@@ -1,4 +1,4 @@
-# ADR-0004: トリガーはClaude Code、DBはNotion（コンテキスト集約方針）
+# ADR-0004: Git を Source of Truth、外部 DB はオプション
 
 ## ステータス
 
@@ -6,72 +6,63 @@
 
 ## 背景
 
-現在、思考・判断のコンテキストが複数の場所に分散している:
-- Notion AI: 壁打ち、判断ログ、SNSネタ出し
+AI コーディングツールを使う際、知識・判断のコンテキストが複数の場所に分散しがちである:
+
 - Claude Code: コード実装、レビュー、CLAUDE.md / MEMORY.md による学習
 - ADR（docs/decisions/）: 技術判断の記録
+- 外部ツール（Notion, Linear 等）: タスク管理、設計書、判断ログ
 
-同じ判断についてNotion AIとClaude Codeの両方に断片が存在し、「あの判断どこで話したっけ？」が起きる。また、Notion AIのセッションに閉じたコンテキストはClaude Codeから参照できない。
+「あの判断どこで話したっけ？」が起きる。外部ツールのセッションに閉じたコンテキストは Claude Code から参照できない。
 
 ## 検討内容
 
 | 選択肢 | メリット | デメリット |
 |--------|---------|-----------|
-| 現状維持（Notion AI + Claude Code 併用） | 使い分け可能 | コンテキスト分散が続く |
-| 全てNotion AIに寄せる | Notionに集約 | コード操作ができない。MCPの逆方向 |
-| **全てClaude Codeに寄せる（Notion はDB）** | コンテキスト一元化。コード操作も可能 | Notion AI の壁打ち機能を捨てる |
+| 外部ツールと Claude Code を併用（現状） | 使い分け可能 | コンテキスト分散が続く |
+| 全て外部ツールに寄せる | 外部ツールに集約 | コード操作ができない |
+| **Claude Code を主体、外部 DB はオプション** | コンテキスト一元化 | 外部ツールの壁打ち機能を捨てる |
 
 ## 決定
 
-### 原則: 「トリガーはClaude Code、DBはNotion」
+### 原則: 「Git が Source of Truth、外部 DB はオプションの共有レイヤー」
 
 ```
-Claude Code（トリガー・思考の主体）:
-  - 壁打ち・思考の整理 → セッション内で完結
-  - 判断ログの記録 → Notion DBにMCP経由で書き込み
-  - SNS記事ネタの記録 → Notion DBにMCP経由で書き込み
-  - ADR記録 → docs/decisions/（Git管理。今のまま）
-  - feedback記録 → feedback_*.md（今のまま）
+Git 管理（Source of Truth）:
+  - CLAUDE.md: プロジェクトルール
+  - ADR (docs/decisions/): 技術判断の記録
+  - MEMORY.md: Claude のローカル作業メモ
+  - feedback_*.md: 行動修正の経緯記録
+  - skills/: 再利用可能なワークフロー
 
-Notion（DB・ビューア・共有レイヤー）:
-  - Tasks DB: タスク状態管理（今のまま）
-  - Projects DB: PJ状態管理（今のまま）
-  - 判断ログDB: Claude Codeが書き込み、オーナーが閲覧
-  - SNSネタDB: Claude Codeが書き込み、記事化時に参照
-  - 設計書: SoTとして維持
-
-Notion AI: 使わない
-  → コンテキストの分散が消える
+外部 DB（オプション。Layer 2）:
+  - タスク管理（Notion, Linear 等）: 非エンジニアとの共有用
+  - 設計書: Source of Truth として外部に置く場合
+  - NOTION_ENABLED=true で有効化
 ```
 
-### ADR vs 判断ログの使い分け
+### ADR vs 外部判断ログの使い分け
 
 ```
 ADR（docs/decisions/）:
   - 「なぜこの設計にしたか」
   - コードに紐づく技術判断
-  - Git管理される
+  - Git 管理される
   - /record-decision スキルで記録
 
-判断ログ（Notion DB）:
-  - 「なぜこの方針にしたか」
-  - 事業判断、運用判断、採用判断
+外部 DB の判断ログ（オプション）:
+  - 事業判断、運用判断など
   - コードに紐づかないこともある
-  - SNS発信のネタになる
-  - Claude Codeが /close-chat 等でMCP経由で記録
+  - Claude Code が MCP 経由で記録
 ```
 
 ## 理由
 
-- Claude CodeはMCP経由でNotionを操作できるため、「トリガーをClaude Code、DBをNotion」にすれば両方の強みを活かせる
-- Notion AIを使わないことでコンテキストの分散を完全に防げる
-- SNS運用の記事構成もClaude Codeに寄せれば、コードの文脈と発信の文脈が同一セッションで繋がる
-- 判断ログをNotion DBに置くことで、オーナーがNotionのビューで横断的に閲覧できる
+- Claude Code は MCP 経由で外部 DB を操作できるため、「トリガーは Claude Code、DB は外部」にすれば両方の強みを活かせる
+- Git 管理されたファイル群（CLAUDE.md, ADR, MEMORY.md）だけで基本機能が完結するため、外部 DB なしでも使える
+- 外部 DB 連携をオプション（Layer 2）にすることで、テンプレートの導入ハードルを下げる
 
 ## 影響
 
-- Notion AIの利用を段階的に停止
-- /close-chat に判断ログDB書き込みステップを追加（各PJで判断ログDBが設計された後）
-- SNS運用のワークフローをClaude Code起点に変更
-- 各PJの .claude/rules/ にNotion DB IDの設定を追加（判断ログDB等）
-- 具体的なNotion DB構成は本ADRのスコープ外。各PJで別途設計する
+- sidekick は外部 DB なしで完結する構成がデフォルト
+- 外部 DB 連携は CLAUDE.md §9 + `.claude/rules/task-db-integration.md` で個別設定
+- `/close-chat`, `/inventory`, `/weekly-review` は外部 DB 設定がある場合のみ同期ステップを実行
