@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# pre-push: 型チェック + テスト実行
+# CLAUDE.md の TYPECHECK_COMMAND / TEST_COMMAND に対応
+
+# 型チェック（設定されている場合）
+if command -v npx &> /dev/null && [ -f "tsconfig.json" ]; then
+  echo "Running type check..."
+  npx tsc --noEmit || exit 1
+fi
+
+# テスト（設定されている場合）
+if command -v npx &> /dev/null && [ -f "vitest.config.ts" ] || [ -f "vitest.config.js" ]; then
+  echo "Running tests..."
+  npx vitest run --changed HEAD~1 2>/dev/null || exit 1
+elif command -v pytest &> /dev/null && [ -f "pyproject.toml" ]; then
+  echo "Running tests..."
+  pytest || exit 1
+fi

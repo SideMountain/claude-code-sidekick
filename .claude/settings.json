@@ -1,0 +1,88 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Grep(*)",
+      "Glob(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Skill(*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebSearch",
+      "Bash(git add:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git fetch:*)",
+      "Bash(git branch:*)",
+      "Bash(git worktree:*)",
+      "Bash(gh auth:*)",
+      "Bash(grep:*)",
+      "Bash(xargs:*)"
+    ],
+    "deny": [
+      "Bash(npx prisma db push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": ".claude/hooks/session-start.sh",
+        "timeout": 15000
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": ".claude/hooks/prompt-reminder.sh",
+        "timeout": 5000
+      }
+    ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": ".claude/hooks/guard-protected-branch-edit.sh",
+        "timeout": 10000,
+        "toolNames": [
+          "Edit",
+          "Write"
+        ]
+      },
+      {
+        "type": "command",
+        "command": ".claude/hooks/guard-bash.sh",
+        "timeout": 10000,
+        "toolNames": [
+          "Bash"
+        ]
+      },
+      {
+        "type": "command",
+        "command": ".claude/hooks/guard-commit-message.sh",
+        "timeout": 10000,
+        "toolNames": [
+          "Bash"
+        ]
+      },
+      {
+        "type": "command",
+        "command": ".claude/hooks/guard-db-operation.sh",
+        "timeout": 10000,
+        "toolNames": [
+          "Bash"
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "prompt",
+        "prompt": "【再発火防止】直前の assistant メッセージで設計判断（選択肢の比較・トレードオフの議論）が行われた場合、ADR記録が必要か確認してください。既に /record-decision を実行済み、またはユーザーが不要と判断した場合はスキップしてください。このプロンプト自体への応答として ADR を提案しないでください（無限ループ防止）。"
+      }
+    ]
+  }
+}

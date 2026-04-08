@@ -1,0 +1,39 @@
+# === PJ固有ファイル（ベーステンプレには含めない） ===
+# 各PJで .example をコピーして使用する
+
+# 外部タスクDB連携設定（PJ固有のDB ID等）
+.claude/rules/task-db-integration.md
+
+# ローカル作業メモ（Claude Code自動記録）
+/MEMORY.md
+
+# Claude Code ローカル設定
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Agent Memory（ローカルスコープ。個人の学習記録）
+.claude/agent-memory-local/
+
+# Skill 永続データディレクトリ（分析履歴・キャッシュ等）
+.claude/skills/*/.data/
+
+# === OS / エディタ ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# === Node.js（フォーク先で使う場合） ===
+node_modules/
+.env
+.env.local
+.env.*.local
+
+# === Python（フォーク先で使う場合） ===
+__pycache__/
+*.pyc
+.venv/
+venv/

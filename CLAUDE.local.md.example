@@ -1,0 +1,17 @@
+# CLAUDE.local.md — 個人設定テンプレート
+
+このファイルはGit管理対象外。個人の好みや環境に応じてカスタマイズする。
+`cp CLAUDE.local.md.example CLAUDE.local.md` でコピーして使用する。
+
+## 応答スタイル
+
+- 日本語で応答する（デフォルト）
+<!-- - Respond in English -->
+
+## 個人 MCP サーバー
+
+使用している個人MCP（Playwright, Context7 等）がある場合にここに記載する。
+
+## ローカル環境メモ
+
+OS・シェル・エディタ等、ローカル環境固有の注意事項があれば記載する。

@@ -1,0 +1,21 @@
+# 外部タスク管理DB連携設定
+
+このPJは「<PJ名>」として外部タスクDBに登録されている。
+
+## 接続先（Notion の場合）
+
+- Tasks DB (database_id): <your-tasks-db-id>
+- Projects DB (database_id): <your-projects-db-id>（任意）
+
+## 用途
+
+- セッション開始時: Tasks DB から自PJの Status=Todo|Doing を取得
+- /close-chat Step 6: Tasks DB の Status/Completion Note を更新
+- /weekly-review Step 4.5: Tasks DB の棚卸し
+
+## 備考
+
+- CLAUDE.md §9「外部タスク管理連携」と合わせて機能する
+- `NOTION_ENABLED: true` の場合のみ有効
+- database_id はハイフン付きのまま使用すること
+- Notion以外のツール（Linear, Jira等）を使う場合は、このファイルを書き換えてスキル側で対応する
