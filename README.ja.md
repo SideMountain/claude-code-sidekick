@@ -94,11 +94,16 @@ flowchart LR
 | **強制** | Pre-tool hooks（exit 2 = ブロック） | `guard-bash.sh` が `rm -rf` をブロック |
 | **検知** | `/review` スキル（6観点） | PR でセキュリティ問題を検出 |
 
-**ハードブロック**（autoモードでも絶対に解除されない）:
-- `prisma db push`、`rm -rf`、force push、`.env` 変更、保護ブランチへの push
+**deny リスト**（絶対に実行されない — settings.json でブロック）:
+- `prisma db push`、force push
 
-**ソフト警告**（autoモードでは自動承認）:
-- `git push`（feature ブランチ）、`gh pr create`、`gh pr merge`（非保護ブランチ）
+**guard ブロック**（hooks が exit 2 でブロック）:
+- `rm -rf`、`.env` 変更、保護ブランチへの push、本番DB操作
+
+**HARD ルール**（Claude がユーザーに確認してから実行）:
+- `git push`（feature ブランチ）、`gh pr create`、`gh pr merge`
+
+**それ以外** — `Bash(*)` で自動承認。ダイアログなし。
 
 ### スキル: 14の再利用ワークフロー
 

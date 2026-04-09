@@ -94,11 +94,16 @@ flowchart LR
 | **Enforcement** | Pre-tool hooks (exit 2 = block) | `guard-bash.sh` blocks `rm -rf` |
 | **Detection** | `/review` skill (6 perspectives) | Catches security issues in PR |
 
-**Hard blocks** (never overridden, even in auto mode):
-- `prisma db push`, `rm -rf`, force push, `.env` modification, push to protected branches
+**Deny list** (never runs — blocked by settings.json):
+- `prisma db push`, force push
 
-**Soft warnings** (auto-approved in `SIDEKICK_AUTO=true` mode):
-- `git push` to feature branches, `gh pr create`, `gh pr merge` (non-protected)
+**Guard blocks** (blocked by hooks with exit 2):
+- `rm -rf`, `.env` modification, push to protected branches, production DB operations
+
+**HARD rules** (Claude confirms before proceeding):
+- `git push` to feature branches, `gh pr create`, `gh pr merge`
+
+**Everything else** — auto-approved via `Bash(*)`. No permission dialogs.
 
 ### Skills: 14 reusable workflows
 

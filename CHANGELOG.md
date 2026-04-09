@@ -6,6 +6,14 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 各PJは MEMORY.md の `sidekick_version` で取り込み済みバージョンを管理し、
 `/inventory` で GitHub Releases API 経由で未適用の更新を検知する。
 
+## [0.4.1] - 2026-04-09
+
+### Changed
+- settings.json の permissions.allow を `Bash(*)` に一本化（ADR-0002 ブラックリスト方式の完全準拠）
+- guard-db-operation.sh: PRD DB 検出時に exit 0（警告）→ exit 2（ブロック）に強化
+- permissions.deny に `prisma db push`（npx なし版）、`git push --force-with-lease` を追加
+- README（EN/JA）の防御モデル説明を4層構造（deny / guard / HARD / auto）に更新
+
 ## [0.4.0] - 2026-04-09
 
 ### Added

@@ -11,8 +11,8 @@
 #   - PRD_DB_PATTERN: substring to identify production DB (e.g., "ep-weathered-mode")
 #   - If neither pattern is set, the hook skips environment detection
 #
-# This hook does NOT block (always exit 0). It provides information for the
-# user to make informed decisions via the permission dialog.
+# This hook BLOCKS production DB operations (exit 2) when PRD_DB_PATTERN is set.
+# STG and unknown connections show warnings only (exit 0).
 #
 # chmod +x .claude/hooks/guard-db-operation.sh
 # =============================================================================
@@ -62,9 +62,10 @@ fi
 if [ -z "$DB_URL" ]; then
   echo "WARNING: [DB Guard] DATABASE_URL not found (${SOURCE}). Verify connection target." >&2
 elif [ -n "$PRD_DB_PATTERN" ] && echo "$DB_URL" | grep -q "$PRD_DB_PATTERN"; then
-  echo "DANGER: [DB Guard] ===== PRODUCTION DB detected ($PRD_DB_PATTERN) =====" >&2
-  echo "DANGER: [DB Guard] Source: ${SOURCE}" >&2
-  echo "DANGER: [DB Guard] Production writes have user impact. Review carefully." >&2
+  echo "BLOCKED: [DB Guard] ===== PRODUCTION DB detected ($PRD_DB_PATTERN) =====" >&2
+  echo "BLOCKED: [DB Guard] Source: ${SOURCE}" >&2
+  echo "BLOCKED: [DB Guard] Production DB operations require explicit approval." >&2
+  exit 2
 elif [ -n "$STG_DB_PATTERN" ] && echo "$DB_URL" | grep -q "$STG_DB_PATTERN"; then
   echo "[DB Guard] Connection: STG DB ($STG_DB_PATTERN) -- ${SOURCE}" >&2
 elif [ -n "$STG_DB_PATTERN" ] || [ -n "$PRD_DB_PATTERN" ]; then

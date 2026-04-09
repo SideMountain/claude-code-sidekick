@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(*)",
       "Read(*)",
       "Grep(*)",
       "Glob(*)",
@@ -10,25 +11,13 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
-      "WebSearch",
-      "Bash(git add:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git fetch:*)",
-      "Bash(git branch:*)",
-      "Bash(git worktree:*)",
-      "Bash(gh auth:*)",
-      "Bash(grep:*)",
-      "Bash(xargs:*)",
-      "Bash(gh repo:*)",
-      "Read(//c/Users/userh/repos/sidekick-downstream-integration/.claude/templates/github/**)",
-      "Read(//c/Users/userh/repos/sidekick-downstream-integration/**)",
-      "Bash(python /tmp/review_patch.py)"
+      "WebSearch"
     ],
     "deny": [
       "Bash(npx prisma db push:*)",
+      "Bash(prisma db push:*)",
       "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
       "Bash(git push -f:*)"
     ]
   },
