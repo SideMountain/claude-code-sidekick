@@ -36,9 +36,10 @@
   │
   ├── 繰り返し実行する手順か？
   │     → Yes → skills/
+  │     ⚠ スキル新規作成時は `.claude/docs/skill-agent-design.md` を必ず Read してから着手する
   │
   ├── 専門的な実行主体の定義か？（ツール権限・モデル・事前知識の固定）
-  │     → Yes → agents/（rules/skill-agent-design.md §4 の判断基準を参照）
+  │     → Yes → agents/（.claude/docs/skill-agent-design.md §4 の判断基準を参照）
   │
   ├── 設計判断の「なぜ」か？
   │     → Yes → ADR（docs/decisions/）
@@ -66,7 +67,7 @@
 | 一時的な作業状態 | 「今このタスクをやっている」 | MEMORY.md Active Work |
 | 積み残しタスク | 「次回これをやる」 | MEMORY.md Backlog |
 | スキルの分析履歴 | レビュー傾向、scout 結果 | skills/*/.data/ |
-| スキル・エージェントの設計判断 | 「隔離する/しない」「エージェント定義を作る」 | rules/skill-agent-design.md |
+| スキル・エージェントの設計判断 | 「隔離する/しない」「エージェント定義を作る」 | .claude/docs/skill-agent-design.md |
 
 ## 昇格と圧縮のルール
 

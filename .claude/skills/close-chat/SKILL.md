@@ -135,8 +135,8 @@ ADR未記録の判断:
 
 ### Step 6: 外部タスクDB同期（Layer 2 オプション）
 
-> **前提条件**: CLAUDE.md §9「状態管理DB連携プロトコル」が設定されているプロジェクトのみ実行する。
-> `.claude/rules/task-db-integration.md` が存在しない場合はこのステップをスキップし、Step 5 で終了する。
+> **前提条件**: CLAUDE.md の `NOTION_ENABLED` が `true`、かつタスクDB連携の設定ファイル（`.claude/rules/` 配下）が存在するプロジェクトのみ実行する。
+> 該当しない場合はこのステップをスキップし、Step 5 で終了する。
 
 Tasks DB（Notion）に自PJのタスクがあれば、以下を同期する。
 MEMORY.md は「Claudeのローカル作業メモ」、Tasks DB は「オーナー向けの報告チャネル」。粒度と読者が異なるため並行運用する。

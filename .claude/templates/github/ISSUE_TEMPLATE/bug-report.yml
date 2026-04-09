@@ -1,0 +1,40 @@
+name: "バグ報告"
+description: "不具合・意図しない動作の報告"
+labels: ["triage", "bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: "何が起きたか"
+      description: "期待する動作と実際の動作を書いてください"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "再現手順"
+      description: "バグを再現するための手順"
+      placeholder: |
+        1. ○○画面を開く
+        2. ○○ボタンをクリック
+        3. エラーが表示される
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: "環境・補足"
+      description: "ブラウザ、OS、エラーメッセージ、スクリーンショット等"
+    validations:
+      required: false
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "深刻度"
+      options:
+        - "Critical: サービス停止・データ損失"
+        - "High: 主要機能が使えない"
+        - "Medium: 回避策あり"
+        - "Low: 軽微な表示崩れ等"
+    validations:
+      required: false

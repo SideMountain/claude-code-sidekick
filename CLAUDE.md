@@ -496,7 +496,7 @@ Notion 等の外部タスク管理DBと連携してタスク状態を共有す�
 `NOTION_ENABLED: false`（デフォルト）のプロジェクトではこのセクション全体をスキップしてよい。
 
 > **設定方法**: `.claude/rules/` にプロジェクト固有の連携設定ファイルを配置する。
-> テンプレート: `.claude/rules/task-db-integration.md.example`
+> テンプレート: `.claude/rules/task-db-integration.md.example` を参照し、`.claude/rules/` 配下に設定ファイルを作成する
 
 ### 作業開始時
 1. タスクDBから自PJの Status=Todo|Doing タスクを取得

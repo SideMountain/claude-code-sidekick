@@ -12,6 +12,9 @@
 
 {worktree_path}/.claude/skills/review-{type}/SKILL.md の手順に従い、
 全ステップを実行して結果を出力フォーマットに従って報告してください。
+
+PJ固有チェック: {worktree_path}/.claude/skills/review-{type}/references/ 配下に
+ファイルがあれば読み込み、追加のチェック項目として実行してください。
 ```
 
 ## 変数
@@ -19,7 +22,7 @@
 | 変数 | 取得元 |
 |------|--------|
 | `{worktree_path}` | 現在のワーキングディレクトリ |
-| `{type}` | `code`, `test`, `ops` のいずれか |
+| `{type}` | `code`, `test`, `ops`, `design`, `spec` のいずれか |
 | `{file_list}` | `git diff $BASE_BRANCH...HEAD --name-only` の出力 |
 | `{commit_list}` | `git log $BASE_BRANCH...HEAD --oneline` の出力 |
 

@@ -30,8 +30,9 @@ user-invocable: true
 ### Step 1: 変更内容の把握
 
 ```bash
-# ベースブランチを特定（CLAUDE.md のブランチ戦略を参照）
-BASE_BRANCH=origin/main  # プロジェクトに応じて変更
+# ベースブランチを自動取得
+BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/@@')
+# CLAUDE.md の STG_ENABLED に応じて上書き（下記ロジック参照）
 
 # 変更ファイル一覧
 git diff $BASE_BRANCH...HEAD --name-only
@@ -42,6 +43,13 @@ git diff $BASE_BRANCH...HEAD --stat
 # コミット一覧
 git log $BASE_BRANCH...HEAD --oneline
 ```
+
+> **BASE_BRANCH の判定ロジック:**
+> 1. `git symbolic-ref refs/remotes/origin/HEAD` でリポジトリのデフォルトブランチを取得（一次ソース）
+> 2. CLAUDE.md の `STG_ENABLED` を確認し、必要に応じて上書き:
+>    - `STG_ENABLED=true` かつ現在のブランチが `feature/*` → `origin/release/stg`
+>    - `STG_ENABLED=true` かつ現在のブランチが `release/stg` → `origin/main`
+>    - `STG_ENABLED=false` → symbolic-ref の結果をそのまま使用
 
 ### Step 1.5: 変更スコープ判定（動的スキップ）
 
@@ -62,6 +70,7 @@ git log $BASE_BRANCH...HEAD --oneline
 - スキップする観点は「対象なし — スキップ」と明示して報告する
 - ユーザーが `/review` 実行時に「全観点で」と指定した場合はスキップせず全実行する
 - プロジェクト固有の観点（UI/デザイン等）がある場合は、CLAUDE.md の定義に従って追加判定する
+- 変更が `skills/` を含む場合、`.claude/docs/skill-agent-design.md` を事前に読み込み、Return Contract・コンテキスト隔離の基準を踏まえてレビューする
 
 ### Step 2: 観点の並列レビュー
 

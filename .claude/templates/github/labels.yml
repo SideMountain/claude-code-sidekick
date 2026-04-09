@@ -1,0 +1,30 @@
+# ラベル定義
+# gh label create で適用、または GitHub Settings > Labels で手動設定
+#
+# 適用コマンド例:
+#   while IFS=: read -r name color desc; do
+#     gh label create "$name" --color "$color" --description "$desc" --force
+#   done < <(grep -E '^\w' .github/labels.yml)
+
+# === Issue ライフサイクル ===
+triage:fbca04:起票直後。分類・優先度の判断待ち
+approved:0e8a16:実装着手OK
+implementing:1d76db:実装中
+needs-review:d93f0b:レビュー待ち
+needs-clarification:c2e0c6:情報不足。起票者に確認中
+blocked:b60205:ブロッカーあり。進行不可
+
+# === PR ライフサイクル ===
+stg-ready:0e8a16:STGマージ準備完了
+prd-ready:d93f0b:PRDマージ準備完了
+prd-approved:006b75:PRDマージ承認済み
+needs-fix:e11d48:修正が必要
+
+# === セキュリティ ===
+needs-security-review:b60205:認証/データ/インフラに触れる変更。オーナー承認必須
+
+# === 分類 ===
+bug:d73a4a:バグ・不具合
+enhancement:a2eeef:機能追加・改善
+refactor:d4c5f9:リファクタリング
+docs:0075ca:ドキュメント

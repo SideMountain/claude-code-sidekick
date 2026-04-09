@@ -31,14 +31,14 @@ user-invocable: true
 
 ### Step 1: Tasks DB タスク取得
 
-> **前提条件**: `.claude/rules/task-db-integration.md` が存在する場合のみ実行。
-> 存在しない場合はスキップし、Step 2 へ。
+> **前提条件**: CLAUDE.md の `NOTION_ENABLED` が `true`、かつタスクDB連携の設定ファイル（`.claude/rules/` 配下）が存在する場合のみ実行。
+> 該当しない場合はスキップし、Step 2 へ。
 
 Tasks DB から自PJの未完了タスクを取得する。
 
 ```
 フィルタ条件:
-  - Project = 自PJ名（task-db-integration.md に記載）
+  - Project = 自PJ名（タスクDB連携の設定ファイルに記載）
   - Status = Todo OR Doing OR Waiting
 ```
 
@@ -88,33 +88,34 @@ MEMORY.md の `## Backlog` セクションを読み込み、未完了項目（`-
 
 ### Step 5: sidekick バージョンチェック
 
-> **前提条件**: sidekick テンプレートの `VERSION` ファイルが存在する場合のみ実行。
+> **前提条件**: MEMORY.md に `sidekick_version` コメントがある場合のみ実行。
 > sidekick をテンプレートとして利用していないPJ（sidekick 自身を含む）ではスキップ。
 
 #### 5a. バージョン比較
 
 1. MEMORY.md から `sidekick_version` コメントを読み取る（例: `<!-- sidekick_version: 0.1.0 -->`）
-2. sidekick リポジトリの最新 VERSION と比較する
-   - 比較方法: sidekick リポジトリがローカルにある場合は直接読み取り、
-     なければ GitHub API（`gh api repos/{owner}/sidekick/contents/VERSION`）で取得
+2. sidekick リポジトリの最新バージョンを取得する
+   - **GitHub Releases API**（推奨）: `gh api repos/{owner}/sidekick/releases/latest --jq '.tag_name'`
+     （`{owner}` は sidekick の GitHub オーナー名。`git remote get-url origin` から取得可能）
+   - フォールバック: `gh api repos/{owner}/sidekick/tags --jq '.[0].name'`
 
 #### 5b. 差分表示
 
-バージョンが異なる場合、CHANGELOG.md の該当範囲を表示する。
+バージョンが異なる場合、GitHub Releases のリリースノートを表示する。
 
 ```
 === sidekick 更新あり ===
-現在: 0.1.0 → 最新: 0.2.0
+現在: v0.1.0 → 最新: v0.2.0
 
 変更内容:
-  （CHANGELOG.md の該当バージョン範囲を表示）
+  （GitHub Releases のリリースノートを表示）
 
 更新が必要です。メインに戻って取り込み判断を行ってください。
 ```
 
 > **Note**: Agent 隔離実行時、バージョン更新の取り込み判断はメインコンテキストで行う。
 > Agent は差分情報をサマリに含めて返し、承認後にメインで以下を実行する:
-> 1. CHANGELOG の変更内容に基づき、手動で差分を適用する
+> 1. GitHub Releases のリリースノートに基づき、手動で差分を適用する
 > 2. MEMORY.md の `sidekick_version` を更新する
 
 ### Step 6: 重複検知

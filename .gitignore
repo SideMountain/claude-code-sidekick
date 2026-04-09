@@ -1,21 +1,25 @@
-# === PJ固有ファイル（ベーステンプレには含めない） ===
-# 各PJで .example をコピーして使用する
-
-# 外部タスクDB連携設定（PJ固有のDB ID等）
-.claude/rules/task-db-integration.md
-
-# ローカル作業メモ（Claude Code自動記録）
-/MEMORY.md
+# === sidekick コアが必要とするパターン ===
+# /setup が配置状況に応じて下流PJに追記する
 
 # Claude Code ローカル設定
 .claude/settings.local.json
-CLAUDE.local.md
 
 # Agent Memory（ローカルスコープ。個人の学習記録）
 .claude/agent-memory-local/
 
 # Skill 永続データディレクトリ（分析履歴・キャッシュ等）
 .claude/skills/*/.data/
+
+# === PJ固有ファイル（/setup が配置した場合のみ下流PJで有効） ===
+
+# ローカル作業メモ（Claude Code自動記録）
+/MEMORY.md
+
+# 個人設定
+CLAUDE.local.md
+
+# 外部タスクDB連携設定（PJ固有のDB ID等）
+.claude/rules/task-db-integration.md
 
 # === OS / エディタ ===
 .DS_Store

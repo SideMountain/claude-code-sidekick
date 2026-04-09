@@ -20,7 +20,11 @@
       "Bash(git worktree:*)",
       "Bash(gh auth:*)",
       "Bash(grep:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(gh repo:*)",
+      "Read(//c/Users/userh/repos/sidekick-downstream-integration/.claude/templates/github/**)",
+      "Read(//c/Users/userh/repos/sidekick-downstream-integration/**)",
+      "Bash(python /tmp/review_patch.py)"
     ],
     "deny": [
       "Bash(npx prisma db push:*)",

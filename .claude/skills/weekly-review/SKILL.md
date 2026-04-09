@@ -110,8 +110,8 @@ Backlog 内の `[ベース昇格]` `[思考OS還流]` プレフィックス付�
 
 ### Step 4.5: Tasks DB 棚卸し
 
-> **前提条件**: CLAUDE.md §9「状態管理DB連携プロトコル」が設定されているプロジェクトのみ実行する。
-> `.claude/rules/task-db-integration.md` が存在しない場合はこのステップをスキップする。
+> **前提条件**: CLAUDE.md の `NOTION_ENABLED` が `true`、かつタスクDB連携の設定ファイル（`.claude/rules/` 配下）が存在するプロジェクトのみ実行する。
+> 該当しない場合はこのステップをスキップする。
 
 - `[Tasks DB投入]` フラグ付きのMEMORY.md Backlog項目を確認
 - オーナーに投入を依頼すべきか、自分でDB投入するか判断

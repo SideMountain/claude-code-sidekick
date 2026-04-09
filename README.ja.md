@@ -49,7 +49,6 @@ gh repo create my-project --template SideMountain/claude-code-sidekick
 
 # 2. セットアップ
 cd my-project
-cp MEMORY.md.example MEMORY.md
 claude  # /setup を実行
 ```
 
@@ -57,13 +56,9 @@ claude  # /setup を実行
 
 ```bash
 # 1. コアファイルをコピー
-cp -r sidekick/CLAUDE.md sidekick/.claude/ sidekick/.rules/ your-project/
-cp sidekick/MEMORY.md.example your-project/
+cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/
 
-# 2. .gitignore にエントリ追加
-cat sidekick/.gitignore >> your-project/.gitignore
-
-# 3. 設定
+# 2. 設定 — /setup が残り（MEMORY.md, .gitignore, テンプレート）を全て処理
 cd your-project && claude  # /setup を実行
 ```
 
@@ -220,14 +215,20 @@ sidekick/
 │   │   ├── thinking.md          # オーナーの判断原則
 │   │   ├── knowledge-map.md     # 知識の配置先マップ
 │   │   └── ...
+│   ├── templates/               # /setup が opt-in で配置するファイル
+│   │   ├── MEMORY.md            # セッション記憶テンプレート
+│   │   ├── CLAUDE.local.md      # 個人設定テンプレート
+│   │   └── github/              # GitHub Issue テンプレート・ラベル定義
+│   ├── docs/                    # 開発者リファレンス（毎セッション読み込まない）
+│   │   └── skill-agent-design.md
 │   └── settings.json            # 権限、hooks、deny リスト
 ├── docs/
 │   ├── decisions/               # ADR（設計判断記録）
 │   ├── cron-setup-guide.md      # 自動実行ガイド
 │   └── playwright-setup-guide.md
-└── .github/
-    ├── ISSUE_TEMPLATE/          # 機能要求・バグ報告テンプレート
-    └── labels.yml               # Issue 駆動フローのラベル定義
+└── .github/                     # sidekick リポ自身用（下流には伝播しない）
+    ├── ISSUE_TEMPLATE/
+    └── labels.yml
 ```
 
 ---
@@ -275,11 +276,13 @@ sidekick は個人開発者でも小チームでも使える。「エンター�
 
 ## バージョン管理
 
+sidekick は **git tag + GitHub Releases** でバージョン管理する。プロジェクトルートに VERSION ファイルは置かない。
+
+各プロジェクトの `MEMORY.md` に取り込み済みバージョンを記録:
 ```markdown
 <!-- sidekick_version: 0.3.0 -->
 ```
-
-各プロジェクトの `MEMORY.md` にバージョンを記録。`/inventory` で更新を確認。
+`/inventory` で最新の GitHub Release と比較し、更新を確認できる。
 
 ## ライセンス
 

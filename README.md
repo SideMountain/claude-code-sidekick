@@ -51,7 +51,6 @@ gh repo create my-project --template SideMountain/claude-code-sidekick
 
 # 2. Setup
 cd my-project
-cp MEMORY.md.example MEMORY.md
 claude  # then run /setup
 ```
 
@@ -59,13 +58,9 @@ claude  # then run /setup
 
 ```bash
 # 1. Copy core files
-cp -r sidekick/CLAUDE.md sidekick/.claude/ sidekick/.rules/ your-project/
-cp sidekick/MEMORY.md.example your-project/
+cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/
 
-# 2. Merge .gitignore entries
-cat sidekick/.gitignore >> your-project/.gitignore
-
-# 3. Configure
+# 2. Configure — /setup handles everything else (MEMORY.md, .gitignore, templates)
 cd your-project && claude  # then run /setup
 ```
 
@@ -222,14 +217,20 @@ sidekick/
 │   │   ├── thinking.md          # Owner's decision principles
 │   │   ├── knowledge-map.md     # Where knowledge goes
 │   │   └── ...
+│   ├── templates/               # Opt-in files deployed by /setup
+│   │   ├── MEMORY.md            # Session memory template
+│   │   ├── CLAUDE.local.md      # Personal settings template
+│   │   └── github/              # GitHub Issue templates & labels
+│   ├── docs/                    # Developer reference (not loaded per-session)
+│   │   └── skill-agent-design.md
 │   └── settings.json            # Permissions, hooks, deny list
 ├── docs/
 │   ├── decisions/               # Architecture Decision Records
 │   ├── cron-setup-guide.md      # Night batch automation
 │   └── playwright-setup-guide.md
-└── .github/
-    ├── ISSUE_TEMPLATE/          # Feature request & bug report
-    └── labels.yml               # Label relay for issue-driven flow
+└── .github/                     # For sidekick repo itself (not propagated)
+    ├── ISSUE_TEMPLATE/
+    └── labels.yml
 ```
 
 ---
@@ -277,11 +278,13 @@ sidekick works for solo developers and small teams alike. No separate "enterpris
 
 ## Versioning
 
+sidekick uses **git tags + GitHub Releases** for version management. No VERSION file in your project root.
+
+Each downstream project tracks its adopted version in `MEMORY.md`:
 ```markdown
 <!-- sidekick_version: 0.3.0 -->
 ```
-
-Each project tracks its adopted version in `MEMORY.md`. Run `/inventory` to check for updates.
+Run `/inventory` to check for updates against the latest GitHub Release.
 
 ## License
 

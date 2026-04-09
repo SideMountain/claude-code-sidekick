@@ -2,7 +2,7 @@
 
 ## ステータス
 
-承認済み（2026-04-07）
+改訂済み（2026-04-09）— git tag + GitHub Releases に移行。VERSION ファイル廃止
 
 ## 背景
 
@@ -21,32 +21,34 @@ sidekick を複数プロジェクトで共有テンプレートとして使う�
 | git remote で pull | 差分管理が正確 | コンフリクト管理の負担 |
 | npm パッケージ化 | OSS 標準 | オーバーエンジニアリング |
 | GitHub Template + Releases | 外部ユーザーに自然 | 既存PJの自動化に不向き |
-| **/inventory で差分取り込み** | PJ側で自律的に取り込める | VERSION + CHANGELOG が必要 |
+| **/inventory で差分取り込み** | PJ側で自律的に取り込める | バージョン追跡の仕組みが必要 |
 
-### PJ固有 vs 汎用の分離
+### バージョン管理方式（改訂時に追加）
 
 | 選択肢 | メリット | デメリット |
 |--------|---------|-----------|
-| CLAUDE.md を base / project に分割 | 機械的に上書きできる | 全PJのリファクタ必要 |
-| **/inventory の差分取り込みで代替** | 最小コスト | 差分適用は人間判断 |
+| ルートに VERSION ファイル | シンプル | 下流PJのルートを汚染する |
+| **git tag + GitHub Releases** | OSS 標準。下流PJにファイル残さない | オフラインで確認不可 |
+| package.json の version | npm 標準 | sidekick は npm パッケージではない |
 
 ## 決定
 
-1. **VERSION + CHANGELOG を導入**し、sidekick のリリースを管理する
-2. **`/inventory` スキルにバージョンチェックを組み込む**。未適用の更新があれば差分を表示し、PJ側で判断して取り込む
+1. ~~VERSION + CHANGELOG を導入~~ → **git tag + GitHub Releases** でリリース管理する（改訂）
+2. **`/inventory` スキルにバージョンチェックを組み込む**。MEMORY.md の `sidekick_version` と GitHub Releases API を比較し、未適用の更新があれば差分を表示
 3. **CLAUDE.md 構造分離は後回し**。`/inventory` の差分取り込みで代替する。PJ数が増えたら再検討
-4. **PJ固有ファイル（task-db-integration.md, MEMORY.md, feedback_*.md）を .gitignore に追加**。`.example` ファイルを提供
+4. **PJ固有ファイルを .gitignore に追加**。テンプレートファイルは `.claude/templates/` に格納し、`/setup` が opt-in で配置する（改訂）
 5. **スキルの階層構造を導入**（SKILL.md + references/ + agents/ + templates/ 構造）
 
 ## 理由
 
 - `/inventory` に組み込む方式は「各PJの Claude Code が自律的に取り込む」横展開フローと一致
-- CLAUDE.md 分割は理想だがリファクタコストが大きく、現時点では `/inventory` で十分に代替できる
-- スキルの階層構造は Claude Code が公式サポートしており、SKILL.md 1枚のフラット構造より保守性が高い
+- git tag + GitHub Releases は OSS の標準慣行。VERSION ファイルは下流PJのルートを汚染する
+- テンプレートファイルの `.claude/templates/` 格納は、下流PJのルート名前空間を保護する
 
 ## 影響
 
-- 新規ファイル: VERSION, CHANGELOG.md
-- 新規スキル: `/inventory`
-- 変更: .gitignore にPJ固有ファイルを追加
-- 各PJの MEMORY.md に `sidekick_version` フィールドを追加
+- 廃止: VERSION ファイル（ルート）
+- 変更: CHANGELOG.md は sidekick upstream リポのみに存在（下流には伝播しない）
+- 変更: `*.example` ファイル → `.claude/templates/` に移動
+- 変更: `/inventory` のバージョンチェックが GitHub Releases API を使用
+- 各PJの MEMORY.md に `sidekick_version` フィールドを維持（変更なし）

@@ -1,9 +1,33 @@
 # Changelog
 
 sidekick のリリース履歴。セマンティックバージョニングに従う。
+バージョンは git tag + GitHub Releases で管理する。
 
 各PJは MEMORY.md の `sidekick_version` で取り込み済みバージョンを管理し、
-`/inventory` で未適用の更新を検知する。
+`/inventory` で GitHub Releases API 経由で未適用の更新を検知する。
+
+## [0.4.0] - 2026-04-09
+
+### Added
+- `/setup` に既存PJモードを追加（CLAUDE.md が既にある場合の非侵襲的セットアップ）
+- `.claude/templates/` ディレクトリ（MEMORY.md, CLAUDE.local.md, GitHub テンプレート）
+- `.claude/docs/` ディレクトリ（毎セッション読み込まない開発者リファレンス）
+- `/auto-implement` に推奨ユースケースセクション（テスト追加から始める段階的導入ガイド）
+- ADR-0005: 下流統合設計原則（.claude/ 封じ込め、opt-in 配置、既存PJ非侵襲）
+
+### Changed
+- バージョン管理を VERSION ファイル → git tag + GitHub Releases に移行
+- `/inventory` のバージョンチェックが GitHub Releases API を使用
+- `/setup` の .gitignore 追記がファイル配置と連動（配置しなかったファイルのパターンは追記しない）
+- `skill-agent-design.md` を `rules/` → `.claude/docs/` に移動（コンテキスト常駐の解消）
+- `mcp-recommendations.md` を `rules/` → `skills/setup/references/` に移動（/setup 時のみ参照）
+- `MEMORY.md.example` → `.claude/templates/MEMORY.md` に移動
+- `CLAUDE.local.md.example` → `.claude/templates/CLAUDE.local.md` に移動
+- `.github/` テンプレートの下流向けコピーを `.claude/templates/github/` に分離
+- `.gitignore` のコメント構造を整理（コア/配置依存/PJ固有の区分）
+
+### Removed
+- ルートの `VERSION` ファイル（git tag に移行）
 
 ## [0.3.0] - 2026-04-08
 
