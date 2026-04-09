@@ -296,6 +296,13 @@ feat: ○○機能を追加
 ```
 ステップ1: git worktree add ../<project>-<用途> -b <branch-name> origin/<base-branch>
 
+ステップ1.5: /add-dir ../<project>-<用途>
+  → Worktree ディレクトリへの Read/Edit/Bash アクセスを許可する
+  → これを省略すると、セッション中に都度ダイアログが出る
+  → 夜間自動モード（--dangerouslySkipPermissions）では不要
+  → /setup で settings.local.json の additionalDirectories に親ディレクトリが
+    設定済みの場合、このステップは省略可（永続設定が優先される）
+
 ステップ2: MEMORY.md Active Work に追記
   - ブランチ名、作業内容（1行）、影響範囲、DBマイグレーション有無
 

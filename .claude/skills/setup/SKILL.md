@@ -94,16 +94,35 @@ CLAUDE.md の `Project Configuration` をヒアリング結果で埋める。
 
 #### 2b. .claude/settings.local.json の生成
 
-プロジェクトに応じた allow/deny リストを設定する:
+プロジェクトに応じた allow/deny リストを設定する。
+また、**Worktree のディレクトリアクセス許可**のため、プロジェクトの親ディレクトリを `additionalDirectories` に自動設定する。
+
+```bash
+# 親ディレクトリの絶対パスを取得
+PARENT_DIR=$(cd .. && pwd)
+```
 
 ```json
 {
   "permissions": {
     "allow": ["テストコマンド", "ビルドコマンド", "リントコマンド"],
-    "deny": ["本番DB操作コマンド"]
+    "deny": ["本番DB操作コマンド"],
+    "additionalDirectories": [
+      "<PARENT_DIR の値>"
+    ]
   }
 }
 ```
+
+> **なぜ**: Worktree は `../<project>-<用途>` に作成される。親ディレクトリを信頼対象にしないと、
+> WT内のファイル操作時にツール許可（Allow）とは別軸のディレクトリアクセス確認ダイアログが毎回表示される。
+> `settings.local.json` は git 非追跡なので、マシン固有のパスが入っても問題ない。
+>
+> **`/add-dir` との関係**: `/add-dir` はセッション単位の一時的な許可。`additionalDirectories` は永続設定。
+> `/setup` で後者を設定済みなら、CLAUDE.md Worktree 手順のステップ1.5（`/add-dir`）は省略できる。
+>
+> **注意**: 親ディレクトリ配下の他プロジェクトもアクセス対象になる。
+> 秘匿情報を含むプロジェクトが同階層にある場合は、WT専用の親ディレクトリで運用することを推奨。
 
 #### 2c. スキル設定の調整
 
@@ -238,6 +257,7 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 - CLAUDE.local.md の有無
 - .github/ の有無
 - .claude/settings.local.json の有無
+- settings.local.json に additionalDirectories（WT用）が設定されているか
 ```
 
 ### Step 2E: 差分案内
@@ -262,6 +282,7 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 | .github/ テンプレート | 「GitHub Issue テンプレートを追加しますか？」 | `.claude/templates/github/` → `.github/` にコピー（既存 .github/ がある場合はマージ方法を確認） |
 | .gitignore パターン | 上記で配置したファイルに応じて自動追記 | 新規PJモードの Step 4 と同じロジック |
 | settings.local.json | 「テスト・ビルドコマンドの自動許可設定を追加しますか？」 | 新規PJモードの Step 2b と同じ |
+| additionalDirectories | （確認不要・自動設定） | settings.local.json に親ディレクトリを追加（Step 2b 参照） |
 
 ### Step 3E: オーナー情報（任意）
 
