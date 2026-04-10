@@ -21,6 +21,9 @@ CLAUDE.local.md
 # 外部タスクDB連携設定（PJ固有のDB ID等）
 .claude/rules/task-db-integration.md
 
+# 外部システム連携設定（PJ固有のNotion ID・API設定等）
+.claude/rules/watari-system.md
+
 # === OS / エディタ ===
 .DS_Store
 Thumbs.db

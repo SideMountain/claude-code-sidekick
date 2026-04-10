@@ -74,6 +74,70 @@ Lane 2: 対話駆動（重いタスク）
 - 2レーン制はシミュレーションで実際の破綻パターンを確認した上での判断
 - 段階的移行により「禁止漏れ」のリスクを最小化できる
 
+## 実装リファレンス
+
+ブラックリスト方式は settings.json + hooks の2層で実現する。
+
+### settings.json: Bash(*) による全自動
+
+```jsonc
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",    // ← 全 Bash コマンドを自動許可
+      // ... 他のツールも同様
+    ],
+    "deny": [
+      // 「絶対禁止」のみ deny に列挙
+      "Bash(npx prisma db push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push -f:*)"
+    ]
+  }
+}
+```
+
+**ポイント**: `Bash(*)` がブラックリスト方式の要。個別コマンドを allow に列挙するとホワイトリスト方式に逆行する。Permission ダイアログは安全弁ではなく開発体験の阻害要因。
+
+### hooks: guard スクリプトの exit code による物理ブロック
+
+```jsonc
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": ".claude/hooks/guard-bash.sh",
+        "toolNames": ["Bash"]
+      }
+    ]
+  }
+}
+```
+
+guard スクリプトは exit code で制御する:
+
+| exit code | 意味 | 用途 |
+|-----------|------|------|
+| `exit 2` | **ハードブロック**（実行不可） | 禁止操作（PRD DB書込、保護ブランチpush、rm -rf等） |
+| `exit 0` | **許可**（Permission ダイアログに委ねる） | 警告のみの操作（git push一般、prisma migrate等） |
+
+**設計原則**: `exit 2` はどのモード（対話/夜間自動）でもバイパスできない。`exit 0` は `SIDEKICK_AUTO=true` + `--dangerouslySkipPermissions` の組み合わせで自動承認される。
+
+### 3層の対応関係
+
+| CLAUDE.md の分類 | 実装手段 |
+|-----------------|---------|
+| 禁止（例外なし） | `deny` リスト + guard スクリプトの `exit 2` |
+| 承認必須 | guard スクリプトの `exit 0`（Permission ダイアログで確認） |
+| 全自動 | `Bash(*)` で自動許可。guard にマッチしないものは全て通過 |
+
+## Gotchas
+
+- **Worktree ディレクトリアクセス**: `Bash(*)` / `Read(*)` / `Edit(*)` はツール使用許可（引数パターン）を制御するが、Claude Code にはプラットフォーム層のディレクトリアクセス制御が別に存在する。Worktree はメインワークスペース外に作られるため、対話モードでは初回アクセス時に許可ダイアログが出る。対策: Worktree 作成直後に `/add-dir` でセッション内のアクセスを許可する。夜間自動モード（`--dangerouslySkipPermissions`）では全バイパスされるため影響なし
+- **settings.json の allow と deny の評価順**: deny が allow より優先される。`Bash(*)` で全許可しても `deny` に列挙されたパターンはブロックされる
+
 ## 影響
 
 - CLAUDE.md §2 の構造が「確認不要リスト + 確認必須リスト」から「禁止リスト + 承認必須リスト」に反転
