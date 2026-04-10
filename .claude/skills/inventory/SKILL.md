@@ -95,9 +95,9 @@ MEMORY.md の `## Backlog` セクションを読み込み、未完了項目（`-
 
 1. MEMORY.md から `sidekick_version` コメントを読み取る（例: `<!-- sidekick_version: 0.1.0 -->`）
 2. sidekick リポジトリの最新バージョンを取得する
-   - **GitHub Releases API**（推奨）: `gh api repos/{owner}/sidekick/releases/latest --jq '.tag_name'`
-     （`{owner}` は sidekick の GitHub オーナー名。`git remote get-url origin` から取得可能）
-   - フォールバック: `gh api repos/{owner}/sidekick/tags --jq '.[0].name'`
+   - **GitHub Releases API**（推奨）: `gh api repos/{owner}/claude-code-sidekick/releases/latest --jq '.tag_name'`
+     （`{owner}` は claude-code-sidekick の GitHub オーナー名。`git remote get-url origin` から取得可能）
+   - フォールバック: `gh api repos/{owner}/claude-code-sidekick/tags --jq '.[0].name'`
 
 #### 5b. 差分表示
 
