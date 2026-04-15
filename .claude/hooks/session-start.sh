@@ -13,7 +13,7 @@
 
 INPUT=$(cat)
 if command -v jq &>/dev/null; then
-  CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
+  CWD=$(printf '%s\n' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null)
 fi
 PROJECT_DIR="${CWD:-$(pwd)}"
 

@@ -2,6 +2,7 @@
 name: record-decision
 description: "仕様に関する判断を ADR（Architecture Decision Record）として docs/decisions/ に記録する。"
 user-invocable: true
+allowed-tools: "Read Write Bash(ls *) Bash(git *) Glob"
 ---
 
 # 仕様判断の記録（/record-decision）

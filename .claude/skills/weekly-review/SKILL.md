@@ -2,6 +2,7 @@
 name: weekly-review
 description: "定期棚卸し。MEMORY.md整理、feedback圧縮、知識還流フラグ処理、ADR同期確認を実行する。"
 user-invocable: true
+allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(wc *) Agent"
 ---
 
 # /weekly-review — 定期棚卸しスキル

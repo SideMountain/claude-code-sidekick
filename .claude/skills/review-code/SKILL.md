@@ -2,6 +2,7 @@
 name: review-code
 description: "実装品質レビュー。コード整合性・拡張性・DB設計・水平展開・セキュリティを検証する。"
 user-invocable: true
+allowed-tools: "Read Grep Glob Bash(git *) Agent"
 ---
 
 # 実装品質レビュー（/review-code）

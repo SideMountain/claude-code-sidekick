@@ -2,6 +2,7 @@
 name: news
 description: "コードベースを最新化し、直近の変更内容をわかりやすくサマリ表示する。"
 user-invocable: true
+allowed-tools: "Read Bash(git *) Agent"
 ---
 
 # /news — 最新の変更を取り込み・サマリ表示

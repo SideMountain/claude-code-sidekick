@@ -78,7 +78,7 @@ flowchart LR
     end
     L1 --> L2
     subgraph L2["🛡️ Enforcement"]
-        B["Pre-tool Hooks\nguard-bash.sh\nexit 2 = block"]
+        B["Pre-tool Hooks\nguard-bash.sh\nJSON deny = block"]
     end
     L2 -->|"❌ blocked"| DENY(("🚫"))
     L2 --> L3
@@ -91,13 +91,13 @@ flowchart LR
 | Layer | Mechanism | Example |
 |-------|-----------|---------|
 | **Awareness** | CLAUDE.md rules (HARD/SOFT/GUIDE) | "Don't push to main" |
-| **Enforcement** | Pre-tool hooks (exit 2 = block) | `guard-bash.sh` blocks `rm -rf` |
+| **Enforcement** | Pre-tool hooks (JSON deny = block) | `guard-bash.sh` blocks `rm -rf` |
 | **Detection** | `/review` skill (6 perspectives) | Catches security issues in PR |
 
 **Deny list** (never runs — blocked by settings.json):
 - `prisma db push`, force push
 
-**Guard blocks** (blocked by hooks with exit 2):
+**Guard blocks** (blocked by hooks with JSON `permissionDecision: "deny"`):
 - `rm -rf`, `.env` modification, push to protected branches, production DB operations
 
 **HARD rules** (Claude confirms before proceeding):

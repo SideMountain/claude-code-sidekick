@@ -15,7 +15,7 @@
 
 ## 備考
 
-- CLAUDE.md §9「外部タスク管理連携」と合わせて機能する
+- `.claude/rules/task-management.md` と合わせて機能する
 - `NOTION_ENABLED: true` の場合のみ有効
 - database_id はハイフン付きのまま使用すること
 - Notion以外のツール（Linear, Jira等）を使う場合は、このファイルを書き換えてスキル側で対応する

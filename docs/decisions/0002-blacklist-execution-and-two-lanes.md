@@ -116,21 +116,21 @@ Lane 2: 対話駆動（重いタスク）
 }
 ```
 
-guard スクリプトは exit code で制御する:
+guard スクリプトは JSON 出力（hookSpecificOutput）で制御する:
 
-| exit code | 意味 | 用途 |
-|-----------|------|------|
-| `exit 2` | **ハードブロック**（実行不可） | 禁止操作（PRD DB書込、保護ブランチpush、rm -rf等） |
-| `exit 0` | **許可**（Permission ダイアログに委ねる） | 警告のみの操作（git push一般、prisma migrate等） |
+| permissionDecision | 意味 | 用途 |
+|--------------------|------|------|
+| `deny` | **ハードブロック**（実行不可） | 禁止操作（PRD DB書込、保護ブランチpush、rm -rf等） |
+| `allow` + `additionalContext` | **許可**（追加情報を Claude に注入） | 警告のみの操作（git push一般、prisma migrate等） |
 
-**設計原則**: `exit 2` はどのモード（対話/夜間自動）でもバイパスできない。`exit 0` は `SIDEKICK_AUTO=true` + `--dangerouslySkipPermissions` の組み合わせで自動承認される。
+**設計原則**: `deny` はどのモード（対話/夜間自動）でもバイパスできない。`allow` は `SIDEKICK_AUTO=true` + `--dangerouslySkipPermissions` の組み合わせで自動承認される。
 
 ### 3層の対応関係
 
 | CLAUDE.md の分類 | 実装手段 |
 |-----------------|---------|
-| 禁止（例外なし） | `deny` リスト + guard スクリプトの `exit 2` |
-| 承認必須 | guard スクリプトの `exit 0`（Permission ダイアログで確認） |
+| 禁止（例外なし） | `deny` リスト + guard スクリプトの `permissionDecision: "deny"` |
+| 承認必須 | guard スクリプトの `permissionDecision: "allow"` + `additionalContext`（Permission ダイアログで確認） |
 | 全自動 | `Bash(*)` で自動許可。guard にマッチしないものは全て通過 |
 
 ## Gotchas

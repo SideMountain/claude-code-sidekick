@@ -2,6 +2,7 @@
 name: review
 description: "統合レビュー（オーケストレーター）。4観点（code/test/ops + プロジェクト固有）を並列実行し、結果を統合して総合判定する。"
 user-invocable: true
+allowed-tools: "Read Grep Bash(git *) Agent"
 ---
 
 # 統合レビュー（/review）

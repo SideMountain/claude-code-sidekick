@@ -2,6 +2,7 @@
 name: setup
 description: "プロジェクトセットアップ。新規PJはテンプレートから生成、既存PJは非侵襲的に追加する。"
 user-invocable: true
+allowed-tools: "Read Write Edit Bash(git *) Bash(cp *) Bash(grep *) Bash(claude *) Glob"
 ---
 
 # /setup — プロジェクトセットアップ
@@ -85,12 +86,12 @@ Tier に応じたインストールコマンドを案内する。
 
 CLAUDE.md の `Project Configuration` をヒアリング結果で埋める。
 
-設定項目:
-- Tech Stack テーブルの更新
-- ブランチ戦略の設定
-- テストコマンドの設定
-- 命名規則の調整
-- DB/ORM 関連セクションの有効化/無効化
+設定項目（Project Configuration の yaml 値を埋める）:
+- `PROJECT_NAME`, `LANGUAGE`, `PACKAGE_MANAGER`
+- `STG_ENABLED`, `PROTECTED_BRANCHES`（ブランチ戦略。詳細は rules/git-strategy.md）
+- `TEST_COMMAND`, `TYPECHECK_COMMAND`, `BUILD_COMMAND`, `LINT_COMMAND`
+- `ORM_TYPE`, `STG_DB_PATTERN`, `PRD_DB_PATTERN`（DB設定。詳細は rules/database.md）
+- `NOTION_ENABLED`
 
 #### 2b. .claude/settings.local.json の生成
 
@@ -119,7 +120,7 @@ PARENT_DIR=$(cd .. && pwd)
 > `settings.local.json` は git 非追跡なので、マシン固有のパスが入っても問題ない。
 >
 > **`/add-dir` との関係**: `/add-dir` はセッション単位の一時的な許可。`additionalDirectories` は永続設定。
-> `/setup` で後者を設定済みなら、CLAUDE.md Worktree 手順のステップ1.5（`/add-dir`）は省略できる。
+> `/setup` で後者を設定済みなら、rules/git-strategy.md Worktree 手順のステップ1.5（`/add-dir`）は省略できる。
 >
 > **注意**: 親ディレクトリ配下の他プロジェクトもアクセス対象になる。
 > 秘匿情報を含むプロジェクトが同階層にある場合は、WT専用の親ディレクトリで運用することを推奨。
@@ -185,7 +186,7 @@ thinking.md §1 のカスタマイズ用。選択肢から選ぶか、自由記�
 | 判断スピード | 70%で動く / 慎重派 / 状況による / 自由記入 | thinking.md §1 |
 | 技術的負債への態度 | 返す派 / 動けば良い / 重要箇所だけ / 自由記入 | thinking.md §1 |
 | テスト方針 | TDD / 後追い / 重要箇所のみ / 書かない / 自由記入 | CLAUDE.md |
-| ドキュメント管理 | Notion / Google Docs / docs/ だけ / なし | CLAUDE.md §6 |
+| ドキュメント管理 | Notion / Google Docs / docs/ だけ / なし | rules/documentation.md |
 
 回答があれば thinking.md §1 に反映する。なければデフォルトのまま。
 
