@@ -2,6 +2,7 @@
 name: inventory
 description: "タスク棚卸し + sidekickバージョンチェック。Tasks DB・GitHub Issues・Backlogを横断照合し、作業全体像を一覧表示する。"
 user-invocable: true
+allowed-tools: "Read Grep Glob Bash(git *) Bash(gh *) Agent WebFetch"
 ---
 
 # /inventory — タスク棚卸し・全体像把握

@@ -11,40 +11,48 @@
 #   - PRD_DB_PATTERN: substring to identify production DB (e.g., "ep-weathered-mode")
 #   - If neither pattern is set, the hook skips environment detection
 #
-# This hook BLOCKS production DB operations (exit 2) when PRD_DB_PATTERN is set.
-# STG and unknown connections show warnings only (exit 0).
+# This hook BLOCKS production DB operations (deny) when PRD_DB_PATTERN is set.
+# STG and unknown connections show context only (allow).
+#
+# Output: JSON (hookSpecificOutput) to stdout, human-readable to stderr
 #
 # chmod +x .claude/hooks/guard-db-operation.sh
 # =============================================================================
 
+source "$(dirname "$0")/hook-helpers.sh"
+
 INPUT=$(cat)
 
 if command -v jq &>/dev/null; then
-  COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
-  CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
+  COMMAND=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)
+  CWD=$(printf '%s\n' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null)
 else
-  COMMAND=$(echo "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//')
+  COMMAND=$(printf '%s\n' "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//')
   CWD=""
 fi
 
+# Fallback: if jq failed (COMMAND is empty but INPUT exists), use grep
+if [ -z "$COMMAND" ] && [ -n "$INPUT" ]; then
+  COMMAND=$(printf '%s\n' "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//')
+fi
+
 # --- Configuration: Set these patterns for your project ---
-# Leave empty to skip environment detection for that tier
 STG_DB_PATTERN=""
 PRD_DB_PATTERN=""
 
 # Check if this is a DB-related command
 IS_DB_CMD=false
-if echo "$COMMAND" | grep -qiE 'prisma\s+(migrate|studio|db)'; then IS_DB_CMD=true; fi
-if echo "$COMMAND" | grep -qiE 'npx\s+tsx.*scripts/|node.*scripts/'; then IS_DB_CMD=true; fi
+if printf '%s\n' "$COMMAND" | grep -qiE 'prisma\s+(migrate|studio|db)'; then IS_DB_CMD=true; fi
+if printf '%s\n' "$COMMAND" | grep -qiE 'npx\s+tsx.*scripts/|node.*scripts/'; then IS_DB_CMD=true; fi
 
-if [ "$IS_DB_CMD" = false ]; then exit 0; fi
+if [ "$IS_DB_CMD" = false ]; then allow_silent; fi
 
 # --- Detect inline DATABASE_URL= override in command ---
 INLINE_DB_URL=""
-if echo "$COMMAND" | grep -qE 'DATABASE_URL='; then
-  INLINE_DB_URL=$(echo "$COMMAND" | grep -oE 'DATABASE_URL="[^"]*"' | head -1 | sed 's/DATABASE_URL="//;s/"$//')
+if printf '%s\n' "$COMMAND" | grep -qE 'DATABASE_URL='; then
+  INLINE_DB_URL=$(printf '%s\n' "$COMMAND" | grep -oE 'DATABASE_URL="[^"]*"' | head -1 | sed 's/DATABASE_URL="//;s/"$//')
   if [ -z "$INLINE_DB_URL" ]; then
-    INLINE_DB_URL=$(echo "$COMMAND" | grep -oE "DATABASE_URL='[^']*'" | head -1 | sed "s/DATABASE_URL='//;s/'$//")
+    INLINE_DB_URL=$(printf '%s\n' "$COMMAND" | grep -oE "DATABASE_URL='[^']*'" | head -1 | sed "s/DATABASE_URL='//;s/'$//")
   fi
 fi
 
@@ -60,18 +68,13 @@ fi
 
 # --- Environment detection & warning ---
 if [ -z "$DB_URL" ]; then
-  echo "WARNING: [DB Guard] DATABASE_URL not found (${SOURCE}). Verify connection target." >&2
-elif [ -n "$PRD_DB_PATTERN" ] && echo "$DB_URL" | grep -q "$PRD_DB_PATTERN"; then
-  echo "BLOCKED: [DB Guard] ===== PRODUCTION DB detected ($PRD_DB_PATTERN) =====" >&2
-  echo "BLOCKED: [DB Guard] Source: ${SOURCE}" >&2
-  echo "BLOCKED: [DB Guard] Production DB operations require explicit approval." >&2
-  exit 2
-elif [ -n "$STG_DB_PATTERN" ] && echo "$DB_URL" | grep -q "$STG_DB_PATTERN"; then
-  echo "[DB Guard] Connection: STG DB ($STG_DB_PATTERN) -- ${SOURCE}" >&2
+  allow_with_context "[DB Guard] WARNING: DATABASE_URL not found (${SOURCE}). Verify connection target."
+elif [ -n "$PRD_DB_PATTERN" ] && printf '%s\n' "$DB_URL" | grep -q "$PRD_DB_PATTERN"; then
+  deny "[DB Guard] PRODUCTION DB detected ($PRD_DB_PATTERN). Source: ${SOURCE}. Production DB operations require explicit approval."
+elif [ -n "$STG_DB_PATTERN" ] && printf '%s\n' "$DB_URL" | grep -q "$STG_DB_PATTERN"; then
+  allow_with_context "[DB Guard] Connection: STG DB ($STG_DB_PATTERN) -- ${SOURCE}"
 elif [ -n "$STG_DB_PATTERN" ] || [ -n "$PRD_DB_PATTERN" ]; then
-  echo "WARNING: [DB Guard] Unknown connection target (${SOURCE}). Verify DATABASE_URL." >&2
+  allow_with_context "[DB Guard] WARNING: Unknown connection target (${SOURCE}). Verify DATABASE_URL."
 else
-  echo "[DB Guard] DB operation detected. Verify DATABASE_URL before proceeding." >&2
+  allow_with_context "[DB Guard] DB operation detected. Verify DATABASE_URL before proceeding."
 fi
-
-exit 0

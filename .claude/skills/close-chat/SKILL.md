@@ -2,6 +2,7 @@
 name: close-chat
 description: "チャット終了時の締めくくりルーティン。未対応項目のバックログ記録に加え、知識の還流チェック（思想・判断の昇格候補抽出）を行う。"
 user-invocable: true
+allowed-tools: "Read Edit Write Grep Bash(git *)"
 ---
 
 # /close-chat — チャット締めくくりスキル

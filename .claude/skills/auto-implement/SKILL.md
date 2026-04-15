@@ -2,6 +2,7 @@
 name: auto-implement
 description: "全自動実装。設計確定済みの作業を実装→テスト→レビュー→PR作成まで無人で実行する。"
 user-invocable: true
+allowed-tools: "Read Write Edit Grep Glob Bash Agent Skill"
 ---
 
 # /auto-implement — 全自動実装スキル

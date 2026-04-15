@@ -2,6 +2,7 @@
 name: review-ops
 description: "運用・耐障害性レビュー。障害モード分析・可観測性・コスト影響・ロールバック可能性・データプライバシーを検証する。"
 user-invocable: true
+allowed-tools: "Read Grep Glob Bash(git *) Agent"
 ---
 
 # 運用・耐障害性レビュー（/review-ops）

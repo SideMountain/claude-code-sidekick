@@ -2,6 +2,7 @@
 name: review-design
 description: "設計品質レビュー。UI/UXの一貫性・デザインシステム準拠・アクセシビリティを検証する。"
 user-invocable: true
+allowed-tools: "Read Grep Glob Bash(git *) Agent"
 ---
 
 # /review-design — 設計品質レビュー

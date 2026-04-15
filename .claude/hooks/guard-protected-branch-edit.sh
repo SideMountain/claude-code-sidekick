@@ -8,41 +8,43 @@
 #   2. Block .env DATABASE_URL modifications in ALL environments
 #      -> Production DB access must use inline env vars, not .env changes
 #
-# Exit codes:
-#   0 = allow (pass to permission dialog)
-#   2 = hard block (reject immediately)
+# Output: JSON (hookSpecificOutput) to stdout, human-readable to stderr
 #
 # chmod +x .claude/hooks/guard-protected-branch-edit.sh
 # =============================================================================
+
+source "$(dirname "$0")/hook-helpers.sh"
 
 INPUT=$(cat)
 
 # Extract file path
 if command -v jq &>/dev/null; then
-  FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+  FILE_PATH=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
 else
-  FILE_PATH=$(echo "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//;s/"$//')
+  FILE_PATH=$(printf '%s\n' "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//;s/"$//')
+fi
+
+# Fallback: if jq failed (FILE_PATH is empty but INPUT exists), use grep
+if [ -z "$FILE_PATH" ] && [ -n "$INPUT" ]; then
+  FILE_PATH=$(printf '%s\n' "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"file_path"[[:space:]]*:[[:space:]]*"//;s/"$//')
 fi
 
 # No file path -> skip
 if [ -z "$FILE_PATH" ]; then
-  exit 0
+  allow_silent
 fi
 
 # --- Guard: .env DATABASE_URL modification (all environments) ---
-if echo "$FILE_PATH" | grep -qE '[\\/]\.env$'; then
+if printf '%s\n' "$FILE_PATH" | grep -qE '[\\/]\.env$'; then
   if command -v jq &>/dev/null; then
-    OLD_STR=$(echo "$INPUT" | jq -r '.tool_input.old_string // ""')
-    NEW_STR=$(echo "$INPUT" | jq -r '.tool_input.new_string // ""')
+    OLD_STR=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.old_string // ""' 2>/dev/null)
+    NEW_STR=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.new_string // ""' 2>/dev/null)
   else
-    OLD_STR=$(echo "$INPUT" | grep -o '"old_string"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1)
-    NEW_STR=$(echo "$INPUT" | grep -o '"new_string"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1)
+    OLD_STR=$(printf '%s\n' "$INPUT" | grep -o '"old_string"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1)
+    NEW_STR=$(printf '%s\n' "$INPUT" | grep -o '"new_string"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1)
   fi
-  if echo "$OLD_STR$NEW_STR" | grep -q 'DATABASE_URL'; then
-    echo "BLOCKED: Modifying DATABASE_URL in .env is forbidden in all environments." >&2
-    echo "  For production DB operations, pass DATABASE_URL as an inline env var:" >&2
-    echo "  DATABASE_URL=\"prod-connection-string\" node scripts/xxx.js" >&2
-    exit 2
+  if printf '%s\n' "$OLD_STR$NEW_STR" | grep -q 'DATABASE_URL'; then
+    deny "Modifying DATABASE_URL in .env is forbidden in all environments. For production DB operations, pass DATABASE_URL as an inline env var: DATABASE_URL=\"prod-connection-string\" node scripts/xxx.js"
   fi
 fi
 
@@ -52,16 +54,13 @@ BRANCH=$(git -C "$FILE_DIR" branch --show-current 2>/dev/null)
 
 # Not in a git repo -> skip
 if [ -z "$BRANCH" ]; then
-  exit 0
+  allow_silent
 fi
 
 # Not on a protected branch -> allow
 if [ "$BRANCH" != "main" ]; then
-  exit 0
+  allow_silent
 fi
 
 # --- Protected branch: block all file edits ---
-echo "BLOCKED: File editing on protected branch ($BRANCH) is forbidden." >&2
-echo "  File: $FILE_PATH" >&2
-echo "  Create a worktree and work on a feature/* or hotfix/* branch instead." >&2
-exit 2
+deny "File editing on protected branch ($BRANCH) is forbidden. File: $FILE_PATH. Create a worktree and work on a feature/* or hotfix/* branch instead."

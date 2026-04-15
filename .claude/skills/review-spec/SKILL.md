@@ -2,6 +2,7 @@
 name: review-spec
 description: "仕様品質レビュー。API契約の整合性・仕様書との乖離・破壊的変更の検出を行う。"
 user-invocable: true
+allowed-tools: "Read Grep Glob Bash(git *) Agent"
 ---
 
 # /review-spec — 仕様品質レビュー

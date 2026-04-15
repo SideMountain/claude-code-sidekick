@@ -2,6 +2,7 @@
 name: review-test
 description: "テスト品質レビュー。テスト網羅性・テストケース品質・モック正確性を検証する。"
 user-invocable: true
+allowed-tools: "Read Grep Glob Bash(git *) Agent"
 ---
 
 # テスト品質レビュー（/review-test）

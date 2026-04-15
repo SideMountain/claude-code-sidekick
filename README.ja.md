@@ -78,7 +78,7 @@ flowchart LR
     end
     L1 --> L2
     subgraph L2["🛡️ 強制"]
-        B["Pre-tool Hooks\nguard-bash.sh\nexit 2 = ブロック"]
+        B["Pre-tool Hooks\nguard-bash.sh\nJSON deny = ブロック"]
     end
     L2 -->|"❌ ブロック"| DENY(("🚫"))
     L2 --> L3
@@ -91,13 +91,13 @@ flowchart LR
 | レイヤー | 仕組み | 例 |
 |---------|--------|-----|
 | **認知** | CLAUDE.md ルール（HARD/SOFT/GUIDE） | 「main に push するな」 |
-| **強制** | Pre-tool hooks（exit 2 = ブロック） | `guard-bash.sh` が `rm -rf` をブロック |
+| **強制** | Pre-tool hooks（JSON deny = ブロック） | `guard-bash.sh` が `rm -rf` をブロック |
 | **検知** | `/review` スキル（6観点） | PR でセキュリティ問題を検出 |
 
 **deny リスト**（絶対に実行されない — settings.json でブロック）:
 - `prisma db push`、force push
 
-**guard ブロック**（hooks が exit 2 でブロック）:
+**guard ブロック**（hooks が JSON `permissionDecision: "deny"` でブロック）:
 - `rm -rf`、`.env` 変更、保護ブランチへの push、本番DB操作
 
 **HARD ルール**（Claude がユーザーに確認してから実行）:
