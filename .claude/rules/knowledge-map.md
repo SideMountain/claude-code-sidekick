@@ -10,7 +10,8 @@
 | `hooks/permissions` | 機械的に止める（enforcement） | 人間 + Claude | される | 長い |
 | `CLAUDE.md` | プロジェクトルール（what to do） | 人間 + Claude（合意の上） | される | 長い |
 | `CLAUDE.local.md` | 個人設定（personal preferences） | 個人 | されない | 長い |
-| `rules/*.md` | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | 長い |
+| `rules/thinking.md` | オーナーの判断基盤・思考OS（how to think） | 人間 + Claude（合意の上） | される | 長い |
+| `rules/*.md`（thinking.md以外） | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | 長い |
 | `skills/` | 繰り返し手順（how to do） | Claude（合意の上） | される | 中〜長い |
 | `agents/` | 専門実行主体の定義（who does it） | Claude（合意の上） | される | 長い |
 | `docs/decisions/` (ADR) | 設計判断記録（why we decided） | Claude（合意の上） | される | 永続 |
@@ -29,6 +30,9 @@
   │
   ├── 機械的に止めるべきか？
   │     → Yes → hooks/permissions（最も強い。判断不要で止まる）
+  │
+  ├── オーナーの判断原則・思考スタイルか？（PJを跨いで持ち運びたいか？）
+  │     → Yes → rules/thinking.md（思考OS）
   │
   ├── プロジェクト全体のルールか？
   │     ├── 全セクションに適用 → CLAUDE.md

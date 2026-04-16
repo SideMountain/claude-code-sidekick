@@ -2,25 +2,55 @@
 
 [日本語版 README はこちら](README.ja.md)
 
-**Claude Code without the "oops."**
+**Teach Claude your decision-making. Then hand off.**
 
-Safety hooks, reusable skills, and a learning memory — so AI works *with* your rules, not around them. Sleep while your issues turn into PRs.
+Your judgment principles, encoded and compounding. Safety hooks block mistakes, skills automate workflows, but what makes sidekick different: every session teaches your AI how *you* think.
+
+---
+
+## What makes sidekick different
+
+Most Claude Code setups give you rules. sidekick gives you a **thinking OS** — a replaceable brain module (`thinking.md`) that defines how Claude makes decisions.
+
+```
+Week 1:  You tell Claude "don't mock the DB in tests"
+Week 4:  Pattern detected — promoted to a principle in thinking.md
+Week 8:  Claude tells *you* "this test should hit staging,
+         based on our testing principle"
+```
+
+This isn't just memory. It's a **growth cycle** that compounds:
+
+```
+Session feedback → feedback_*.md → pattern detection → thinking.md §1 → Claude's judgment changes
+                                    (/weekly-review)
+```
+
+### The thinking OS is yours to customize
+
+`thinking.md` §1 defines your decision-making principles. Replace it with your own:
+
+- What you prioritize (speed? safety? user impact?)
+- What you never do (over-engineer? skip tests? deploy on Fridays?)
+- Your failure patterns (where you tend to make mistakes)
+
+The framework (self-review protocol, phase protocols, communication style) stays the same. **The judgment axis is pluggable.**
 
 ---
 
 ## Why sidekick?
 
-Claude Code is powerful but dangerous out of the box. One wrong command can push to production, drop a table, or overwrite your `.env`. And without persistent memory, every session starts from zero.
+Claude Code is powerful but dangerous out of the box. One wrong command can push to production, drop a table, or overwrite your `.env`.
 
 sidekick solves this with three layers:
 
 ```
-Layer 1: Safety          → Hooks physically block dangerous operations
-Layer 2: Skills          → Reusable workflows (review, setup, auto-implement)
-Layer 3: Knowledge       → Feedback → principles → thinking OS (grows over time)
+Layer 1: Safety     → Hooks physically block dangerous operations
+Layer 2: Skills     → Reusable workflows (review, setup, auto-implement)
+Layer 3: Thinking   → Your judgment principles → feedback → growth (thinking OS)
 ```
 
-### What happens without sidekick
+### Without sidekick
 
 ```
 You: "Fix the login bug"
@@ -28,7 +58,7 @@ Claude: *modifies .env* *pushes to main* *drops test data*
 You: "..."
 ```
 
-### What happens with sidekick
+### With sidekick
 
 ```
 You: "Fix the login bug"
@@ -68,24 +98,61 @@ cd your-project && claude  # then run /setup
 
 ## How It Works
 
+### Thinking OS: Your judgment, Claude's execution
+
+`thinking.md` lives at `.claude/rules/thinking.md` — but it's not a project rule. It's your **decision-making brain**, tied to **you**, not the project. You can carry it across projects.
+
+| File | What it defines | Changes when... |
+|------|----------------|-----------------|
+| `thinking.md` | Your decision-making principles, self-review protocol | You change how you think |
+| `rules/*.md` | Project-specific rules (coding, DB, Git, deploy) | The project changes |
+| `CLAUDE.md` | Project configuration + HARD/SOFT/GUIDE rules | The project changes |
+
+### Knowledge Pipeline: Sessions become principles
+
+```
+Session 1: "Don't mock the database in tests"
+  → saved to feedback_testing.md
+
+Session 2: "Use real DB for integration tests too"
+  → saved to feedback_testing.md (2nd occurrence)
+
+Session 3: "Always test against staging DB"
+  → 3rd occurrence detected → promoted to thinking.md §1
+
+Future sessions: Claude automatically follows the principle
+```
+
+### Session Lifecycle
+
+```
+/setup          → Project initialization + thinking.md customization
+  ↓ (develop)
+/close-chat     → Captures decisions, flags knowledge for reflux
+  ↓ (accumulate)
+/weekly-review  → Compresses feedback, promotes patterns to thinking.md
+  ↓ (grow)
+thinking.md     → Claude's proposals get better over time
+```
+
 ### Safety: Three-layer defense
 
 ```mermaid
 flowchart LR
-    OP["🤖 Claude's\nAction"] --> L1
-    subgraph L1["📋 Awareness"]
+    OP["Claude's\nAction"] --> L1
+    subgraph L1["Awareness"]
         A["CLAUDE.md\nHARD / SOFT / GUIDE"]
     end
     L1 --> L2
-    subgraph L2["🛡️ Enforcement"]
+    subgraph L2["Enforcement"]
         B["Pre-tool Hooks\nguard-bash.sh\nJSON deny = block"]
     end
-    L2 -->|"❌ blocked"| DENY(("🚫"))
+    L2 -->|"blocked"| DENY(("DENY"))
     L2 --> L3
-    subgraph L3["🔍 Detection"]
+    subgraph L3["Detection"]
         C["/review\n6 perspectives"]
     end
-    L3 --> SAFE["✅ Safe\nChange"]
+    L3 --> SAFE["Safe\nChange"]
 ```
 
 | Layer | Mechanism | Example |
@@ -114,21 +181,6 @@ flowchart LR
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
 
-### Knowledge Pipeline: Sessions → Principles
-
-```
-Session 1: "Don't mock the database in tests"
-  → saved to feedback_testing.md
-
-Session 2: "Use real DB for integration tests too"
-  → saved to feedback_testing.md (2nd occurrence)
-
-Session 3: "Always test against staging DB"
-  → 3rd occurrence detected → promoted to thinking.md §1
-
-Future sessions: Claude automatically follows the principle
-```
-
 ### Auto Mode: Hand off and walk away
 
 After a design discussion, hand off implementation:
@@ -154,11 +206,11 @@ SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
 ```mermaid
 flowchart LR
     P0["Phase 0\nDesign\nCheck"] --> P1["Phase 1\nWorktree\nSetup"]
-    P1 --> P2["Phase 2\nImplement\n🔒 isolated"]
-    P2 --> P3["Phase 3\n/review\n↻ max 3"]
-    P3 --> P4["Phase 4\nTest →\nPush → PR"]
+    P1 --> P2["Phase 2\nImplement\nisolated"]
+    P2 --> P3["Phase 3\n/review\nmax 3"]
+    P3 --> P4["Phase 4\nTest\nPush PR"]
     P4 --> P5["Phase 5\nKnowledge\nCapture"]
-    P0 -..->|"not ready"| STOP(("🛑"))
+    P0 -..->|"not ready"| STOP(("STOP"))
     P3 -..->|"BLOCKER"| STOP
 ```
 
@@ -167,27 +219,27 @@ flowchart LR
 ```
 === /auto-implement report (3 parallel) ===
 
-[Overall] 2 succeeded ✅ / 1 stopped 🛑
+[Overall] 2 succeeded / 1 stopped
 
-── Issue #10: User auth ── ✅
-  [PR] #43 → release/stg
+-- Issue #10: User auth -- OK
+  [PR] #43
   Changes: 8 files (+342, -28)
-  Tests: 156 passed / Review: OK (1 Ops WARN → fixed)
+  Tests: 156 passed / Review: OK (1 Ops WARN -> fixed)
   Knowledge: 1 flag / Backlog: 2 items
 
-── Issue #11: Email templates ── ✅
-  [PR] #44 → release/stg
+-- Issue #11: Email templates -- OK
+  [PR] #44
   Changes: 4 files (+89, -12)
   Tests: 160 passed / Review: OK
 
-── Issue #12: Dashboard ── 🛑
+-- Issue #12: Dashboard -- STOPPED
   [Stopped at] Phase 3 (review)
   [Reason] BLOCKER: N+1 query in lib/dashboard.ts L45
-  [Resume] Fix N+1 → re-run /auto-implement #12
+  [Resume] Fix N+1 -> re-run /auto-implement #12
 
-── Next actions ──
-  → Review & merge PR #43, #44
-  → Fix #12's N+1 in interactive mode or re-run after fix
+-- Next actions --
+  -> Review & merge PR #43, #44
+  -> Fix #12's N+1 in interactive mode or re-run after fix
 ==========================================================
 ```
 
@@ -218,9 +270,10 @@ sidekick/
 │   │   ├── auto-implement/      # Full automation pipeline
 │   │   ├── close-chat/          # Session wrap-up + knowledge reflux
 │   │   └── ...
-│   ├── rules/                   # Domain-specific guidelines
-│   │   ├── thinking.md          # Owner's decision principles
+│   ├── rules/                   # Guidelines + thinking OS
+│   │   ├── thinking.md          # Thinking OS — owner's decision principles (pluggable)
 │   │   ├── knowledge-map.md     # Where knowledge goes
+│   │   ├── code-quality.md      # Coding standards
 │   │   └── ...
 │   ├── templates/               # Opt-in files deployed by /setup
 │   │   ├── MEMORY.md            # Session memory template
@@ -269,17 +322,23 @@ sidekick works for solo developers and small teams alike. No separate "enterpris
 
 ## Design Principles
 
-1. **Safety first**: Hard blocks are never overridden. Not by auto mode, not by user request, not by clever workarounds.
+1. **Knowledge compounds**: Insights flow from sessions → feedback → principles → thinking OS. Your AI gets better every week. ([ADR-0007](docs/decisions/0007-thinking-os-positioning.md))
 
-2. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](docs/decisions/0002-blacklist-execution-and-two-lanes.md))
+2. **Safety is non-negotiable**: Hard blocks are never overridden. Not by auto mode, not by user request, not by clever workarounds.
 
-3. **Knowledge compounds**: Insights flow from sessions → feedback → principles → thinking OS. Your AI gets better every week.
+3. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](docs/decisions/0002-blacklist-execution-and-two-lanes.md))
 
 4. **Fixed cost, not per-project**: Runs on Claude Max subscription. No API charges. Scale to 10 projects for the same $100/month. ([ADR-0003](docs/decisions/0003-slack-cron-architecture.md))
 
 5. **Git is the source of truth**: No external DB required. MEMORY.md + ADR + GitHub Issues. Notion is optional. ([ADR-0004](docs/decisions/0004-context-consolidation-claude-code-first.md))
 
 ---
+
+## Feedback
+
+Using sidekick in your project? We'd love to hear what works, what doesn't, and what's missing.
+
+File a [Downstream Feedback issue](../../issues/new?template=downstream-feedback.yml) — it helps us improve the template for everyone.
 
 ## Versioning
 

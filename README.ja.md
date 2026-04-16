@@ -1,21 +1,51 @@
 # sidekick
 
-**Claude Code を「安全に」「賢く」使うためのハーネステンプレート**
+**Claude に判断を教える。そして任せる。**
 
-安全フック、再利用スキル、学習する記憶 ― AI があなたのルールで動く。寝ている間に Issue が PR になる。
+あなたの判断原則がエンコードされ、複利で効いていく。安全フックがミスを防ぎ、スキルがワークフローを自動化する。でも sidekick が本当に違うのは、**使うたびに AI があなたの考え方を学ぶ**こと。
+
+---
+
+## sidekick は何が違うのか
+
+他の Claude Code テンプレートはルールを渡す。sidekick は**思考OS** を渡す ― `thinking.md` という入れ替え可能な「脳」が、Claude の判断を決める。
+
+```
+Week 1:  「テストでDBモックを使うな」と伝える
+Week 4:  パターン検出 → thinking.md の原則に昇格
+Week 8:  Claude の方から「テスト原則に基づいて、
+         ステージングDBを使うべきです」と提案してくる
+```
+
+これは単なる記憶ではない。**複利で効く成長サイクル**:
+
+```
+セッション中の feedback → feedback_*.md → パターン検出 → thinking.md §1 → Claude の判断が変わる
+                                          (/weekly-review)
+```
+
+### 思考OS はあなた専用にカスタマイズできる
+
+`thinking.md` §1 はオーナーの判断原則を定義する。自分の軸に置き換えられる:
+
+- 何を最優先するか（スピード？安全性？ユーザー影響？）
+- 絶対にやらないこと（過剰設計？テスト省略？金曜デプロイ？）
+- 自分の失敗パターン（どこで判断を間違えがちか）
+
+フレームワーク（セルフレビュー、フェーズ別プロトコル、コミュニケーション）はそのまま。**判断軸だけがプラガブル。**
 
 ---
 
 ## なぜ sidekick が必要か？
 
-Claude Code はそのままだと強力だが危険。一つの間違いで本番に push、テーブルを DROP、`.env` を上書きしうる。しかも記憶が持続しないので、毎回ゼロからスタート。
+Claude Code はそのままだと強力だが危険。一つの間違いで本番に push、テーブルを DROP、`.env` を上書きしうる。
 
 sidekick は3つのレイヤーでこれを解決する:
 
 ```
 レイヤー1: 安全       → hooks が危険な操作を物理ブロック
 レイヤー2: スキル     → 再利用可能なワークフロー（レビュー、セットアップ、自動実装）
-レイヤー3: 知識       → feedback → 原則 → 思考OS（使うほど賢くなる）
+レイヤー3: 思考       → あなたの判断原則 → feedback → 成長（思考OS）
 ```
 
 ### sidekick なし
@@ -68,24 +98,61 @@ cd your-project && claude  # /setup を実行
 
 ## 仕組み
 
+### 思考OS: あなたの判断軸で、Claude が動く
+
+`thinking.md` は `.claude/rules/thinking.md` に配置される ― 他のルールファイルとは役割が違う。プロジェクトルールではなく**オーナーの判断軸**。「人」に紐づくから、プロジェクトを跨いで持ち運べる。
+
+| ファイル | 定義するもの | 変わるタイミング |
+|---------|------------|---------------|
+| `thinking.md` | オーナーの判断原則、セルフレビュー手順 | あなたの考え方が変わったとき |
+| `rules/*.md` | プロジェクト固有ルール（コーディング、DB、Git、デプロイ） | プロジェクトが変わったとき |
+| `CLAUDE.md` | プロジェクト設定 + HARD/SOFT/GUIDE ルール | プロジェクトが変わったとき |
+
+### 知識パイプライン: セッションが原則になるまで
+
+```
+セッション1: 「テストでDBモックを使うな」
+  → feedback_testing.md に保存
+
+セッション2: 「結合テストもリアルDB使って」
+  → feedback_testing.md（2回目）
+
+セッション3: 「ステージングDBで必ずテストしろ」
+  → 3回目を検出 → thinking.md §1 に昇格
+
+以降: Claude が原則として自動適用
+```
+
+### セッションライフサイクル
+
+```
+/setup          → プロジェクト初期化 + thinking.md のカスタマイズ
+  ↓ (開発)
+/close-chat     → 判断を記録、知識還流フラグを付与
+  ↓ (蓄積)
+/weekly-review  → feedback を圧縮、パターンを thinking.md に昇格
+  ↓ (成長)
+thinking.md     → Claude の提案精度が上がっていく
+```
+
 ### 安全: 3層防御
 
 ```mermaid
 flowchart LR
-    OP["🤖 Claude の\n操作"] --> L1
-    subgraph L1["📋 認知"]
+    OP["Claude の\n操作"] --> L1
+    subgraph L1["認知"]
         A["CLAUDE.md\nHARD / SOFT / GUIDE"]
     end
     L1 --> L2
-    subgraph L2["🛡️ 強制"]
+    subgraph L2["強制"]
         B["Pre-tool Hooks\nguard-bash.sh\nJSON deny = ブロック"]
     end
-    L2 -->|"❌ ブロック"| DENY(("🚫"))
+    L2 -->|"ブロック"| DENY(("DENY"))
     L2 --> L3
-    subgraph L3["🔍 検知"]
+    subgraph L3["検知"]
         C["/review\n6観点レビュー"]
     end
-    L3 --> SAFE["✅ 安全な\n変更"]
+    L3 --> SAFE["安全な\n変更"]
 ```
 
 | レイヤー | 仕組み | 例 |
@@ -114,21 +181,6 @@ flowchart LR
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR記録、バージョン追跡 |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
 
-### 知識パイプライン: セッションが原則になるまで
-
-```
-セッション1: 「テストでDBモックを使うな」
-  → feedback_testing.md に保存
-
-セッション2: 「結合テストもリアルDB使って」
-  → feedback_testing.md（2回目）
-
-セッション3: 「ステージングDBで必ずテストしろ」
-  → 3回目を検出 → thinking.md §1 に昇格
-
-以降: Claude が原則として自動適用
-```
-
 ### 自動モード: 寝てる間に PR ができる
 
 ```
@@ -143,7 +195,7 @@ Claude: → 3つの Worktree を並列作成
 
 完全無人実行（夜間・離席中）:
 ```bash
-claude --dangerouslySkipPermissions \
+SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
   -p "/auto-implement #10, #11, #12"
 ```
 
@@ -152,11 +204,11 @@ claude --dangerouslySkipPermissions \
 ```mermaid
 flowchart LR
     P0["Phase 0\n設計確定\nチェック"] --> P1["Phase 1\nWorktree\n作成"]
-    P1 --> P2["Phase 2\n実装\n🔒 隔離"]
-    P2 --> P3["Phase 3\n/review\n↻ 最大3回"]
-    P3 --> P4["Phase 4\nテスト →\nPush → PR"]
+    P1 --> P2["Phase 2\n実装\n隔離"]
+    P2 --> P3["Phase 3\n/review\n最大3回"]
+    P3 --> P4["Phase 4\nテスト\nPush PR"]
     P4 --> P5["Phase 5\n知識\n蓄積"]
-    P0 -..->|"未確定"| STOP(("🛑"))
+    P0 -..->|"未確定"| STOP(("STOP"))
     P3 -..->|"BLOCKER"| STOP
 ```
 
@@ -165,25 +217,25 @@ flowchart LR
 ```
 === /auto-implement 完了レポート（並列3件） ===
 
-[全体結果] 2件成功 ✅ / 1件停止 🛑
+[全体結果] 2件成功 / 1件停止
 
-── Issue #10: ユーザー認証 ── ✅
-  [PR] #43 → release/stg
+-- Issue #10: ユーザー認証 -- OK
+  [PR] #43
   変更: 8ファイル（+342, -28）
   テスト: 156 passed / レビュー: OK（Ops WARN 1件 → 修正済み）
   知識還流: 1件 / バックログ: 2件
 
-── Issue #11: メール通知テンプレ ── ✅
-  [PR] #44 → release/stg
+-- Issue #11: メール通知テンプレ -- OK
+  [PR] #44
   変更: 4ファイル（+89, -12）
   テスト: 160 passed / レビュー: OK
 
-── Issue #12: 管理画面ダッシュボード ── 🛑
+-- Issue #12: 管理画面ダッシュボード -- STOPPED
   [停止Phase] Phase 3（レビュー）
   [停止理由] BLOCKER: N+1クエリ（lib/dashboard.ts L45）
   [再開方法] N+1 修正後、/auto-implement #12 で再実行
 
-── 次のアクション ──
+-- 次のアクション --
   → PR #43, #44 をレビュー・マージ
   → Issue #12 は対話モードで N+1 修正、または修正後に再実行
 ==========================================================
@@ -216,9 +268,10 @@ sidekick/
 │   │   ├── auto-implement/      # 全自動パイプライン
 │   │   ├── close-chat/          # セッション締め + 知識還流
 │   │   └── ...
-│   ├── rules/                   # 領域特化ガイドライン
-│   │   ├── thinking.md          # オーナーの判断原則
+│   ├── rules/                   # ガイドライン + 思考OS
+│   │   ├── thinking.md          # 思考OS — オーナーの判断原則（入れ替え可能）
 │   │   ├── knowledge-map.md     # 知識の配置先マップ
+│   │   ├── code-quality.md      # コーディング規約
 │   │   └── ...
 │   ├── templates/               # /setup が opt-in で配置するファイル
 │   │   ├── MEMORY.md            # セッション記憶テンプレート
@@ -267,17 +320,21 @@ sidekick は個人開発者でも小チームでも使える。「エンター�
 
 ## 設計思想
 
-1. **安全が最優先**: ハードブロックは絶対に解除されない。autoモードでも、ユーザーの指示でも、巧妙な回避策でも。
+1. **知識が複利で効く**: セッションの気づきが feedback → 原則 → 思考OS に育つ。使うほど賢くなる。([ADR-0007](docs/decisions/0007-thinking-os-positioning.md))
 
-2. **ブラックリスト方式**: 危険なものだけリスト化。残りは全自動。([ADR-0002](docs/decisions/0002-blacklist-execution-and-two-lanes.md))
+2. **安全が最優先**: ハードブロックは絶対に解除されない。autoモードでも、ユーザーの指示でも、巧妙な回避策でも。
 
-3. **知識が複利で効く**: セッションの気づきが feedback → 原則 → 思考OS に育つ。使うほど賢くなる。
+3. **ブラックリスト方式**: 危険なものだけリスト化。残りは全自動。([ADR-0002](docs/decisions/0002-blacklist-execution-and-two-lanes.md))
 
 4. **固定費、PJ比例しない**: Claude Max サブスクリプション上で動く。API 従量課金なし。10 PJ でも $100/月。([ADR-0003](docs/decisions/0003-slack-cron-architecture.md))
 
 5. **Git が Source of Truth**: 外部DB不要。MEMORY.md + ADR + GitHub Issues で完結。Notion はオプション。([ADR-0004](docs/decisions/0004-context-consolidation-claude-code-first.md))
 
 ---
+
+## フィードバック
+
+sidekick を使っていて「ここが良い」「ここが困る」「これが欲しい」があれば、[Downstream Feedback](../../issues/new?template=downstream-feedback.yml) から教えてください。
 
 ## バージョン管理
 

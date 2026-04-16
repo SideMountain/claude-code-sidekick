@@ -1,0 +1,57 @@
+name: "Downstream Feedback"
+description: "下流プロジェクトからのフィードバック・改善提案"
+labels: ["triage", "downstream"]
+body:
+  - type: dropdown
+    id: project-type
+    attributes:
+      label: "プロジェクト種別"
+      description: "sidekick を使っているプロジェクトの種類"
+      options:
+        - "Web アプリ（TypeScript）"
+        - "API サーバー"
+        - "GAS / スクリプト"
+        - "Python プロジェクト"
+        - "その他"
+    validations:
+      required: true
+  - type: dropdown
+    id: target-layer
+    attributes:
+      label: "対象レイヤー"
+      description: "フィードバックが関連する sidekick の構成要素"
+      options:
+        - "CLAUDE.md / rules（ルール・規約）"
+        - "thinking.md（思考OS・判断原則）"
+        - "skills（スキル・ワークフロー）"
+        - "hooks（安全ガード）"
+        - "templates（テンプレート・初期ファイル）"
+        - "docs（ドキュメント・ADR）"
+        - "その他 / 不明"
+    validations:
+      required: true
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: "フィードバック種別"
+      options:
+        - "改善提案（こうした方が良い）"
+        - "問題報告（困ったこと）"
+        - "成功事例（うまくいったこと）"
+        - "質問（使い方がわからない）"
+    validations:
+      required: true
+  - type: textarea
+    id: content
+    attributes:
+      label: "フィードバック内容"
+      description: "具体的に書いてください。実際のユースケースや再現状況があると助かります"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: "補足情報"
+      description: "sidekick バージョン、関連する設定値（STG_ENABLED 等）、スクリーンショットなど"
+    validations:
+      required: false
