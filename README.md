@@ -1,215 +1,287 @@
 # sidekick
 
+**Teach Claude Code your decision-making. Then hand off.**
+
 [日本語版 README はこちら](README.ja.md)
 
-**Teach Claude your decision-making. Then hand off.**
+![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Claude Code](https://img.shields.io/badge/for-Claude%20Code-orange.svg)
+![Status](https://img.shields.io/badge/status-active-green.svg)
 
-Your judgment principles, encoded and compounding. Safety hooks block mistakes, skills automate workflows, but what makes sidekick different: every session teaches your AI how *you* think.
-
----
-
-## What makes sidekick different
-
-Most Claude Code setups give you rules. sidekick gives you a **thinking OS** — a replaceable brain module (`thinking.md`) that defines how Claude makes decisions.
-
-```
-Week 1:  You tell Claude "don't mock the DB in tests"
-Week 4:  Pattern detected — promoted to a principle in thinking.md
-Week 8:  Claude tells *you* "this test should hit staging,
-         based on our testing principle"
-```
-
-This isn't just memory. It's a **growth cycle** that compounds:
-
-```
-Session feedback → feedback_*.md → pattern detection → thinking.md §1 → Claude's judgment changes
-                                    (/weekly-review)
-```
-
-### The thinking OS is yours to customize
-
-`thinking.md` §1 defines your decision-making principles. Replace it with your own:
-
-- What you prioritize (speed? safety? user impact?)
-- What you never do (over-engineer? skip tests? deploy on Fridays?)
-- Your failure patterns (where you tend to make mistakes)
-
-The framework (self-review protocol, phase protocols, communication style) stays the same. **The judgment axis is pluggable.**
+A repository template that makes Claude Code **safe, personalized, and autonomous**.
+Organized as: 30-second overview → try it → deep dive.
 
 ---
 
-## Why sidekick?
+## In 30 seconds
 
-Claude Code is powerful but dangerous out of the box. One wrong command can push to production, drop a table, or overwrite your `.env`.
+sidekick is a **repository template** for Claude Code. It ships with three layers built in:
 
-sidekick solves this with three layers:
+| 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
+|---|---|---|
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **14 skills** ready to use: `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
+
+The "Thinking OS" is what sets sidekick apart from other templates.
+
+<p align="center">
+  <img src="docs/images/three-layers.svg" alt="Three Layers — Safety, Skills, Thinking OS" width="720"/>
+</p>
+
+**How Layer 3 (Thinking OS) grows:**
+
+<p align="center">
+  <img src="docs/images/learning-loop.svg" alt="Knowledge Compounds — The Learning Loop" width="720"/>
+</p>
+
+---
+
+## What actually gets better?
+
+### Before (vanilla Claude Code)
 
 ```
-Layer 1: Safety     → Hooks physically block dangerous operations
-Layer 2: Skills     → Reusable workflows (review, setup, auto-implement)
-Layer 3: Thinking   → Your judgment principles → feedback → growth (thinking OS)
+You   : "Fix the login bug"
+Claude: → Edits directly on main
+        → Reports "done" with no tests
+        → Runs git push
+You   : "...main is broken"
 ```
 
-### Without sidekick
+### After (with sidekick)
 
 ```
-You: "Fix the login bug"
-Claude: *modifies .env* *pushes to main* *drops test data*
-You: "..."
+You   : "Fix the login bug"
+Claude: → Creates worktree (main untouched)
+        → Confirms staging DB connection
+        → Fixes → Runs scoped tests
+        → /review (code + test + ops — 6 perspectives)
+        → Creates PR (merging is your call)
 ```
 
-### With sidekick
+**On top of that, a learning loop compounds over time:**
 
 ```
-You: "Fix the login bug"
-Claude: → Creates worktree (not touching main)
-        → Checks DB connection (staging confirmed)
-        → Implements fix → Runs scoped tests
-        → /review (code + test + ops)
-        → Creates PR (not merging — that's your call)
+Session 1: "Use staging DB, not mocks" — you give feedback
+Session 2: Same feedback (2nd occurrence detected)
+Session 3: 3rd time → promoted to a principle in thinking.md
+Session 4+: Claude proactively says "Running against staging DB"
 ```
+
+In other words, **you stop repeating yourself**.
+
+---
+
+## How is this different from other templates?
+
+| | Vanilla Claude Code | Typical template | **sidekick** |
+|---|:---:|:---:|:---:|
+| Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
+| Reusable skills | ❌ | △ | ✅ 14 skills |
+| **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
+| Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
+| Tracks design decisions (ADR) | ❌ | △ | ✅ |
+
+**In short**: other templates give you a ruleset (static docs). sidekick gives you a **growing judgment system (dynamic)**.
+
+---
+
+## FAQ
+
+<details>
+<summary><b>Q. Claude Code only? Does it work with Cursor / Cline / Gemini?</b></summary>
+
+**Yes, Claude Code only.**
+
+- hooks / skills / settings.json use Claude Code's format
+- Won't work with Cursor / Cline / Gemini
+
+That said, the core idea — **teaching your judgment to an AI** — is tool-agnostic.
+</details>
+
+<details>
+<summary><b>Q. Solo dev or team?</b></summary>
+
+**Both.** No "enterprise edition." Same config scales with your team size.
+
+| Setting | Solo | Team |
+|---|---|---|
+| Worktree | Optional | Essential (parallel work) |
+| `/review` | Self-review | Team review gate |
+| `PROTECTED_BRANCHES` | `main` | `main`, `release/stg` |
+| `MEMORY.md` | Personal notes | Shared context |
+</details>
+
+<details>
+<summary><b>Q. API billing? Claude Max?</b></summary>
+
+**Runs on Claude Max subscription.** No API charges. 10 projects for the same $100/month. ([ADR-0003](./docs/decisions/0003-slack-cron-architecture.md))
+</details>
+
+<details>
+<summary><b>Q. Can I add it to an existing project?</b></summary>
+
+**Yes.** For projects in maintenance mode, start with **just safety guards (hooks) and `/review`**. The thinking OS grows naturally over time.
+</details>
 
 ---
 
 ## Quick Start
 
-### New project (template)
+### 1. Create from template
 
 ```bash
-# 1. Create from template
 gh repo create my-project --template SideMountain/claude-code-sidekick
-
-# 2. Setup
 cd my-project
-claude  # then run /setup
+claude
 ```
 
-### Existing project (adopt)
+Adding to an existing project:
 
 ```bash
-# 1. Copy core files
 cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/
-
-# 2. Configure — /setup handles everything else (MEMORY.md, .gitignore, templates)
-cd your-project && claude  # then run /setup
+cd your-project && claude
 ```
+
+### 2. Run `/setup`
+
+After launching Claude Code, run `/setup`. It walks you through interactively (~**5 minutes**):
+
+```
+┌───────────────────────���──────────────────────────┐
+│ Step 1 : Project info                            │
+│  Language / ORM / test command / staging toggle   │
+│  → written to CLAUDE.md                          │
+├────────────────��───────────────────────────────���─┤
+│ Step 2 : Activate safety guards                  │
+│  Block rm -rf, .env overwrites, push to main     │
+│  → settings.json + hooks/                        │
+├────────────────────────────────────────��─────────┤
+│ Step 3 : Deploy templates                        │
+│  MEMORY.md (session memory)                      │
+│  CLAUDE.local.md (personal config, gitignored)   │
+├───────────��─────────────────────────────────���────┤
+│ Step 4 : Your judgment principles (optional)     │
+│  "Top priority? Speed / safety / user impact"    │
+│  "What do you never do?"                         │
+│  → written to thinking.md (fine to skip — grows  │
+│    naturally over time)                          │
+└──────────────────���────────────────────────────��──┘
+```
+
+### 3. Try it out
+
+```
+"Fix the typo in README and create a PR"
+```
+
+With sidekick, Claude will automatically:
+
+1. Create a worktree (main stays safe)
+2. Fix the typo
+3. Self-review with `/review`
+4. Create a PR → you merge
+
+That's your first taste.
 
 ---
 
 ## How It Works
 
-### Thinking OS: Your judgment, Claude's execution
+### 🧠 Thinking OS — Claude learns your judgment
 
-`thinking.md` lives at `.claude/rules/thinking.md` — but it's not a project rule. It's your **decision-making brain**, tied to **you**, not the project. You can carry it across projects.
-
-| File | What it defines | Changes when... |
-|------|----------------|-----------------|
-| `thinking.md` | Your decision-making principles, self-review protocol | You change how you think |
-| `rules/*.md` | Project-specific rules (coding, DB, Git, deploy) | The project changes |
-| `CLAUDE.md` | Project configuration + HARD/SOFT/GUIDE rules | The project changes |
-
-### Knowledge Pipeline: Sessions become principles
-
-```
-Session 1: "Don't mock the database in tests"
-  → saved to feedback_testing.md
-
-Session 2: "Use real DB for integration tests too"
-  → saved to feedback_testing.md (2nd occurrence)
-
-Session 3: "Always test against staging DB"
-  → 3rd occurrence detected → promoted to thinking.md §1
-
-Future sessions: Claude automatically follows the principle
-```
-
-### Session Lifecycle
-
-```
-/setup          → Project initialization + thinking.md customization
-  ↓ (develop)
-/close-chat     → Captures decisions, flags knowledge for reflux
-  ↓ (accumulate)
-/weekly-review  → Compresses feedback, promotes patterns to thinking.md
-  ↓ (grow)
-thinking.md     → Claude's proposals get better over time
-```
-
-### Safety: Three-layer defense
+The core of sidekick. When session feedback repeats, it gets **promoted to a principle** that Claude follows automatically.
 
 ```mermaid
 flowchart LR
-    OP["Claude's\nAction"] --> L1
-    subgraph L1["Awareness"]
-        A["CLAUDE.md\nHARD / SOFT / GUIDE"]
-    end
-    L1 --> L2
-    subgraph L2["Enforcement"]
-        B["Pre-tool Hooks\nguard-bash.sh\nJSON deny = block"]
-    end
-    L2 -->|"blocked"| DENY(("DENY"))
+    S["Session insight<br/>(correction/feedback)"] --> F["feedback_*.md<br/>recorded"]
+    F --> P["/weekly-review<br/>pattern detection"]
+    P -->|"3+ times<br/>detected"| C{"Promote?<br/>Your call"}
+    C -->|"Yes"| T["thinking.md §1<br/>becomes a principle"]
+    C -->|"No"| F
+    T --> A["Claude applies<br/>automatically"]
+    A --> S
+```
+
+**Promotion always requires your approval** (not fully automatic). `/weekly-review` surfaces candidates; only what you approve enters `thinking.md`.
+
+#### What goes in `thinking.md`?
+
+`thinking.md` §1 is your personal judgment axis:
+
+- What you prioritize (speed / safety / user impact)
+- What you never do (over-engineer / skip tests / deploy on Fridays)
+- Your failure patterns (where you tend to misjudge)
+
+The framework (self-review protocol, phase protocols) stays shared. **Only the judgment axis becomes yours.**
+
+#### File responsibilities
+
+| File | Defines | Changes when... |
+|---|---|---|
+| `thinking.md` | **Your** decision principles (tied to you, portable across projects) | Your thinking changes |
+| `rules/*.md` | **Project** rules (coding standards, DB, Git strategy) | The project changes |
+| `CLAUDE.md` | Project config + HARD/SOFT/GUIDE rules | The project changes |
+
+### 🛡️ Three-layer defense — safety is non-negotiable
+
+```mermaid
+flowchart LR
+    OP["Claude's<br/>action"] --> L1
+    L1["① Awareness<br/>CLAUDE.md<br/>HARD/SOFT/GUIDE"] --> L2
+    L2["② Enforcement<br/>Pre-tool Hooks<br/>(physical block)"]
+    L2 -->|"dangerous op"| DENY(("DENY"))
     L2 --> L3
-    subgraph L3["Detection"]
-        C["/review\n6 perspectives"]
-    end
-    L3 --> SAFE["Safe\nChange"]
+    L3["③ Detection<br/>/review<br/>6 perspectives"] --> SAFE["Safe<br/>change"]
 ```
 
 | Layer | Mechanism | Example |
-|-------|-----------|---------|
-| **Awareness** | CLAUDE.md rules (HARD/SOFT/GUIDE) | "Don't push to main" |
-| **Enforcement** | Pre-tool hooks (JSON deny = block) | `guard-bash.sh` blocks `rm -rf` |
-| **Detection** | `/review` skill (6 perspectives) | Catches security issues in PR |
+|---|---|---|
+| **① Awareness** | CLAUDE.md rules (HARD / SOFT / GUIDE) | "Don't push to main" |
+| **② Enforcement** | Pre-tool hooks (JSON deny = blocked) | `guard-bash.sh` blocks `rm -rf` |
+| **③ Detection** | `/review` skill (6 perspectives) | Catches security issues in PR |
 
-**Deny list** (never runs — blocked by settings.json):
-- `prisma db push`, force push
+**Four levels of blocking:**
 
-**Guard blocks** (blocked by hooks with JSON `permissionDecision: "deny"`):
-- `rm -rf`, `.env` modification, push to protected branches, production DB operations
+1. **Deny list (settings.json)** — never runs: `prisma db push`, force push
+2. **Guard blocks (hooks)** — JSON deny: `rm -rf`, `.env` changes, protected branch push, prod DB ops
+3. **HARD rules** — Claude asks you first: `git push` (feature), `gh pr create`, `gh pr merge`
+4. **Everything else** — auto-approved via `Bash(*)` (no dialogs)
 
-**HARD rules** (Claude confirms before proceeding):
-- `git push` to feature branches, `gh pr create`, `gh pr merge`
-
-**Everything else** — auto-approved via `Bash(*)`. No permission dialogs.
-
-### Skills: 14 reusable workflows
+### 🧰 14 Skills — ready-to-use workflows
 
 | Category | Skills | Purpose |
-|----------|--------|---------|
-| **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Dynamic scope detection — only runs relevant perspectives |
+|---|---|---|
+| **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Runs only relevant perspectives based on change scope |
 | **Lifecycle** | `/setup`, `/close-chat`, `/weekly-review`, `/news` | Session & project management |
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
 
-### Auto Mode: Hand off and walk away
-
-After a design discussion, hand off implementation:
+### 🌙 Auto mode — PRs while you sleep
 
 ```
-You: "Design looks good. /auto-implement #10, #11, #12"
+You   : "Design looks good. /auto-implement #10, #11, #12"
 Claude: → Creates 3 worktrees in parallel
         → Implements each issue independently
         → Runs /review on each
         → Pushes and creates 3 PRs
-You: *reviews PRs when ready*
+        → Records to learning loop
+You   : (morning) Review and merge PRs
 ```
 
-For fully unattended execution (overnight, AFK):
+Fully unattended (overnight, AFK):
 
 ```bash
 SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
   -p "/auto-implement #10, #11, #12"
 ```
 
-**`/auto-implement` pipeline:**
-
 ```mermaid
 flowchart LR
-    P0["Phase 0\nDesign\nCheck"] --> P1["Phase 1\nWorktree\nSetup"]
-    P1 --> P2["Phase 2\nImplement\nisolated"]
-    P2 --> P3["Phase 3\n/review\nmax 3"]
-    P3 --> P4["Phase 4\nTest\nPush PR"]
-    P4 --> P5["Phase 5\nKnowledge\nCapture"]
+    P0["Phase 0<br/>Design<br/>Check"] --> P1["Phase 1<br/>Worktree<br/>Setup"]
+    P1 --> P2["Phase 2<br/>Implement<br/>Isolated"]
+    P2 --> P3["Phase 3<br/>/review<br/>max 3 rounds"]
+    P3 --> P4["Phase 4<br/>Test<br/>Push PR"]
+    P4 --> P5["Phase 5<br/>Learning Loop<br/>Capture"]
     P0 -..->|"not ready"| STOP(("STOP"))
     P3 -..->|"BLOCKER"| STOP
 ```
@@ -218,45 +290,66 @@ flowchart LR
 
 ```
 === /auto-implement report (3 parallel) ===
-
 [Overall] 2 succeeded / 1 stopped
 
 -- Issue #10: User auth -- OK
-  [PR] #43
-  Changes: 8 files (+342, -28)
+  [PR] #43 / Changes: 8 files (+342, -28)
   Tests: 156 passed / Review: OK (1 Ops WARN -> fixed)
-  Knowledge: 1 flag / Backlog: 2 items
+  Learning loop: 1 flag / Backlog: 2 items
 
 -- Issue #11: Email templates -- OK
-  [PR] #44
-  Changes: 4 files (+89, -12)
+  [PR] #44 / Changes: 4 files (+89, -12)
   Tests: 160 passed / Review: OK
 
 -- Issue #12: Dashboard -- STOPPED
   [Stopped at] Phase 3 (review)
-  [Reason] BLOCKER: N+1 query in lib/dashboard.ts L45
+  [Reason] BLOCKER: N+1 query (lib/dashboard.ts L45)
   [Resume] Fix N+1 -> re-run /auto-implement #12
 
 -- Next actions --
   -> Review & merge PR #43, #44
-  -> Fix #12's N+1 in interactive mode or re-run after fix
+  -> Fix #12's N+1 in interactive mode
 ==========================================================
 ```
 
-**What stays manual** (even in auto mode):
-- PR merge to main
-- DB migrations
-- Production deploys
+**Always manual, even in auto mode:** PR merge to main / DB migrations / production deploys
 
-For advanced setups (cron polling, Slack integration), see [cron-setup-guide.md](docs/cron-setup-guide.md).
+Advanced setup (cron, Slack) → [cron-setup-guide.md](./docs/cron-setup-guide.md)
 
 ---
 
-## Architecture
+## Configuration
+
+Set in `Project Configuration` at the top of `CLAUDE.md`:
+
+| Setting | Description | Default |
+|---|---|---|
+| `PROJECT_NAME` | Project name | `""` |
+| `STG_ENABLED` | Staging environment | `false` |
+| `ORM_TYPE` | `prisma` / `drizzle` / `none` | `none` |
+| `LANGUAGE` | `typescript` / `python` | `typescript` |
+| `NOTION_ENABLED` | External task DB integration | `false` |
+| `TEST_COMMAND` | Test runner command | `""` |
+| `BUILD_COMMAND` | Build command | `""` |
+
+---
+
+## Design Principles
+
+1. **Knowledge compounds**: Session insights flow from feedback → principles → thinking OS. Your AI gets better every week. ([ADR-0007](./docs/decisions/0007-thinking-os-positioning.md))
+2. **Safety is non-negotiable**: Hard blocks are never overridden. Not by auto mode, not by user request, not by clever workarounds.
+3. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md))
+4. **Fixed cost, not per-project**: Runs on Claude Max. No API charges. 10 projects for the same $100/month. ([ADR-0003](./docs/decisions/0003-slack-cron-architecture.md))
+5. **Git is the source of truth**: No external DB required. MEMORY.md + ADR + GitHub Issues. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
+
+---
+
+<details>
+<summary><b>Architecture Details</b></summary>
 
 ```
 sidekick/
-├── CLAUDE.md                    # Rules & configuration (HARD/SOFT/GUIDE)
+├── CLAUDE.md                    # Rules & config (HARD/SOFT/GUIDE)
 ├── .claude/
 │   ├── hooks/                   # Safety enforcement layer
 │   │   ├── guard-bash.sh        # 9 guards (push, rm, prisma, env, etc.)
@@ -268,86 +361,49 @@ sidekick/
 │   ├── skills/                  # 14 reusable workflows
 │   │   ├── review/              # Orchestrator + agents/ + references/
 │   │   ├── auto-implement/      # Full automation pipeline
-│   │   ├── close-chat/          # Session wrap-up + knowledge reflux
+│   │   ├── close-chat/          # Session wrap-up + learning loop capture
 │   │   └── ...
 │   ├── rules/                   # Guidelines + thinking OS
-│   │   ├── thinking.md          # Thinking OS — owner's decision principles (pluggable)
+│   │   ├── thinking.md          # Thinking OS — your decision principles (pluggable)
 │   │   ├── knowledge-map.md     # Where knowledge goes
 │   │   ├── code-quality.md      # Coding standards
 │   │   └── ...
 │   ├── templates/               # Opt-in files deployed by /setup
 │   │   ├── MEMORY.md            # Session memory template
-│   │   ├── CLAUDE.local.md      # Personal settings template
+│   │   ├── CLAUDE.local.md      # Personal config template
 │   │   └── github/              # GitHub Issue templates & labels
-│   ├── docs/                    # Developer reference (not loaded per-session)
+│   ├── docs/                    # Developer reference
 │   │   └── skill-agent-design.md
 │   └── settings.json            # Permissions, hooks, deny list
 ├── docs/
 │   ├── decisions/               # Architecture Decision Records
-│   ├── cron-setup-guide.md      # Night batch automation
+│   ├── cron-setup-guide.md      # Automation guide
 │   └── playwright-setup-guide.md
-└── .github/                     # For sidekick repo itself (not propagated)
+└── .github/                     # For this repo only
     ├── ISSUE_TEMPLATE/
     └── labels.yml
 ```
 
----
-
-## Configuration
-
-Set in `Project Configuration` at the top of `CLAUDE.md`:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `PROJECT_NAME` | Project name | `""` |
-| `STG_ENABLED` | Staging environment | `false` |
-| `ORM_TYPE` | `prisma` / `drizzle` / `none` | `none` |
-| `LANGUAGE` | `typescript` / `python` | `typescript` |
-| `NOTION_ENABLED` | External task DB integration | `false` |
-| `TEST_COMMAND` | Test runner | `""` |
-| `BUILD_COMMAND` | Build command | `""` |
-
-### Scaling: Individual → Team
-
-sidekick works for solo developers and small teams alike. No separate "enterprise edition."
-
-| Setting | Solo | Team |
-|---------|------|------|
-| Worktree usage | Optional | Essential (parallel work) |
-| `/review` | Self-review | Team review gate |
-| `PROTECTED_BRANCHES` | `main` | `main`, `release/stg` |
-| MEMORY.md | Personal notes | Shared context |
-
----
-
-## Design Principles
-
-1. **Knowledge compounds**: Insights flow from sessions → feedback → principles → thinking OS. Your AI gets better every week. ([ADR-0007](docs/decisions/0007-thinking-os-positioning.md))
-
-2. **Safety is non-negotiable**: Hard blocks are never overridden. Not by auto mode, not by user request, not by clever workarounds.
-
-3. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](docs/decisions/0002-blacklist-execution-and-two-lanes.md))
-
-4. **Fixed cost, not per-project**: Runs on Claude Max subscription. No API charges. Scale to 10 projects for the same $100/month. ([ADR-0003](docs/decisions/0003-slack-cron-architecture.md))
-
-5. **Git is the source of truth**: No external DB required. MEMORY.md + ADR + GitHub Issues. Notion is optional. ([ADR-0004](docs/decisions/0004-context-consolidation-claude-code-first.md))
+</details>
 
 ---
 
 ## Feedback
 
-Using sidekick in your project? We'd love to hear what works, what doesn't, and what's missing.
+Using sidekick? Tell us what works, what doesn't, and what's missing.
 
-File a [Downstream Feedback issue](../../issues/new?template=downstream-feedback.yml) — it helps us improve the template for everyone.
+File a [Downstream Feedback issue](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) — it helps improve the template for everyone.
 
 ## Versioning
 
 sidekick uses **git tags + GitHub Releases** for version management. No VERSION file in your project root.
 
 Each downstream project tracks its adopted version in `MEMORY.md`:
+
 ```markdown
 <!-- sidekick_version: 0.3.0 -->
 ```
+
 Run `/inventory` to check for updates against the latest GitHub Release.
 
 ## License
