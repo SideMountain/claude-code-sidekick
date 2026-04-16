@@ -26,3 +26,8 @@ Claude Code のコンテキストウィンドウは有限。長時間セッシ�
 
 - 多数のスキルがある場合、`SLASH_COMMAND_TOOL_CHAR_BUDGET` の上限（15,000文字）に注意
 - 不要なスキルは `user-invocable: false` にして description の常駐を避ける
+### rules/skills の公式フォーマット準拠
+
+- rules ファイルを新規作成・更新する際は、path-scoped（`paths:` frontmatter）が適用できるか検討する
+- skills ファイルを新規作成・更新する際は、`allowed-tools` を frontmatter に含める
+- 公式ドキュメントのサポート対象フィールドを確認してから記述する

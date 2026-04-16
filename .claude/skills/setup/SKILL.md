@@ -149,6 +149,14 @@ Yes の場合:
 cp .claude/templates/CLAUDE.local.md CLAUDE.local.md
 ```
 
+#### 3b-2. .gitattributes
+
+`.gitattributes` が存在しない場合は自動配置する（確認不要）。
+Windows 環境での CRLF 問題を防ぐため、シェルスクリプトの LF を強制する。
+```bash
+cp .claude/templates/.gitattributes .gitattributes
+```
+
 #### 3c. GitHub テンプレート（opt-in）
 
 「GitHub Issue テンプレート（バグ報告・機能要求）とラベル定義を追加しますか？」と確認。
