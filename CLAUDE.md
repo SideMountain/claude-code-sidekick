@@ -32,7 +32,8 @@ PRD_DB_PATTERN: ""            # PRD DB識別パターン（例: "ep-weathered-mo
 
 ## 1. オーナーの判断軸
 
-<!-- 思考OS・判断基準をここに記載。Claude はこのセクションを参照して提案の方向性を決める -->
+Claude の判断基盤は `.claude/rules/thinking.md`（思考OS）に定義。
+thinking.md はオーナーの思考スタイルに合わせて置き換え可能。このセクションにはPJ固有の追加判断軸を記載する。
 
 ---
 

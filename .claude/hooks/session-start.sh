@@ -7,6 +7,7 @@
 #   2. Uncommitted changes detection
 #   3. Active Work display (from MEMORY.md)
 #   4. Existing worktree listing
+#   5. Weekly review staleness check
 #
 # chmod +x .claude/hooks/session-start.sh
 # =============================================================================
@@ -35,8 +36,8 @@ PROTECTED_BRANCHES=("main")
 echo "=== SESSION START: Automated Checks ==="
 echo ""
 
-# --- [1/4] Branch Status ---
-echo "[1/4] Branch status"
+# --- [1/5] Branch Status ---
+echo "[1/5] Branch status"
 git fetch origin 2>/dev/null
 BRANCH=$(git branch --show-current 2>/dev/null)
 echo "  Current branch: $BRANCH"
@@ -66,9 +67,9 @@ else
   echo "  INFO: Not on a protected branch. Ensure this is intentional."
 fi
 
-# --- [2/4] Uncommitted Changes ---
+# --- [2/5] Uncommitted Changes ---
 echo ""
-echo "[2/4] Uncommitted changes"
+echo "[2/5] Uncommitted changes"
 CHANGES=$(git status --short 2>/dev/null)
 if [ -n "$CHANGES" ]; then
   echo "  WARNING: Uncommitted changes detected:"
@@ -77,19 +78,45 @@ else
   echo "  OK: clean"
 fi
 
-# --- [3/4] Active Work ---
+# --- [3/5] Active Work ---
 echo ""
-echo "[3/4] Active Work (parallel work board)"
+echo "[3/5] Active Work (parallel work board)"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   sed -n '/^## Active Work/,/^## [^A]/p' "$MEMORY_FILE" | head -30 | sed 's/^/  /'
 else
   echo "  (MEMORY.md not found)"
 fi
 
-# --- [4/4] Existing Worktrees ---
+# --- [4/5] Existing Worktrees ---
 echo ""
-echo "[4/4] Existing worktrees"
+echo "[4/5] Existing worktrees"
 git worktree list 2>/dev/null | sed 's/^/  /'
+
+# --- [5/5] Maintenance ---
+echo ""
+echo "[5/5] Maintenance"
+if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
+  LAST_REVIEW=$(grep -o '最終棚卸し: [0-9-]*' "$MEMORY_FILE" 2>/dev/null | head -1 | sed 's/最終棚卸し: //')
+  if [ -n "$LAST_REVIEW" ]; then
+    # Calculate days since last review (portable across Linux/macOS)
+    LAST_EPOCH=$(date -d "$LAST_REVIEW" +%s 2>/dev/null || date -jf "%Y-%m-%d" "$LAST_REVIEW" +%s 2>/dev/null || printf '0')
+    NOW_EPOCH=$(date +%s)
+    if [ "$LAST_EPOCH" -gt 0 ] 2>/dev/null; then
+      DAYS_AGO=$(( (NOW_EPOCH - LAST_EPOCH) / 86400 ))
+      if [ "$DAYS_AGO" -gt 7 ]; then
+        echo "  WARNING: Last /weekly-review was ${DAYS_AGO} days ago (consider running /weekly-review)"
+      else
+        echo "  OK: Last /weekly-review: ${LAST_REVIEW} (${DAYS_AGO} days ago)"
+      fi
+    else
+      echo "  (could not parse last review date)"
+    fi
+  else
+    echo "  INFO: /weekly-review has never been run"
+  fi
+else
+  echo "  (MEMORY.md not found — skipping review check)"
+fi
 
 echo ""
 echo "=== Review the above before starting work ==="
