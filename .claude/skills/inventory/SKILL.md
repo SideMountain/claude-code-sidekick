@@ -21,7 +21,7 @@ allowed-tools: "Read Grep Glob Bash(git *) Bash(gh *) Agent WebFetch"
 
 ## 目的
 
-複数のタスクソース（Tasks DB、GitHub Issues、MEMORY.md Backlog）を横断的に取得・照合し、
+複数のタスクソース（Tasks DB、GitHub Issues、auto-memory MEMORY.md Backlog）を横断的に取得・照合し、
 現在の作業全体像を一覧表示する。加えて、sidekick テンプレートの更新有無を検知する。
 
 セッション開始時やタスクの優先順位を見直したいときに実行する。
@@ -79,9 +79,9 @@ gh issue list --state open --limit 50 --json number,title,labels,assignees,creat
 
 Issue がない場合は「GitHub Issues: 0件」と表示してスキップ。
 
-### Step 4: MEMORY.md Backlog 読み込み
+### Step 4: auto-memory MEMORY.md Backlog 読み込み
 
-MEMORY.md の `## Backlog` セクションを読み込み、未完了項目（`- [ ]`）を一時保持する。
+auto-memory の MEMORY.md（`~/.claude/projects/<slug>/memory/MEMORY.md`）の `## Backlog` セクションを読み込み、未完了項目（`- [ ]`）を一時保持する。
 
 ```
 [Backlog] {内容}
@@ -89,12 +89,12 @@ MEMORY.md の `## Backlog` セクションを読み込み、未完了項目（`-
 
 ### Step 5: sidekick バージョンチェック
 
-> **前提条件**: MEMORY.md に `sidekick_version` コメントがある場合のみ実行。
-> sidekick をテンプレートとして利用していないPJ（sidekick 自身を含む）ではスキップ。
+> **前提条件**: `CLAUDE.md` の Project Configuration に `SIDEKICK_VERSION` が設定されている場合のみ実行。
+> sidekick をテンプレートとして利用していないPJ（sidekick 自身を含む、`SIDEKICK_VERSION` が空）ではスキップ。
 
 #### 5a. バージョン比較
 
-1. MEMORY.md から `sidekick_version` コメントを読み取る（例: `<!-- sidekick_version: 0.1.0 -->`）
+1. `CLAUDE.md` から `SIDEKICK_VERSION` の値を読み取る（例: `SIDEKICK_VERSION: "0.1.0"`）
 2. sidekick リポジトリの最新バージョンを取得する
    - **GitHub Releases API**（推奨）: `gh api repos/{owner}/claude-code-sidekick/releases/latest --jq '.tag_name'`
      （`{owner}` は claude-code-sidekick の GitHub オーナー名。`git remote get-url origin` から取得可能）
@@ -117,7 +117,7 @@ MEMORY.md の `## Backlog` セクションを読み込み、未完了項目（`-
 > **Note**: Agent 隔離実行時、バージョン更新の取り込み判断はメインコンテキストで行う。
 > Agent は差分情報をサマリに含めて返し、承認後にメインで以下を実行する:
 > 1. GitHub Releases のリリースノートに基づき、手動で差分を適用する
-> 2. MEMORY.md の `sidekick_version` を更新する
+> 2. `CLAUDE.md` の `SIDEKICK_VERSION` を更新する
 
 ### Step 6: 重複検知
 

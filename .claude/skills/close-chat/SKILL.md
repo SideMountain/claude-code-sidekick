@@ -16,6 +16,8 @@ Claude がバックログ候補と知識還流候補を提案し、ユーザー�
 
 ---
 
+> **用語**: 以下の「MEMORY.md」は全て auto-memory の MEMORY.md（`~/.claude/projects/<project-slug>/memory/MEMORY.md`）を指す。project-root の MEMORY.md は使わない（設計変更 ADR-0008 参照）。
+
 ## 手順
 
 ### Step 1: 完了サマリ
@@ -132,7 +134,24 @@ ADR未記録の判断:
 このチャットで完了した Worktree があれば、MEMORY.md の Active Work のステータスを更新する。
 （Worktree 運用プロジェクトの場合）
 
-**ここまでが標準フロー。** Step 5 まで完了すれば、外部DB連携がないプロジェクトではセッション終了してよい。
+### Step 5.5: CHANGELOG 整合性チェック
+
+PR が main にマージされた場合、`CHANGELOG.md` に該当エントリがあるか確認する。
+
+**前提条件**: `CHANGELOG.md` がリポジトリルートに存在する場合のみ実行。
+存在しないプロジェクトはスキップ。
+
+**チェック手順**:
+1. 直近のマージコミット（`git log --oneline main --merges -5`）を取得
+2. `CHANGELOG.md` の `[Unreleased]` セクションを読む
+3. マージされた PR 内容が反映されているか確認
+
+**未反映の場合**:
+- ユーザーに「CHANGELOG に未反映のマージがあります。追記しますか？」と確認
+- Yes なら `[Unreleased]` セクションに追記（Added / Changed / Fixed の適切なカテゴリ）
+- No なら「次の `/weekly-review` または `/release` 時に反映」としてスキップ
+
+**ここまでが標準フロー。** 外部DB連携がないプロジェクトではセッション終了してよい。
 
 ### Step 6: 外部タスクDB同期（Layer 2 オプション）
 

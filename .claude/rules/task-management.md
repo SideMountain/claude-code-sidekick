@@ -1,6 +1,6 @@
 # 外部タスク管理連携（Layer 2 オプション）
 
-> **標準構成（Layer 0）**: sidekick は MEMORY.md + GitHub Issues だけで完結する。
+> **標準構成（Layer 0）**: sidekick は auto-memory + GitHub Issues だけで完結する。
 > Notion 等の外部DB連携は、非エンジニアとのタスク共有が必要な場合のオプション拡張。
 
 Notion 等の外部タスク管理DBと連携してタスク状態を共有する場合のプロトコル。

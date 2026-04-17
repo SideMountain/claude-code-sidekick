@@ -17,7 +17,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 
 | 🛡️ 安全ガード | 🧰 再利用ワークフロー | 🧠 思考OS |
 |---|---|---|
-| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/review`、`/auto-implement` など**14スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
+| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**15スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
 
 最後の「思考OS」が sidekick の一番の差別化です。
 
@@ -74,7 +74,7 @@ Claude : → Worktree 作成（main は触らない）
 | | 素の Claude Code | 一般的なテンプレ | **sidekick** |
 |---|:---:|:---:|:---:|
 | 危険操作の物理ブロック | ❌ | △（ルール記述のみ） | ✅ hooks で強制 |
-| 再利用スキル | ❌ | △ | ✅ 14 種類 |
+| 再利用スキル | ❌ | △ | ✅ 15 種類 |
 | **あなたの判断軸を学習** | ❌ | ❌ | ✅ **思考OS** |
 | 完全自動実装（寝てる間に PR） | ❌ | ❌ | ✅ `/auto-implement` |
 | ADR で設計判断を追跡可能 | ❌ | △ | ✅ |
@@ -106,7 +106,7 @@ Claude : → Worktree 作成（main は触らない）
 | Worktree | 任意 | 必須（並行作業） |
 | `/review` | セルフレビュー | チームレビューゲート |
 | `PROTECTED_BRANCHES` | `main` | `main`, `release/stg` |
-| `MEMORY.md` | 個人メモ | 共有コンテキスト |
+| auto-memory | 個人メモ（個別） | 個別（メンバーごとに別保持） |
 </details>
 
 <details>
@@ -155,8 +155,8 @@ Claude Code 起動後、`/setup` を叩くと対話形式で次が進みます�
 │  → settings.json + hooks/                         │
 ├──────────────────────────────────────────────────┤
 │ Step 3 : テンプレート配置                         │
-│  MEMORY.md（セッション記憶）                      │
 │  CLAUDE.local.md（個人設定、gitignore 済み）      │
+│  （セッション記憶は auto-memory で自動管理）       │
 ├──────────────────────────────────────────────────┤
 │ Step 4 : あなたの判断原則（任意・スキップ可）     │
 │  「何を最優先？ スピード / 安全性 / ユーザー影響」│
@@ -244,14 +244,40 @@ flowchart LR
 3. **HARD ルール** — Claude があなたに確認してから実行: `git push`（feature）, `gh pr create`, `gh pr merge`
 4. **それ以外** — `Bash(*)` で自動承認（ダイアログなし）
 
-### 🧰 14 スキル — すぐ使えるワークフロー
+### 🧰 15 スキル — すぐ使えるワークフロー
 
 | カテゴリ | スキル | 用途 |
 |---|---|---|
+| **アイデア発想** | `/discover` | アイデア → 要件定義（ギャップ分析・タスク分解） |
 | **レビュー** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | 変更スコープに応じて必要な観点だけ実行 |
 | **ライフサイクル** | `/setup`, `/close-chat`, `/weekly-review`, `/news` | セッション・プロジェクト管理 |
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
+
+<sub>※ `/sync-oss` は sidekick 保守者向けの内部スキル（下流プロジェクトでは使わない）のため、本表から除外しています。</sub>
+
+### 🔄 スキル同士のつながり
+
+`/discover` と `/auto-implement` が1本のパイプラインの両端。その間は自動で流れます。
+
+```mermaid
+flowchart LR
+    Idea["💡 アイデア"] --> D["/discover<br/>要件定義<br/>・タスク分解"]
+    D --> Design["📋 設計<br/>確定"]
+    Design --> AI["/auto-implement<br/>Phase 0-5"]
+    AI --> R["/review<br/>6観点"]
+    R --> PR["📤 PR"]
+    PR --> CC["/close-chat<br/>学習ループ記録"]
+    CC -.->|"フィードバック"| TH["thinking.md<br/>（原則に昇格）"]
+    TH -.->|"次セッションで<br/>自動適用"| Idea
+```
+
+**実運用でのイメージ:**
+
+- アイデアが曖昧 → `/discover` が設計とタスクリストに落とす
+- 設計確定済み → `/auto-implement` が PR まで自動で回す
+- セッション中のフィードバック → `/close-chat` が記録、`/weekly-review` が `thinking.md` に昇格
+- 次のセッションはより賢くなる — ループが閉じる
 
 ### 🌙 自動モード — 寝てる間に PR ができる
 
@@ -337,7 +363,7 @@ flowchart LR
 2. **安全が最優先**: ハードブロックは絶対に解除されない。auto モードでも、あなたの指示でも、巧妙な回避策でも。
 3. **ブラックリスト方式**: 危険なものだけリスト化。残りは全自動。（[ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md)）
 4. **固定費、PJ 比例しない**: Claude Max 上で動く。API 従量課金なし。10 PJ でも $100/月。（[ADR-0003](./docs/decisions/0003-slack-cron-architecture.md)）
-5. **Git が Source of Truth**: 外部 DB 不要。MEMORY.md + ADR + GitHub Issues で完結。Notion はオプション。（[ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md)）
+5. **Git が Source of Truth**: 外部 DB 不要。CLAUDE.md + ADR + GitHub Issues + auto-memory で完結。Notion はオプション。（[ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md)）
 
 ---
 
@@ -355,7 +381,7 @@ sidekick/
 │   │   ├── guard-protected-branch-edit.sh
 │   │   ├── prompt-reminder.sh
 │   │   └── session-start.sh
-│   ├── skills/                  # 14 の再利用ワークフロー
+│   ├── skills/                  # 15 の再利用ワークフロー
 │   │   ├── review/              # オーケストレーター + agents/ + references/
 │   │   ├── auto-implement/      # 全自動パイプライン
 │   │   ├── close-chat/          # セッション締め + 学習ループ記録
@@ -366,7 +392,6 @@ sidekick/
 │   │   ├── code-quality.md      # コーディング規約
 │   │   └── ...
 │   ├── templates/               # /setup が opt-in で配置するファイル
-│   │   ├── MEMORY.md            # セッション記憶テンプレート
 │   │   ├── CLAUDE.local.md      # 個人設定テンプレート
 │   │   └── github/              # GitHub Issue テンプレート・ラベル定義
 │   ├── docs/                    # 開発者リファレンス
@@ -393,10 +418,10 @@ sidekick を使っていて「ここが良い」「困った」「こうして�
 
 sidekick は **git tag + GitHub Releases** でバージョン管理しています。プロジェクトルートに VERSION ファイルは置きません。
 
-各プロジェクトの `MEMORY.md` に取り込み済みバージョンを記録:
+各プロジェクトの `CLAUDE.md` の Project Configuration に取り込み済みバージョンを記録:
 
-```markdown
-<!-- sidekick_version: 0.3.0 -->
+```yaml
+SIDEKICK_VERSION: "0.4.1"
 ```
 
 `/inventory` で最新の GitHub Release と比較し、更新を確認できます。
@@ -405,4 +430,3 @@ sidekick は **git tag + GitHub Releases** でバージョン管理していま�
 
 MIT
 
-<!-- sidekick_version: 0.3.0 -->

@@ -26,6 +26,8 @@ NOTION_ENABLED: false         # true: Notion MCP連携有効
 PACKAGE_MANAGER: npm          # npm | pnpm | yarn | pip
 STG_DB_PATTERN: ""            # STG DB識別パターン（例: "ep-bitter-salad"）
 PRD_DB_PATTERN: ""            # PRD DB識別パターン（例: "ep-weathered-mode"）
+SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（例: "0.4.1"）
+                              # 空 or 未設定なら sidekick 本体として扱う（バージョンチェック対象外）
 ```
 
 ---
@@ -78,7 +80,7 @@ thinking.md はオーナーの思考スタイルに合わせて置き換え可�
 #### Worktree・並行作業
 
 - **H12**: 新作業は Worktree 作成（メインWSでブランチ切り替え禁止）
-- **H13**: Worktree 作成 → MEMORY.md Active Work 記録（この順序。飛ばさない）
+- **H13**: Worktree 作成 → auto-memory の MEMORY.md（`~/.claude/projects/<slug>/memory/MEMORY.md`）の Active Work セクションに記録（この順序。飛ばさない）
 - **H14**: DBマイグレーション作業の並行禁止
 
 #### ORM_TYPE=prisma の場合のみ有効
@@ -148,12 +150,15 @@ STG DB SELECT（接続先確認は毎回必須）、その他ローカル操作�
 
 推測・未検証の情報を確定的に述べない。ユーザーの意思決定に影響する情報は必ず確度を添える。
 
-#### ゲート3: CLAUDE.md / MEMORY.md への記録前
+#### ゲート3: CLAUDE.md / auto-memory への記録前
 
 | 記録内容 | 記録先 |
 |----------|--------|
 | プロジェクトルール・規約 | CLAUDE.md の該当セクションに追記 |
-| Claude固有の操作メモ・補足 | MEMORY.md |
+| 設計判断の「なぜ」 | ADR（`docs/decisions/`） |
+| 行動修正の経緯 | auto-memory の `feedback_*.md` |
+| 外部システムへのポインタ | auto-memory の `reference_*.md` |
+| 作業中のステータス・引継ぎメモ | auto-memory の `MEMORY.md`（Active Work / Backlog） |
 | 既存セクションのどこにも該当しない | ユーザーに配置を確認する |
 
 ---

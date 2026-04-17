@@ -10,7 +10,7 @@ allowed-tools: "Read Write Edit Bash(git *) Bash(cp *) Bash(grep *) Bash(claude 
 ## 目的
 
 新規または既存プロジェクトの Claude Code 環境を対話的にセットアップする。
-ヒアリングから設定ファイル生成、MEMORY.md 初期化までを一貫して行う。
+ヒアリングから設定ファイル生成、個人設定初期化までを一貫して行う。
 
 ## 設計原則
 
@@ -135,13 +135,7 @@ PJの特性に応じてスキルの活用方針を案内する:
 
 `.claude/templates/` から必要なファイルをルートにコピーする。
 
-#### 3a. MEMORY.md
-
-```bash
-cp .claude/templates/MEMORY.md MEMORY.md
-```
-
-#### 3b. CLAUDE.local.md（opt-in）
+#### 3a. CLAUDE.local.md（opt-in）
 
 「個人設定ファイル（応答言語・ローカル環境メモ）を使いますか？」と確認。
 Yes の場合:
@@ -149,7 +143,7 @@ Yes の場合:
 cp .claude/templates/CLAUDE.local.md CLAUDE.local.md
 ```
 
-#### 3b-2. .gitattributes
+#### 3b. .gitattributes
 
 `.gitattributes` が存在しない場合は自動配置する（確認不要）。
 Windows 環境での CRLF 問題を防ぐため、シェルスクリプトの LF を強制する。
@@ -176,7 +170,6 @@ cp -r .claude/templates/github/.  .github/
 - `.claude/skills/*/.data/`
 
 Step 3 で配置した場合のみ追記:
-- MEMORY.md を配置した → `/MEMORY.md`
 - CLAUDE.local.md を配置した → `CLAUDE.local.md`
 
 外部DB連携を設定した場合のみ追記:
@@ -201,7 +194,7 @@ thinking.md §1 のカスタマイズ用。選択肢から選ぶか、自由記�
 ### Step 5.5: 外部DB連携（オプション）
 
 > **ほとんどのPJではスキップ可。** Notion等と連携したい場合のみ設定する。
-> sidekick は MEMORY.md + GitHub Issues だけで全機能動作する。
+> sidekick は auto-memory + GitHub Issues だけで全機能動作する。
 
 連携したい場合:
 1. `.claude/rules/task-db-integration.md.example` をコピーして設定を記入
@@ -260,9 +253,8 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 
 ```
 確認項目:
-- CLAUDE.md の Project Configuration 内容
+- CLAUDE.md の Project Configuration 内容（SIDEKICK_VERSION 含む）
 - .gitignore の sidekick 関連パターンの有無
-- MEMORY.md の有無
 - CLAUDE.local.md の有無
 - .github/ の有無
 - .claude/settings.local.json の有無
@@ -277,7 +269,7 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 === sidekick セットアップ（既存PJモード） ===
 
 ✅ 既に存在: CLAUDE.md, .claude/settings.json
-❌ 不足: MEMORY.md, .gitignore パターン
+❌ 不足: CLAUDE.local.md, .gitignore パターン
 
 以下を追加しますか？（個別に確認します）
 ```
@@ -286,7 +278,6 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 
 | 不足 | 質問（背景知識不要な聞き方） | Yes の場合 |
 |------|---------------------------|-----------|
-| MEMORY.md | 「セッション間で作業状態を引き継ぎたいですか？」 | `.claude/templates/MEMORY.md` → `MEMORY.md` にコピー |
 | CLAUDE.local.md | 「個人の応答設定（言語等）をカスタマイズしたいですか？」 | `.claude/templates/CLAUDE.local.md` → `CLAUDE.local.md` にコピー |
 | .github/ テンプレート | 「GitHub Issue テンプレートを追加しますか？」 | `.claude/templates/github/` → `.github/` にコピー（既存 .github/ がある場合はマージ方法を確認） |
 | .gitignore パターン | 上記で配置したファイルに応じて自動追記 | 新規PJモードの Step 4 と同じロジック |
@@ -319,6 +310,5 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 
 - ヒアリングは対話的に進める。一度に全項目を聞かず、カテゴリごとに確認してもよい
 - 既に CLAUDE.md が存在する場合は上書きせず、差分を提示してユーザーに確認する
-- MEMORY.md が既に存在する場合は上書きしない
 - .github/ が既に存在する場合は、上書きせずマージ方法（追加のみ/個別選択）を確認する
 - テンプレートの全セクションを埋める必要はない。プロジェクトに不要なセクションは「対象外」と明記する
