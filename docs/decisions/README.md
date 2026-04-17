@@ -9,3 +9,5 @@ sidekick の設計判断とその根拠を記録する。
 | 0003 | [無人実行のアーキテクチャ](0003-slack-cron-architecture.md) | 承認済み |
 | 0004 | [Git を Source of Truth、外部DBはオプション](0004-context-consolidation-claude-code-first.md) | 承認済み |
 | 0005 | [下流統合設計原則](0005-downstream-integration-principles.md) | 承認済み |
+| 0007 | [thinking.md を入れ替え可能な思考OSとして位置づけ](0007-thinking-os-positioning.md) | 承認済み |
+| 0008 | [project-root MEMORY.md を廃止し auto-memory に一本化](0008-memory-md-to-auto-memory.md) | 承認済み |

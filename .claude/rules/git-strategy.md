@@ -84,7 +84,7 @@ feat: ○○機能を追加
 ステップ2: git status
   → 未コミットの変更がないか確認
 
-ステップ3: MEMORY.md の「Active Work」を読む
+ステップ3: auto-memory MEMORY.md の「Active Work」を読む
   → 他チャットの作業状況と影響範囲を把握
 ```
 
@@ -100,7 +100,7 @@ feat: ○○機能を追加
   → /setup で settings.local.json の additionalDirectories に親ディレクトリが
     設定済みの場合、このステップは省略可（永続設定が優先される）
 
-ステップ2: MEMORY.md Active Work に追記
+ステップ2: auto-memory MEMORY.md Active Work に追記
   - ブランチ名、作業内容（1行）、影響範囲、DBマイグレーション有無
 
 ステップ3: .env をコピーし接続先を確認
@@ -132,8 +132,8 @@ ln -s $(realpath node_modules) ../<project>-<用途>/node_modules
 ### Worktree ライフサイクル
 
 - **原則**: ユーザーが「作業完了」と明言するまで保持。PRマージ後すぐには削除しない
-- **PRマージ後**: MEMORY.md のステータスを「STG確認待ち」に更新
-- **削除**: ユーザー明言後に `git worktree remove` → ブランチ削除 → MEMORY.md更新
+- **PRマージ後**: auto-memory MEMORY.md のステータスを「STG確認待ち」に更新
+- **削除**: ユーザー明言後に `git worktree remove` → ブランチ削除 → auto-memory MEMORY.md更新
 
 ### Active Work ステータス
 

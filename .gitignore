@@ -12,10 +12,7 @@
 
 # === PJ固有ファイル（/setup が配置した場合のみ下流PJで有効） ===
 
-# ローカル作業メモ（Claude Code自動記録）
-/MEMORY.md
-
-# 個人設定
+# 個人設定（応答スタイル・個人MCP・ローカル環境メモ）
 CLAUDE.local.md
 
 # 外部タスクDB連携設定（PJ固有のDB ID等）

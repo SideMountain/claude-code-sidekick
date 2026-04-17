@@ -19,7 +19,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 
 | 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
 |---|---|---|
-| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **14 skills** ready to use: `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **15 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
 
 The "Thinking OS" is what sets sidekick apart from other templates.
 
@@ -76,7 +76,7 @@ In other words, **you stop repeating yourself**.
 | | Vanilla Claude Code | Typical template | **sidekick** |
 |---|:---:|:---:|:---:|
 | Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
-| Reusable skills | ❌ | △ | ✅ 14 skills |
+| Reusable skills | ❌ | △ | ✅ 15 skills |
 | **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
 | Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
 | Tracks design decisions (ADR) | ❌ | △ | ✅ |
@@ -108,7 +108,7 @@ That said, the core idea — **teaching your judgment to an AI** — is tool-agn
 | Worktree | Optional | Essential (parallel work) |
 | `/review` | Self-review | Team review gate |
 | `PROTECTED_BRANCHES` | `main` | `main`, `release/stg` |
-| `MEMORY.md` | Personal notes | Shared context |
+| auto-memory | Personal notes (individual) | Individual per teammate |
 </details>
 
 <details>
@@ -157,8 +157,8 @@ After launching Claude Code, run `/setup`. It walks you through interactively (~
 │  → settings.json + hooks/                        │
 ├────────────────────────────────────────��─────────┤
 │ Step 3 : Deploy templates                        │
-│  MEMORY.md (session memory)                      │
 │  CLAUDE.local.md (personal config, gitignored)   │
+│  (Session memory uses auto-memory, not a file)   │
 ├───────────��─────────────────────────────────���────┤
 │ Step 4 : Your judgment principles (optional)     │
 │  "Top priority? Speed / safety / user impact"    │
@@ -247,14 +247,40 @@ flowchart LR
 3. **HARD rules** — Claude asks you first: `git push` (feature), `gh pr create`, `gh pr merge`
 4. **Everything else** — auto-approved via `Bash(*)` (no dialogs)
 
-### 🧰 14 Skills — ready-to-use workflows
+### 🧰 15 Skills — ready-to-use workflows
 
 | Category | Skills | Purpose |
 |---|---|---|
+| **Ideation** | `/discover` | Idea → requirements (gap analysis, task breakdown) |
 | **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Runs only relevant perspectives based on change scope |
 | **Lifecycle** | `/setup`, `/close-chat`, `/weekly-review`, `/news` | Session & project management |
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
+
+<sub>* `/sync-oss` is an internal skill for sidekick maintainers (not intended for downstream projects) and is omitted from this table.</sub>
+
+### 🔄 How the skills connect
+
+`/discover` and `/auto-implement` are the two ends of one pipeline. Everything between happens automatically.
+
+```mermaid
+flowchart LR
+    Idea["💡 Idea"] --> D["/discover<br/>requirements<br/>& tasks"]
+    D --> Design["📋 Design<br/>confirmed"]
+    Design --> AI["/auto-implement<br/>Phase 0-5"]
+    AI --> R["/review<br/>6 perspectives"]
+    R --> PR["📤 PR"]
+    PR --> CC["/close-chat<br/>learning loop"]
+    CC -.->|"feedback"| TH["thinking.md<br/>(principles)"]
+    TH -.->|"applied next<br/>session"| Idea
+```
+
+**What this means in practice:**
+
+- Vague idea? → `/discover` structures it into a design and a task list
+- Design confirmed? → `/auto-implement` runs the full pipeline to PR
+- Feedback during a session → captured by `/close-chat`, promoted to `thinking.md` by `/weekly-review`
+- Next session starts sharper — the loop closes
 
 ### 🌙 Auto mode — PRs while you sleep
 
@@ -340,7 +366,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 2. **Safety is non-negotiable**: Hard blocks are never overridden. Not by auto mode, not by user request, not by clever workarounds.
 3. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md))
 4. **Fixed cost, not per-project**: Runs on Claude Max. No API charges. 10 projects for the same $100/month. ([ADR-0003](./docs/decisions/0003-slack-cron-architecture.md))
-5. **Git is the source of truth**: No external DB required. MEMORY.md + ADR + GitHub Issues. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
+5. **Git is the source of truth**: No external DB required. CLAUDE.md + ADR + GitHub Issues + auto-memory. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
 
 ---
 
@@ -358,7 +384,7 @@ sidekick/
 │   │   ├── guard-protected-branch-edit.sh
 │   │   ├── prompt-reminder.sh
 │   │   └── session-start.sh
-│   ├── skills/                  # 14 reusable workflows
+│   ├── skills/                  # 15 reusable workflows
 │   │   ├── review/              # Orchestrator + agents/ + references/
 │   │   ├── auto-implement/      # Full automation pipeline
 │   │   ├── close-chat/          # Session wrap-up + learning loop capture
@@ -369,7 +395,6 @@ sidekick/
 │   │   ├── code-quality.md      # Coding standards
 │   │   └── ...
 │   ├── templates/               # Opt-in files deployed by /setup
-│   │   ├── MEMORY.md            # Session memory template
 │   │   ├── CLAUDE.local.md      # Personal config template
 │   │   └── github/              # GitHub Issue templates & labels
 │   ├── docs/                    # Developer reference
@@ -398,10 +423,10 @@ File a [Downstream Feedback issue](https://github.com/SideMountain/claude-code-s
 
 sidekick uses **git tags + GitHub Releases** for version management. No VERSION file in your project root.
 
-Each downstream project tracks its adopted version in `MEMORY.md`:
+Each downstream project tracks its adopted version in `CLAUDE.md` Project Configuration:
 
-```markdown
-<!-- sidekick_version: 0.3.0 -->
+```yaml
+SIDEKICK_VERSION: "0.4.1"
 ```
 
 Run `/inventory` to check for updates against the latest GitHub Release.
@@ -410,4 +435,3 @@ Run `/inventory` to check for updates against the latest GitHub Release.
 
 MIT
 
-<!-- sidekick_version: 0.3.0 -->

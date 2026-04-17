@@ -145,7 +145,9 @@ Backlog 内の `[ベース昇格]` `[思考OS還流]` プレフィックス付�
 - オーナーに投入を依頼すべきか、自分でDB投入するか判断
 - Tasks DBの Doing タスクで24h以上更新がないものを検出して報告
 
-### Step 5: ADR 同期確認 + プロセス改善
+### Step 5: ADR / CHANGELOG / README 整合性確認
+
+#### 5a. ADR 同期確認
 
 ```bash
 # 直近追加された ADR
@@ -153,10 +155,57 @@ git log --all --diff-filter=A -- docs/decisions/*.md --format="%h %s" | head -10
 
 # ステータスが「検討中」の ADR
 grep -l "検討中" docs/decisions/*.md 2>/dev/null
+
+# docs/decisions/ にあるが README.md 索引に無い ADR を検出
+if [ -f docs/decisions/README.md ]; then
+  for adr in docs/decisions/????-*.md; do
+    name=$(basename "$adr")
+    grep -q "$name" docs/decisions/README.md || echo "⚠️ 索引未反映: $name"
+  done
+fi
 ```
 
 - 「検討中」のまま放置されている ADR を報告
+- `docs/decisions/README.md` の索引に未反映の ADR を報告
 - Notion 連携プロジェクトの場合、未同期の ADR を検出
+
+#### 5a-2. CHANGELOG drift 検出
+
+```bash
+# 最新タグ以降のマージコミット
+if [ -f CHANGELOG.md ]; then
+  latest_tag=$(git describe --tags --abbrev=0 2>/dev/null)
+  if [ -n "$latest_tag" ]; then
+    merges=$(git log "${latest_tag}..HEAD" --merges --oneline 2>/dev/null | wc -l)
+    unreleased_section=$(grep -c "^## \[Unreleased\]" CHANGELOG.md 2>/dev/null)
+    if [ "$merges" -gt 0 ] && [ "$unreleased_section" -eq 0 ]; then
+      echo "⚠️ CHANGELOG drift: 最新タグ以降に $merges 件のマージがあるが [Unreleased] セクション無し"
+    fi
+  fi
+fi
+```
+
+- `[Unreleased]` セクションに未反映の変更があれば報告
+- タグ以降の変更と CHANGELOG の内容差を可視化
+
+#### 5a-3. README stale 検出（下流 PJ 向け）
+
+```bash
+# README.md の最終更新日
+if [ -f README.md ]; then
+  readme_mtime=$(git log -1 --format=%ct -- README.md 2>/dev/null)
+  head_mtime=$(git log -1 --format=%ct 2>/dev/null)
+  if [ -n "$readme_mtime" ] && [ -n "$head_mtime" ]; then
+    diff_days=$(( (head_mtime - readme_mtime) / 86400 ))
+    if [ "$diff_days" -gt 60 ]; then
+      echo "⚠️ README.md が $diff_days 日更新されていません。プロジェクト状況の反映を検討してください"
+    fi
+  fi
+fi
+```
+
+- README が 60日以上更新されていない場合、プロジェクト概要の最新化を提案
+- `docs/` 配下の主要ファイルも同様に検出（拡張可）
 
 #### 5b. 外部情報収集（任意）
 

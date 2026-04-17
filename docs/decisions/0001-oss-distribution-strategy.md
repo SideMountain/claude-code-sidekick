@@ -2,7 +2,7 @@
 
 ## ステータス
 
-改訂済み（2026-04-09）— git tag + GitHub Releases に移行。VERSION ファイル廃止
+改訂済み（2026-04-18）— git tag + GitHub Releases に移行（2026-04-09）。`sidekick_version` の置き場を project-root MEMORY.md → `CLAUDE.md` の `SIDEKICK_VERSION` へ移管（2026-04-18、ADR-0008）
 
 ## 背景
 
@@ -34,7 +34,7 @@ sidekick を複数プロジェクトで共有テンプレートとして使う�
 ## 決定
 
 1. ~~VERSION + CHANGELOG を導入~~ → **git tag + GitHub Releases** でリリース管理する（改訂）
-2. **`/inventory` スキルにバージョンチェックを組み込む**。MEMORY.md の `sidekick_version` と GitHub Releases API を比較し、未適用の更新があれば差分を表示
+2. **`/inventory` スキルにバージョンチェックを組み込む**。`CLAUDE.md` の `SIDEKICK_VERSION` と GitHub Releases API を比較し、未適用の更新があれば差分を表示（ADR-0008 により MEMORY.md から移管）
 3. **CLAUDE.md 構造分離は後回し**。`/inventory` の差分取り込みで代替する。PJ数が増えたら再検討
 4. **PJ固有ファイルを .gitignore に追加**。テンプレートファイルは `.claude/templates/` に格納し、`/setup` が opt-in で配置する（改訂）
 5. **スキルの階層構造を導入**（SKILL.md + references/ + agents/ + templates/ 構造）
@@ -51,4 +51,4 @@ sidekick を複数プロジェクトで共有テンプレートとして使う�
 - 変更: CHANGELOG.md は sidekick upstream リポのみに存在（下流には伝播しない）
 - 変更: `*.example` ファイル → `.claude/templates/` に移動
 - 変更: `/inventory` のバージョンチェックが GitHub Releases API を使用
-- 各PJの MEMORY.md に `sidekick_version` フィールドを維持（変更なし）
+- 各PJの `CLAUDE.md` Project Configuration に `SIDEKICK_VERSION` フィールドを維持（ADR-0008 により MEMORY.md から移管）

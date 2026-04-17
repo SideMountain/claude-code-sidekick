@@ -18,8 +18,11 @@
 | `agent-memory/` | エージェントの学習記録（PJスコープ共有） | Agent（自動） | される | 可変（棚卸しで整理） |
 | `agent-memory-local/` | エージェントの学習記録（個人ローカル） | Agent（自動） | されない | 可変 |
 | `skills/*/.data/` | スキル永続データ（分析履歴・キャッシュ） | Claude（自動） | されない | 可変 |
-| `feedback_*.md` | 行動修正の経緯記録（what not to do） | Claude（自動） | されない | 中（昇格 or 統合で整理） |
-| `MEMORY.md` | 索引 + 状態管理 + バックログ | Claude（自動） | されない | 可変（棚卸しで整理） |
+| auto-memory `feedback_*.md` | 行動修正の経緯記録（what not to do） | Claude（自動） | されない | 中（昇格 or 統合で整理） |
+| auto-memory `reference_*.md` | 外部システム・設定へのポインタ | Claude（自動） | されない | 長い |
+| auto-memory `project_*.md` | 進行中の作業・ゴール・マイルストーン | Claude（自動） | されない | 中（作業完了で整理） |
+| auto-memory `user_*.md` | ユーザーの役割・好み・知識 | Claude（自動） | されない | 長い |
+| auto-memory `MEMORY.md` | 索引 + Active Work + Backlog | Claude（自動） | されない | 可変（棚卸しで整理） |
 
 ## 判断フロー
 
@@ -49,27 +52,27 @@
   │     → Yes → ADR（docs/decisions/）
   │
   ├── Claudeの行動修正か？
-  │     → Yes → feedback_*.md + MEMORY.md索引
+  │     → Yes → auto-memory の `feedback_*.md` + `MEMORY.md` 索引
   │     → 3回以上同趣旨が溜まったら → thinking.md に昇格
   │
   └── 上記いずれにも該当しない補足情報
-        → MEMORY.md
+        → auto-memory の `MEMORY.md`
 ```
 
 ## 知識の種類別ガイド
 
 | 知識の種類 | 例 | 置き場 |
 |---|---|---|
-| ユーザーの修正指示 | 「dry-run省略するな」 | feedback_*.md |
+| ユーザーの修正指示 | 「dry-run省略するな」 | auto-memory `feedback_*.md` |
 | ユーザーの承認 | 「A案でいい」 | ADR（設計判断の場合）/ 消える（軽微な場合） |
 | 設計思想・原則 | 「意図のないコードは書くな」 | thinking.md §1 |
-| 事故・障害の教訓 | 「マージコマンドをテスト目的で実行しない」 | MEMORY.md Lessons |
-| 実装パターン | フレームワーク固有の落とし穴等 | MEMORY.md Lessons |
+| 事故・障害の教訓 | 「マージコマンドをテスト目的で実行しない」 | auto-memory `feedback_*.md` or CLAUDE.md Lessons Learned |
+| 実装パターン | フレームワーク固有の落とし穴等 | auto-memory `reference_*.md` |
 | 運用手順 | 「本番DBはコマンド単位で接続文字列を渡す」 | CLAUDE.md + rules/*.md |
-| UIルール | 「ブラウザネイティブダイアログを使わない」 | feedback + rules/ |
-| 外部連携の情報 | 「Notion タスクDB の ID」 | MEMORY.md（参照情報） |
-| 一時的な作業状態 | 「今このタスクをやっている」 | MEMORY.md Active Work |
-| 積み残しタスク | 「次回これをやる」 | MEMORY.md Backlog |
+| UIルール | 「ブラウザネイティブダイアログを使わない」 | auto-memory `feedback_*.md` + rules/ |
+| 外部連携の情報 | 「Notion タスクDB の ID」 | auto-memory `reference_*.md` |
+| 一時的な作業状態 | 「今このタスクをやっている」 | auto-memory `MEMORY.md` の Active Work |
+| 積み残しタスク | 「次回これをやる」 | auto-memory `MEMORY.md` の Backlog |
 | スキルの分析履歴 | レビュー傾向、scout 結果 | skills/*/.data/ |
 | スキル・エージェントの設計判断 | 「隔離する/しない」「エージェント定義を作る」 | .claude/docs/skill-agent-design.md |
 

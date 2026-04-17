@@ -6,8 +6,8 @@ Claude Code のコンテキストウィンドウは有限。長時間セッシ�
 
 ### ファイルサイズの目安
 
-- CLAUDE.md, MEMORY.md, rules/*.md は **各200行以内** を目標にする
-- 超えそうな場合は分割（rules/ へ切り出し、MEMORY.md は棚卸しで圧縮）
+- CLAUDE.md, auto-memory MEMORY.md, rules/*.md は **各200行以内** を目標にする
+- 超えそうな場合は分割（rules/ へ切り出し、auto-memory MEMORY.md は棚卸しで圧縮）
 - スキル SKILL.md も200行以内。超える場合は `references/` に分離する
 
 ### セッション中のコンパクション

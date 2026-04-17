@@ -1,12 +1,16 @@
 # Documentation Strategy
 
-## CLAUDE.md と MEMORY.md の使い分け
+## ドキュメントレイヤーの使い分け
 
-| | CLAUDE.md | MEMORY.md |
-|---|---|---|
-| **Git管理** | される（チーム共有） | されない（個人ローカル） |
-| **スコープ** | プロジェクトのルール・規約 | Claude の学習メモ・補足 |
-| **寿命** | プロジェクトと同じ | 会話をまたいで永続 |
+| | CLAUDE.md | CLAUDE.local.md | auto-memory |
+|---|---|---|---|
+| **置き場所** | project root | project root | `~/.claude/projects/<slug>/memory/` |
+| **Git管理** | される（チーム共有） | されない（個人ローカル） | されない（個人ローカル） |
+| **スコープ** | プロジェクトのルール・規約・設定 | 応答設定・個人 MCP・環境メモ・sidekick_version | Active Work / Backlog / Memory Index（feedback/reference 等） |
+| **更新主体** | 人 + Claude（合意の上） | 個人 | Claude（自動） |
+| **寿命** | プロジェクトと同じ | プロジェクトと同じ | 会話をまたいで永続（棚卸しで整理） |
+
+auto-memory は Claude Code 標準機能。types: `user` / `feedback` / `project` / `reference` が個別ファイルで保持され、`MEMORY.md` が索引となる（詳細は `knowledge-map.md` 参照）。
 
 ## ADR（Architecture Decision Records）
 
