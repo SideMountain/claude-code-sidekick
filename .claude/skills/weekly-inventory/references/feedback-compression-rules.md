@@ -1,6 +1,6 @@
 # feedback 圧縮ルール
 
-/weekly-review Step 3 で使用する feedback ファイルの整理基準。
+/weekly-inventory Step 3 で使用する feedback ファイルの整理基準。
 
 ## 昇格判定基準
 

@@ -1,18 +1,18 @@
 ---
-name: weekly-review
+name: weekly-inventory
 description: "定期棚卸し。MEMORY.md整理、feedback圧縮、知識還流フラグ処理、ADR同期確認を実行する。"
 user-invocable: true
 allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(wc *) Agent"
 ---
 
-# /weekly-review — 定期棚卸しスキル
+# /weekly-inventory — 定期棚卸しスキル
 
 ## 目的
 
 蓄積された運用資産（feedback、バックログ、知識還流フラグ）を定期的に圧縮・整理する。
-close-chat が「セッション単位の蓄積」なら、weekly-review は「蓄積の圧縮」。
+close-chat が「セッション単位の蓄積」なら、weekly-inventory は「蓄積の圧縮」。
 
-**実行タイミング**: 手動（ユーザーが `/weekly-review` を呼び出す）。目安は週1回〜月1回。
+**実行タイミング**: 手動（ユーザーが `/weekly-inventory` を呼び出す）。目安は週1回〜月1回。
 
 ---
 
@@ -44,6 +44,65 @@ thinking.md §1 がテンプレートのデフォルトのまま（ユーザー�
 3. やらないと決めていること（自由記入）
 
 回答を thinking.md §1 に反映する。
+
+### Step 0.5: sidekick 未取込更新の棚卸し
+
+> **前提条件**: `CLAUDE.md` に `SIDEKICK_VERSION` が設定されている下流 PJ のみ。
+> sidekick 本体 / `SIDEKICK_VERSION` 空の PJ ではスキップ。
+
+全 severity（Critical / Standard / Enhancement）を横断棚卸し。`/inventory` が Critical のみ拾うのに対し、ここが**全量レポート**の責務（ADR-0009）。
+
+```bash
+CURRENT=$(grep -E "^SIDEKICK_VERSION:" CLAUDE.md | sed -E 's/.*"([^"]+)".*/\1/')
+# 最新 Release 取得
+LATEST=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.tag_name')
+# 過去のリリース一覧（現行と最新の間にある中間バージョンも拾う）
+gh api repos/SideMountain/claude-code-sidekick/releases --jq '.[] | select(.tag_name > "v'${CURRENT}'") | "\(.tag_name) \(.name)"'
+```
+
+レポート形式（**Critical は先頭に分離表示**、経過日数を併記）:
+
+```
+=== sidekick 未取込更新 ===
+
+⚠️  Critical リリース（即取り込み推奨）:
+  v0.5.1 — 2026-04-10 (8日経過) ← ⚠️ 長期未取込。即対応推奨
+    Highlights: stop hook 無限ループ修正
+    変更: 2ファイル
+    → /adopt-sidekick-update
+
+Standard:
+  v0.6.0 — 2026-04-18 (0日前)
+    Highlights: /adopt-sidekick-update 導入 + /inventory severity 対応
+    変更: 23ファイル
+
+Enhancement（opt-in、後回し可）:
+  v0.7.0 — 2026-04-25 (当日)
+    Highlights: /review-design の minor 改善
+    変更: 2ファイル
+
+永久スキップ: X件
+後回し（defer_until 経過）: Y件 ← 要対応
+後回し（defer_until 未到来）: Z件
+```
+
+**Critical 経過日数の警告基準**（ADR-0009 P3 検知層）:
+- 0-2日: 通常表示
+- 3-7日: 「取り込み遅延、検討ください」
+- 8日〜: 「⚠️ 長期未取込。本番影響の可能性。即対応推奨」
+
+経過日数は release の `published_at` と現在日時の差で計算（Linux / macOS 両対応）:
+```bash
+PUBLISHED=$(gh api repos/SideMountain/claude-code-sidekick/releases/tags/${TAG} --jq '.published_at')
+PUB_EPOCH=$(date -d "$PUBLISHED" +%s 2>/dev/null \
+  || date -jf "%Y-%m-%dT%H:%M:%SZ" "$PUBLISHED" +%s 2>/dev/null \
+  || printf '0')
+DAYS=$(( ($(date +%s) - PUB_EPOCH) / 86400 ))
+```
+
+**`auto-memory/project_skipped_updates.md` の棚卸し**:
+- 永久スキップが PJ 性質変化で不要になった可能性のある項目（例: UI 追加後に `review-design` スキップが残っている）を報告
+- 後回しで `defer_until` を過ぎているのに未対応の項目を報告
 
 ### Step 1: 現状スナップショット
 
@@ -253,7 +312,7 @@ MEMORY.md に最終棚卸し日を記録する。
 
 ## Return Contract
 
-weekly-review は Step 1-5 を Agent に委譲する場合がある。その際のデータ契約:
+weekly-inventory は Step 1-5 を Agent に委譲する場合がある。その際のデータ契約:
 
 ### 返すもの
 - Step 1 のスナップショット数値（MEMORY.md行数、Active Work件数、Backlog未完了件数、feedback件数）

@@ -8,6 +8,7 @@
 #   3. Active Work display (from MEMORY.md)
 #   4. Existing worktree listing
 #   5. Weekly review staleness check
+#   6. Critical sidekick update pending warning (P3, ADR-0009)
 #
 # chmod +x .claude/hooks/session-start.sh
 # =============================================================================
@@ -18,13 +19,23 @@ if command -v jq &>/dev/null; then
 fi
 PROJECT_DIR="${CWD:-$(pwd)}"
 
-# MEMORY.md path — adjust per project if needed
-# Claude Code stores memory at ~/.claude/projects/<project-slug>/memory/MEMORY.md
+# MEMORY.md path — Claude Code stores memory at ~/.claude/projects/<project-slug>/memory/
+# project-slug is PROJECT_DIR with '/' replaced by '-' (leading '-' included)
 MEMORY_DIR="$HOME/.claude/projects"
+PROJECT_SLUG=""
+MEM_DIR=""
 MEMORY_FILE=""
-if [ -d "$MEMORY_DIR" ]; then
-  # Find MEMORY.md matching the current project directory
+if [ -n "$PROJECT_DIR" ]; then
+  PROJECT_SLUG=$(printf '%s' "$PROJECT_DIR" | sed 's|/|-|g')
+  MEM_DIR="$MEMORY_DIR/$PROJECT_SLUG/memory"
+  if [ -f "$MEM_DIR/MEMORY.md" ]; then
+    MEMORY_FILE="$MEM_DIR/MEMORY.md"
+  fi
+fi
+# Fallback: find any MEMORY.md (for projects with different slug algorithms / symlinks)
+if [ -z "$MEMORY_FILE" ] && [ -d "$MEMORY_DIR" ]; then
   MEMORY_FILE=$(find "$MEMORY_DIR" -maxdepth 3 -name "MEMORY.md" 2>/dev/null | head -1)
+  [ -z "$MEM_DIR" ] && MEM_DIR=$(dirname "$MEMORY_FILE" 2>/dev/null)
 fi
 
 cd "$PROJECT_DIR" 2>/dev/null || exit 0
@@ -36,8 +47,8 @@ PROTECTED_BRANCHES=("main")
 echo "=== SESSION START: Automated Checks ==="
 echo ""
 
-# --- [1/5] Branch Status ---
-echo "[1/5] Branch status"
+# --- [1/6] Branch Status ---
+echo "[1/6] Branch status"
 git fetch origin 2>/dev/null
 BRANCH=$(git branch --show-current 2>/dev/null)
 echo "  Current branch: $BRANCH"
@@ -67,9 +78,9 @@ else
   echo "  INFO: Not on a protected branch. Ensure this is intentional."
 fi
 
-# --- [2/5] Uncommitted Changes ---
+# --- [2/6] Uncommitted Changes ---
 echo ""
-echo "[2/5] Uncommitted changes"
+echo "[2/6] Uncommitted changes"
 CHANGES=$(git status --short 2>/dev/null)
 if [ -n "$CHANGES" ]; then
   echo "  WARNING: Uncommitted changes detected:"
@@ -78,23 +89,23 @@ else
   echo "  OK: clean"
 fi
 
-# --- [3/5] Active Work ---
+# --- [3/6] Active Work ---
 echo ""
-echo "[3/5] Active Work (parallel work board)"
+echo "[3/6] Active Work (parallel work board)"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   sed -n '/^## Active Work/,/^## [^A]/p' "$MEMORY_FILE" | head -30 | sed 's/^/  /'
 else
   echo "  (MEMORY.md not found)"
 fi
 
-# --- [4/5] Existing Worktrees ---
+# --- [4/6] Existing Worktrees ---
 echo ""
-echo "[4/5] Existing worktrees"
+echo "[4/6] Existing worktrees"
 git worktree list 2>/dev/null | sed 's/^/  /'
 
-# --- [5/5] Maintenance ---
+# --- [5/6] Maintenance ---
 echo ""
-echo "[5/5] Maintenance"
+echo "[5/6] Maintenance"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   LAST_REVIEW=$(grep -o '最終棚卸し: [0-9-]*' "$MEMORY_FILE" 2>/dev/null | head -1 | sed 's/最終棚卸し: //')
   if [ -n "$LAST_REVIEW" ]; then
@@ -104,18 +115,33 @@ if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
     if [ "$LAST_EPOCH" -gt 0 ] 2>/dev/null; then
       DAYS_AGO=$(( (NOW_EPOCH - LAST_EPOCH) / 86400 ))
       if [ "$DAYS_AGO" -gt 7 ]; then
-        echo "  WARNING: Last /weekly-review was ${DAYS_AGO} days ago (consider running /weekly-review)"
+        echo "  WARNING: Last /weekly-inventory was ${DAYS_AGO} days ago (consider running /weekly-inventory)"
       else
-        echo "  OK: Last /weekly-review: ${LAST_REVIEW} (${DAYS_AGO} days ago)"
+        echo "  OK: Last /weekly-inventory: ${LAST_REVIEW} (${DAYS_AGO} days ago)"
       fi
     else
       echo "  (could not parse last review date)"
     fi
   else
-    echo "  INFO: /weekly-review has never been run"
+    echo "  INFO: /weekly-inventory has never been run"
   fi
 else
   echo "  (MEMORY.md not found — skipping review check)"
+fi
+
+echo ""
+# --- [6/6] Critical sidekick update pending (ADR-0009 P3) ---
+echo "[6/6] Critical sidekick update"
+CRITICAL_FLAG=""
+if [ -n "$MEM_DIR" ]; then
+  CRITICAL_FLAG="$MEM_DIR/project_critical_pending.md"
+fi
+if [ -n "$CRITICAL_FLAG" ] && [ -f "$CRITICAL_FLAG" ]; then
+  VERSION=$(grep -o 'release: v[0-9.]*' "$CRITICAL_FLAG" 2>/dev/null | head -1 | sed 's/release: //')
+  echo "  ⚠️  CRITICAL sidekick update pending${VERSION:+ ($VERSION)}"
+  echo "     → /adopt-sidekick-update で取り込み推奨（stop hook 等の致命的修正を含む可能性）"
+else
+  echo "  OK: no critical update pending"
 fi
 
 echo ""

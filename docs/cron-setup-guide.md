@@ -40,8 +40,8 @@ approved Issue
 # 毎日 19:00: 日次サマリ → Slack通知
 0 19 * * * /path/to/scripts/cron-daily-summary.sh
 
-# 毎週月曜 10:00: /weekly-review 実行
-0 10 * * 1 /path/to/scripts/cron-weekly-review.sh
+# 毎週月曜 10:00: /weekly-inventory 実行
+0 10 * * 1 /path/to/scripts/cron-weekly-inventory.sh
 ```
 
 ## 二重実行防止

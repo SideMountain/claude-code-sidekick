@@ -191,7 +191,7 @@ sidekick の一番の核。セッションのフィードバックが繰り返�
 ```mermaid
 flowchart LR
     S["セッションの気づき<br/>(指摘・修正)"] --> F["feedback_*.md<br/>に記録"]
-    F --> P["/weekly-review<br/>パターン検出"]
+    F --> P["/weekly-inventory<br/>パターン検出"]
     P -->|"3回以上<br/>出現"| C{"昇格<br/>承認?"}
     C -->|"Yes"| T["thinking.md §1<br/>原則として定着"]
     C -->|"No"| F
@@ -199,7 +199,7 @@ flowchart LR
     A --> S
 ```
 
-**昇格判断は必ずあなたが確認します**（完全自動昇格ではない）。`/weekly-review` でパターンが提示され、OK を出したものだけが `thinking.md` に入ります。
+**昇格判断は必ずあなたが確認します**（完全自動昇格ではない）。`/weekly-inventory` でパターンが提示され、OK を出したものだけが `thinking.md` に入ります。
 
 #### 何が `thinking.md` に入る？
 
@@ -250,7 +250,7 @@ flowchart LR
 |---|---|---|
 | **アイデア発想** | `/discover` | アイデア → 要件定義（ギャップ分析・タスク分解） |
 | **レビュー** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | 変更スコープに応じて必要な観点だけ実行 |
-| **ライフサイクル** | `/setup`, `/close-chat`, `/weekly-review`, `/news` | セッション・プロジェクト管理 |
+| **ライフサイクル** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | セッション・プロジェクト管理 |
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
 
@@ -276,7 +276,7 @@ flowchart LR
 
 - アイデアが曖昧 → `/discover` が設計とタスクリストに落とす
 - 設計確定済み → `/auto-implement` が PR まで自動で回す
-- セッション中のフィードバック → `/close-chat` が記録、`/weekly-review` が `thinking.md` に昇格
+- セッション中のフィードバック → `/close-chat` が記録、`/weekly-inventory` が `thinking.md` に昇格
 - 次のセッションはより賢くなる — ループが閉じる
 
 ### 🌙 自動モード — 寝てる間に PR ができる
@@ -425,6 +425,16 @@ SIDEKICK_VERSION: "0.4.1"
 ```
 
 `/inventory` で最新の GitHub Release と比較し、更新を確認できます。
+
+### リリース温度感
+
+リリースは3段階の温度感に分類されます（[ADR-0009](./docs/decisions/0009-release-adoption-design.md)）:
+
+- **⚠️ [CRITICAL]**: セキュリティ / 致命的バグ修正。**即取り込み推奨**
+- **(プレフィックスなし)**: Standard — 通常の機能追加・修正（デフォルト）
+- **💡 [ENHANCEMENT]**: opt-in な改善。**後回し可**
+
+温度感は GitHub Release の title prefix と body 冒頭 banner に明示され、`/inventory` が緊急度を下流 PJ に伝えます。リリースは `/release` スキルで切り、変更された ADR / rules / skills が機械的にリリースノートに含まれるため、設計意図の漏洩がありません。
 
 ## ライセンス
 

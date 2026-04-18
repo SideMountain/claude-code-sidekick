@@ -68,7 +68,7 @@ GitHub Issue（標準）:
   /inventory 実行 → サマリ通知
 
 週次:
-  /weekly-review 実行 → レポート通知
+  /weekly-inventory 実行 → レポート通知
 ```
 
 ### 4. セキュリティ: 多層ガード

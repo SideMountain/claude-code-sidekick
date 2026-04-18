@@ -149,7 +149,7 @@ PR が main にマージされた場合、`CHANGELOG.md` に該当エントリ�
 **未反映の場合**:
 - ユーザーに「CHANGELOG に未反映のマージがあります。追記しますか？」と確認
 - Yes なら `[Unreleased]` セクションに追記（Added / Changed / Fixed の適切なカテゴリ）
-- No なら「次の `/weekly-review` または `/release` 時に反映」としてスキップ
+- No なら「次の `/weekly-inventory` または `/release` 時に反映」としてスキップ
 
 **ここまでが標準フロー。** 外部DB連携がないプロジェクトではセッション終了してよい。
 
