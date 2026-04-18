@@ -3,8 +3,42 @@
 sidekick のリリース履歴。セマンティックバージョニングに従う。
 バージョンは git tag + GitHub Releases で管理する。
 
-各PJは MEMORY.md の `sidekick_version` で取り込み済みバージョンを管理し、
+各PJは `CLAUDE.md` Project Configuration の `SIDEKICK_VERSION` で取り込み済みバージョンを管理し、
 `/inventory` で GitHub Releases API 経由で未適用の更新を検知する。
+
+## [Unreleased]
+
+## [0.5.0] - 2026-04-18
+
+### Added
+- `/discover` スキル（アイデア → 要件定義 → タスク分解の対話型スキル）
+- `/discover` に仕様セルフレビューチェックポイント（Step 4 / Step 5 前の thinking.md §2 準拠チェック）
+- `/close-chat` に CHANGELOG 整合性チェックステップ（Step 5.5）
+- `/weekly-review` にドキュメント整合性チェック（ADR index・CHANGELOG drift・README stale 検出）
+- `CLAUDE.md` Project Configuration に `SIDEKICK_VERSION` を追加
+- ADR-0007（thinking-os positioning）、ADR-0008（MEMORY.md 廃止・auto-memory 一本化）
+- 下流 PJ 向け移行ガイド `docs/migrations/memory-md-to-auto-memory.md`
+
+### Changed
+- README に `/discover` を反映、スキル総数 14 → 15、スキル間連携フロー図追加
+- README / README.ja のスキル記述を「project-root MEMORY.md」→「auto-memory」に書き換え
+- `/close-chat` / `/inventory` / `/setup` の MEMORY.md 参照を auto-memory 前提に統一
+- `.claude/rules/documentation.md` / `knowledge-map.md` を auto-memory 一本化前提に書き換え
+- CLAUDE.md H13 / ゲート3 を auto-memory 前提に明文化
+- `.gitattributes` で全テキストファイルを LF 強制
+- thinking.md を「入れ替え可能な思考OS」として位置づけ（ADR-0007）
+- settings.json の hooks を公式 JSON フォーマットに移行
+
+### Removed
+- `.claude/templates/MEMORY.md`（ADR-0008 により廃止）
+- `.gitignore` の `/MEMORY.md` エントリ（配置対象外になったため）
+
+### Fixed
+- hook の `echo` を `printf` に修正（Windows パスで全ガードが無効化されるバグ）
+- SVG 内の "14 Skills" を "15 Skills" に修正
+
+### Breaking Changes
+- **下流 PJ**: project-root `/MEMORY.md` の手動移行が必要。`docs/migrations/memory-md-to-auto-memory.md` を参照
 
 ## [0.4.1] - 2026-04-09
 
