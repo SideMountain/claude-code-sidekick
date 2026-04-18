@@ -6,7 +6,36 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 各PJは `CLAUDE.md` Project Configuration の `SIDEKICK_VERSION` で取り込み済みバージョンを管理し、
 `/inventory` で GitHub Releases API 経由で未適用の更新を検知する。
 
+## リリース温度感
+
+各リリースは3段階の温度感に分類される（ADR-0009）:
+
+- **[CRITICAL]** (`⚠️`): セキュリティ / 致命的バグ修正。即取り込み推奨
+- **(No prefix)**: Standard — 通常の機能追加・修正（デフォルト）
+- **[ENHANCEMENT]** (`💡`): opt-in な改善。後回し可
+
+GitHub Release の title prefix と body 冒頭 banner に明示される。
+`/release` スキルが切る時に判定する。
+
 ## [Unreleased]
+
+## [0.6.0] - 2026-04-18
+
+### Added
+- `/release` スキル新規（リリース発信側。温度感判定 + 機械的変更リスト生成 + CHANGELOG bump + tag + GitHub Release 作成）
+- `/adopt-sidekick-update` スキル新規（下流 PJ の取り込み対話、カテゴリ一括 UX、スキップ永久/後回し記録）
+- ADR-0009: リリース取り込み設計（温度感・思想漏洩防止・スキップ制御。P1+P2+P3 全実装）
+- `/inventory` に Release severity 判定追加（Critical のみ強調、Standard/Enhancement は 1行サマリ）
+- `/inventory` が Critical 検知時に auto-memory フラグファイル作成
+- `/weekly-inventory` Step 0.5 追加（sidekick 未取込更新の棚卸し、全 severity、経過日数警告）
+- `/setup` に ccs remote 自動追加ステップ
+- `session-start.sh` に `[6/6] Critical sidekick update` セクション（未取込 Critical 警告の継続表示）
+- `/adopt-sidekick-update` の Step 6 で Critical フラグをクリア
+
+### Changed
+- **`/weekly-review` → `/weekly-inventory` へ rename**（実態は棚卸し系のため `/inventory` との命名整合）
+- CHANGELOG intro にリリース温度感セクション追加
+- 関連ドキュメントの `/weekly-review` 参照を更新
 
 ## [0.5.0] - 2026-04-18
 

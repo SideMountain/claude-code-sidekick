@@ -194,7 +194,7 @@ The core of sidekick. When session feedback repeats, it gets **promoted to a pri
 ```mermaid
 flowchart LR
     S["Session insight<br/>(correction/feedback)"] --> F["feedback_*.md<br/>recorded"]
-    F --> P["/weekly-review<br/>pattern detection"]
+    F --> P["/weekly-inventory<br/>pattern detection"]
     P -->|"3+ times<br/>detected"| C{"Promote?<br/>Your call"}
     C -->|"Yes"| T["thinking.md §1<br/>becomes a principle"]
     C -->|"No"| F
@@ -202,7 +202,7 @@ flowchart LR
     A --> S
 ```
 
-**Promotion always requires your approval** (not fully automatic). `/weekly-review` surfaces candidates; only what you approve enters `thinking.md`.
+**Promotion always requires your approval** (not fully automatic). `/weekly-inventory` surfaces candidates; only what you approve enters `thinking.md`.
 
 #### What goes in `thinking.md`?
 
@@ -253,7 +253,7 @@ flowchart LR
 |---|---|---|
 | **Ideation** | `/discover` | Idea → requirements (gap analysis, task breakdown) |
 | **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Runs only relevant perspectives based on change scope |
-| **Lifecycle** | `/setup`, `/close-chat`, `/weekly-review`, `/news` | Session & project management |
+| **Lifecycle** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | Session & project management |
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
 
@@ -279,7 +279,7 @@ flowchart LR
 
 - Vague idea? → `/discover` structures it into a design and a task list
 - Design confirmed? → `/auto-implement` runs the full pipeline to PR
-- Feedback during a session → captured by `/close-chat`, promoted to `thinking.md` by `/weekly-review`
+- Feedback during a session → captured by `/close-chat`, promoted to `thinking.md` by `/weekly-inventory`
 - Next session starts sharper — the loop closes
 
 ### 🌙 Auto mode — PRs while you sleep
@@ -430,6 +430,16 @@ SIDEKICK_VERSION: "0.4.1"
 ```
 
 Run `/inventory` to check for updates against the latest GitHub Release.
+
+### Release severity
+
+Releases are classified into 3 severity levels ([ADR-0009](./docs/decisions/0009-release-adoption-design.md)):
+
+- **⚠️ [CRITICAL]**: Security / critical bug fix. Immediate adoption recommended.
+- **(No prefix)**: Standard — normal feature/fix release (default).
+- **💡 [ENHANCEMENT]**: Opt-in improvements. Safe to defer.
+
+The severity is shown in the GitHub Release title prefix and body banner. `/inventory` uses this to signal urgency. Releases are cut via the `/release` skill, which ensures release notes include machine-generated lists of changed ADRs, rules, and skills (no missed design intent).
 
 ## License
 

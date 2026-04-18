@@ -65,4 +65,4 @@ ADR（docs/decisions/）:
 
 - sidekick は外部 DB なしで完結する構成がデフォルト
 - 外部 DB 連携は CLAUDE.md §9 + `.claude/rules/` 配下の連携設定ファイルで個別設定
-- `/close-chat`, `/inventory`, `/weekly-review` は外部 DB 設定がある場合のみ同期ステップを実行
+- `/close-chat`, `/inventory`, `/weekly-inventory` は外部 DB 設定がある場合のみ同期ステップを実行

@@ -87,37 +87,72 @@ auto-memory の MEMORY.md（`~/.claude/projects/<slug>/memory/MEMORY.md`）の `
 [Backlog] {内容}
 ```
 
-### Step 5: sidekick バージョンチェック
+### Step 5: sidekick バージョンチェック（軽量 — Critical のみ強調）
 
 > **前提条件**: `CLAUDE.md` の Project Configuration に `SIDEKICK_VERSION` が設定されている場合のみ実行。
 > sidekick をテンプレートとして利用していないPJ（sidekick 自身を含む、`SIDEKICK_VERSION` が空）ではスキップ。
 
-#### 5a. バージョン比較
+#### 5a. バージョン + severity 取得
 
-1. `CLAUDE.md` から `SIDEKICK_VERSION` の値を読み取る（例: `SIDEKICK_VERSION: "0.1.0"`）
-2. sidekick リポジトリの最新バージョンを取得する
-   - **GitHub Releases API**（推奨）: `gh api repos/{owner}/claude-code-sidekick/releases/latest --jq '.tag_name'`
-     （`{owner}` は claude-code-sidekick の GitHub オーナー名。`git remote get-url origin` から取得可能）
-   - フォールバック: `gh api repos/{owner}/claude-code-sidekick/tags --jq '.[0].name'`
+```bash
+CURRENT=$(grep -E "^SIDEKICK_VERSION:" CLAUDE.md | sed -E 's/.*"([^"]+)".*/\1/')
+LATEST=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.tag_name')
+TITLE=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.name')
 
-#### 5b. 差分表示
-
-バージョンが異なる場合、GitHub Releases のリリースノートを表示する。
-
-```
-=== sidekick 更新あり ===
-現在: v0.1.0 → 最新: v0.2.0
-
-変更内容:
-  （GitHub Releases のリリースノートを表示）
-
-更新が必要です。メインに戻って取り込み判断を行ってください。
+case "$TITLE" in
+  *"[CRITICAL]"*) SEVERITY="Critical" ;;
+  *"[ENHANCEMENT]"*) SEVERITY="Enhancement" ;;
+  *) SEVERITY="Standard" ;;
+esac
 ```
 
-> **Note**: Agent 隔離実行時、バージョン更新の取り込み判断はメインコンテキストで行う。
-> Agent は差分情報をサマリに含めて返し、承認後にメインで以下を実行する:
-> 1. GitHub Releases のリリースノートに基づき、手動で差分を適用する
-> 2. `CLAUDE.md` の `SIDEKICK_VERSION` を更新する
+#### 5b. 表示（severity 別）
+
+**Critical の場合のみ強調・即取り込み推奨**:
+
+```
+[sidekick] v${CURRENT} → ${LATEST}
+  ⚠️  Critical 更新: ${TITLE}
+  → 即取り込み推奨: /adopt-sidekick-update
+```
+
+**Standard / Enhancement の場合は 1行サマリ**:
+
+```
+[sidekick] v${CURRENT} → ${LATEST} (${SEVERITY}) — 詳細は /weekly-inventory、取り込みは /adopt-sidekick-update
+```
+
+#### 5c. スキップ済み項目の件数表示
+
+`auto-memory/project_skipped_updates.md` が存在する場合、件数のみ表示（詳細は /adopt-sidekick-update に委譲）:
+
+```
+  スキップ済み: 永久 X件 / 後回し Y件
+```
+
+#### 5d. Critical 未取込フラグの書き込み（ADR-0009 P3）
+
+Critical 更新を検知した場合、auto-memory に `project_critical_pending.md` を作成/更新する:
+
+```bash
+if [ "$SEVERITY" = "Critical" ]; then
+  MEM_DIR="$HOME/.claude/projects/$(pwd | sed 's|/|-|g')/memory"
+  mkdir -p "$MEM_DIR"
+  cat > "$MEM_DIR/project_critical_pending.md" <<EOF
+# Critical sidekick release pending
+
+- release: ${LATEST}
+  title: ${TITLE}
+  detected_at: $(date -Iseconds)
+  source: /inventory
+EOF
+fi
+```
+
+このフラグは `session-start.sh` が毎セッション開始時に読み、**取り込み忘れ防止の warning** を表示する。
+`/adopt-sidekick-update` が Critical を取り込むとフラグが削除される（3層の「検知」）。
+
+**設計意図**: `/inventory` は高頻度実行なので**冗長化を避け、緊急情報のみ強調**する。Standard/Enhancement の詳細棚卸しは `/weekly-inventory` の責務（ADR-0009）。
 
 ### Step 6: 重複検知
 

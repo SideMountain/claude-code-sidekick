@@ -11,3 +11,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0005 | [下流統合設計原則](0005-downstream-integration-principles.md) | 承認済み |
 | 0007 | [thinking.md を入れ替え可能な思考OSとして位置づけ](0007-thinking-os-positioning.md) | 承認済み |
 | 0008 | [project-root MEMORY.md を廃止し auto-memory に一本化](0008-memory-md-to-auto-memory.md) | 承認済み |
+| 0009 | [リリース取り込み設計（温度感・思想漏洩防止・スキップ制御）](0009-release-adoption-design.md) | 承認済み |

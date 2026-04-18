@@ -190,9 +190,9 @@ preloaded されたスキルに従い、変更を分析して判定を返して�
 対話型スキルの中に重い調査フェーズがある場合、調査部分だけ Agent に委譲し、
 対話部分はメインで実行する。
 
-例: `/weekly-review`（Step 1-5 の分析を Agent に委譲 → Step 6 の承認はメインで対話）
+例: `/weekly-inventory`（Step 1-5 の分析を Agent に委譲 → Step 6 の承認はメインで対話）
 
-> 実装の参考: `.claude/skills/weekly-review/SKILL.md` を参照。
+> 実装の参考: `.claude/skills/weekly-inventory/SKILL.md` を参照。
 > 委譲部分には Return Contract が必要。対話部分はメインの出力フォーマットで制御する。
 
 ---

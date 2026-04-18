@@ -159,6 +159,20 @@ Yes の場合:
 cp -r .claude/templates/github/.  .github/
 ```
 
+### Step 3.5: ccs remote 追加（新規PJモード）
+
+下流 PJ が `/adopt-sidekick-update` で sidekick の更新を取り込めるよう、claude-code-sidekick を remote として登録する:
+
+```bash
+if ! git remote | grep -q "^ccs$"; then
+  git remote add ccs https://github.com/SideMountain/claude-code-sidekick.git
+  git fetch ccs --tags 2>/dev/null
+  echo "ccs remote を追加しました（/adopt-sidekick-update で使用）"
+fi
+```
+
+**既存PJモードでも同様**: Step 1E の確認項目に `ccs remote の有無` を追加し、未設定なら自動追加（ADR-0009）。
+
 ### Step 4: .gitignore 連動
 
 **Step 3 で配置したファイルに対応するパターンのみ追記する。**
@@ -232,7 +246,7 @@ Tech Stack: {language} + {framework} + {db}
            /news（最新変更のサマリ）
   自動化:  /auto-implement（設計確定済みの作業を全自動実行）
   管理:    /inventory（タスク棚卸し）
-           /weekly-review（定期メンテナンス）
+           /weekly-inventory（定期メンテナンス）
            /record-decision（設計判断の ADR 記録）
 
 次のステップ:
@@ -259,6 +273,7 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 - .github/ の有無
 - .claude/settings.local.json の有無
 - settings.local.json に additionalDirectories（WT用）が設定されているか
+- ccs remote（/adopt-sidekick-update 用）の有無 ← 新規（ADR-0009）
 ```
 
 ### Step 2E: 差分案内

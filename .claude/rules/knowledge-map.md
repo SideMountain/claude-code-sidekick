@@ -82,7 +82,7 @@
 
 - 同趣旨のfeedbackが3回以上溜まったら、原則への昇格を検討する
 - 昇格後もfeedbackファイルは経緯記録として残す（MEMORY.md索引に「昇格済み」を明記）
-- `/weekly-review` Step 3 で定期的に昇格候補を検出する
+- `/weekly-inventory` Step 3 で定期的に昇格候補を検出する
 
 ### 圧縮（統合・削除）
 
@@ -92,12 +92,12 @@
   - 具体的すぎる原則は rules/ への降格を検討
   - 重複する原則は統合する
   - プロジェクト固有の原則は CLAUDE.md §1 に移動する
-- `/weekly-review` で定期実行
+- `/weekly-inventory` で定期実行
 
 ### 知識還流（プロジェクト → ベーステンプレ / 思考OS）
 
 - `/close-chat` Step 2.5 でフラグを立てる
-- `/weekly-review` Step 4 でフラグをまとめて処理する
+- `/weekly-inventory` Step 4 でフラグをまとめて処理する
 - 即座に反映しない。蓄積→パターン検出→統合の順
 
 ## 書かないもの（どこにも置かない）
