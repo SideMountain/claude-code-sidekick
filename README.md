@@ -130,7 +130,7 @@ That said, the core idea — **teaching your judgment to an AI** — is tool-agn
 ### 1. Create from template
 
 ```bash
-gh repo create my-project --template SideMountain/claude-code-sidekick
+gh repo create my-project --template SideMountain/claude-code-sidekick --private --clone
 cd my-project
 claude
 ```
