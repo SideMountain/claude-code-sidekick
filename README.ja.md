@@ -128,7 +128,7 @@ Claude : → Worktree 作成（main は触らない）
 ### 1. テンプレートから作る
 
 ```bash
-gh repo create my-project --template SideMountain/claude-code-sidekick
+gh repo create my-project --template SideMountain/claude-code-sidekick --private --clone
 cd my-project
 claude
 ```
