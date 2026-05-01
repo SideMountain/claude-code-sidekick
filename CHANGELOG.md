@@ -19,6 +19,33 @@ GitHub Release の title prefix と body 冒頭 banner に明示される。
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-02
+
+### Added
+- **brain 3 層構造**（ADR-0013）: 思考OS の格納先を「業界共通 (L0) / 個人 (L1) / PJ 固有 (L2)」の 3 スコープに分離。各層は `@import` でチェーン化（L2 → L1 → L0）
+  - 新規 `brain/thinking.md` (L0 マスター、OSS 配布物として業界共通の判断軸を保持)
+  - 新規 `.claude/brain/thinking.md` (L2 テンプレ、PJ 固有判断軸の置き場)
+  - CLAUDE.md §1 を brain への参照に縮約。PJ 固有判断軸は L2 へ
+- **個人情報・固有名詞の混入防止ルール**（HARD グレード、新規 `.claude/rules/pii-prevention.md`）: Notion ID/URL・内部 URL・接続情報のパターンと `scan_pii` 関数を提供。`/record-decision` `/close-chat` でセルフレビューを自動実行
+- **Notion 判断ログ同期**（ADR-0012、opt-in）: 設計判断・方針判断を Notion 判断ログDB に蓄積する機能。`NOTION_JUDGMENT_SYNC` 独立フラグで `NOTION_ENABLED` と疎結合に制御
+- ADR-0010: 思考OS の 2 層構造と配布・還流メカニズム（一部 Superseded by ADR-0013）
+- `/setup` Step 4.5: brain 3 層配置パターン（物理コピー / L1 import のみ / 3 層 chain 推奨）の選択肢
+- `/adopt-sidekick-update` Step 6.5: ホーム L0 (`~/.claude/ccs/brain/thinking.md`) の自動展開 + L1 案内
+- `/record-decision` Step 5: ADR ドラフト完成後の PII セルフレビュー
+- `/close-chat` Step 5.6: 公開ファイル変更時の PII セルフレビュー
+- `/close-chat` Step 6.5: Notion 判断ログDB 同期（`NOTION_JUDGMENT_SYNC=true` の場合のみ）
+- `CLAUDE.md` Project Configuration に `NOTION_JUDGMENT_SYNC` / `NOTION_JUDGMENT_DB_URL` を追加（デフォルト false）
+- `.claude/rules/task-management.md` に「判断ログ同期」セクション（Notion 判断ログDB スキーマ定義含む）
+
+### Changed
+- `.claude/rules/code-quality.md`: 抽象的判断原則の参照先を thinking.md → brain L0 に更新
+- `.claude/rules/knowledge-map.md`: 格納レイヤー表に L0/L1/L2 を反映、判断フロー・昇格ルール（PJ 内 → L2、別 PJ 観測 → L1、業界共通 → L0）を更新
+- 還流タグを 3 層化: `[ベース昇格]` `[思考OS還流]` `[固有]` → `[L0候補]` `[L1候補]` `[L2固有]`（`/close-chat` `/weekly-inventory` の references 含む）
+- README / README.ja の Quick Start 例を `--private --clone` 付きに更新（個人開発のフォーク手順を改善）
+
+### Renamed
+- `.claude/rules/thinking.md` → `brain/thinking.md`（思考OS を L0 として独立。`@import` で参照）
+
 ## [0.6.0] - 2026-04-18
 
 ### Added
