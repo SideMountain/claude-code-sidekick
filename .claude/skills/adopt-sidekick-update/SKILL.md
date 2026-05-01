@@ -154,6 +154,39 @@ if [ "$SEVERITY" = "Critical" ]; then
 fi
 ```
 
+### Step 6.5: ホーム L0 展開（ADR-0013、3 層 brain 構造）
+
+`brain/thinking.md` が変更対象に含まれていた場合、または `~/.claude/ccs/brain/thinking.md` が未配置の場合に、ホーム L0 を最新化する。
+L1（`~/.claude/brain/thinking.md`）が L0 を `@~/.claude/ccs/brain/thinking.md` で import する前提。
+
+```bash
+HOME_L0="$HOME/.claude/ccs/brain/thinking.md"
+HOME_L1="$HOME/.claude/brain/thinking.md"
+
+# L0 をホームに展開（ccs リポの最新版を反映）
+if echo "$APPLIED_FILES" | grep -q '^brain/thinking\.md$' || [ ! -f "$HOME_L0" ]; then
+  mkdir -p "$(dirname "$HOME_L0")"
+  git show "ccs/main:brain/thinking.md" > "$HOME_L0"
+  echo "L0 (base brain) をホームに展開: $HOME_L0"
+fi
+
+# L1 が未配置なら案内のみ（自動配置はしない、個人スコープなので明示的同意が必要）
+if [ ! -f "$HOME_L1" ]; then
+  echo ""
+  echo "ℹ️  L1 (personal brain) が未配置: $HOME_L1"
+  echo "   個人の判断軸を持つには以下のいずれか:"
+  echo "   (i)  L0 を直接 import する薄い L1 を配置（推奨初期形）:"
+  echo "        echo '@~/.claude/ccs/brain/thinking.md' > $HOME_L1"
+  echo "   (ii) スキップ（L2 が直接 L0 を import するパターンに切替）"
+fi
+```
+
+判断基準:
+- **L0 はホーム展開を自動化してよい**: ccs 配布物（OSS）であり個人差分が乗らない。冪等な上書きで安全
+- **L1 は自動配置しない**: 個人の判断軸を保持する層なので、初回展開時のみ案内し、内容は本人に委ねる
+
+ADR-0013 の最小実装: ホーム L0 展開のみ自動化、L1 は案内のみ。
+
 ### Step 7: 取り込み結果 → commit 提案
 
 ```
@@ -185,6 +218,8 @@ vX.Y.Z-1 → vX.Y.Z
 - **SIDEKICK_VERSION 更新漏れ**: Step 6 で必ず更新。次回 `/inventory` が同じ差分を再検知する
 - **対話型なので Agent 委譲しない**: ユーザー判断が頻繁
 - **永久スキップの見直し**: PJ 性質が変わったら（UI 追加等）、`/weekly-inventory` で棚卸し提案が出る
+- **ホーム L0 展開のべき等性**: Step 6.5 は `brain/thinking.md` が変更されたとき、または `~/.claude/ccs/brain/thinking.md` が未配置のときのみ動く。再実行で副作用なし
+- **L1 は自動配置しない**: 個人スコープのファイルを sidekick が勝手に作らない。案内のみで本人の同意を待つ
 
 ## 参考
 

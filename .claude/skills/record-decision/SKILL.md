@@ -84,6 +84,24 @@ README.md が存在しない場合は作成する:
 | NNNN | [タイトル](NNNN-タイトル.md) | 承認済み |
 ```
 
+### Step 5: PII セルフレビュー（commit 前必須）
+
+ADR ドラフトに個人情報・固有名詞が混入していないか、`pii-prevention.md` の `scan_pii` で検査する。
+
+```bash
+# 直近作成した ADR と README.md を対象
+ADR_FILE="docs/decisions/NNNN-タイトル.md"
+source <(awk '/^```bash$/{flag=1; next} /^```$/{flag=0} flag' .claude/rules/pii-prevention.md)
+scan_pii "$ADR_FILE" "docs/decisions/README.md"
+```
+
+**検出ゼロが通過条件**。検出された場合:
+1. 該当行を汎用表現に置換（`pii-prevention.md` の代替表現テーブル参照）
+2. 判断に迷う固有名詞はユーザーに確認
+3. 再スキャンしてゼロを確認してから次へ
+
+OSS ドキュメントの作法（`oss-doc-authoring.md` SOFT）も併せて確認する。
+
 ## ファイル命名規則
 
 ```
