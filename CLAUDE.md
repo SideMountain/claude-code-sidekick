@@ -22,7 +22,9 @@ TEST_COMMAND: ""              # 例: "npx vitest run", "pytest", ""
 TYPECHECK_COMMAND: ""         # 例: "npx tsc --noEmit", "", ""
 BUILD_COMMAND: ""             # 例: "npm run build", "", ""
 LINT_COMMAND: ""              # 例: "npm run lint", "", ""
-NOTION_ENABLED: false         # true: Notion MCP連携有効
+NOTION_ENABLED: false         # true: Notion MCP連携有効（Tasks DB 双方向同期）
+NOTION_JUDGMENT_SYNC: false   # true: /close-chat 実行時にNotion判断ログDBへ同期
+NOTION_JUDGMENT_DB_URL: ""    # 同期先 Notion 判断ログDB の URL（NOTION_JUDGMENT_SYNC=true の場合必須）
 PACKAGE_MANAGER: npm          # npm | pnpm | yarn | pip
 STG_DB_PATTERN: ""            # STG DB識別パターン（例: "ep-bitter-salad"）
 PRD_DB_PATTERN: ""            # PRD DB識別パターン（例: "ep-weathered-mode"）
@@ -34,8 +36,17 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 
 ## 1. オーナーの判断軸
 
-Claude の判断基盤は `.claude/rules/thinking.md`（思考OS）に定義。
-thinking.md はオーナーの思考スタイルに合わせて置き換え可能。このセクションにはPJ固有の追加判断軸を記載する。
+判断基盤は **brain (3 層構造)** に定義する。各層は `@import` でチェーン化される。
+
+| 層 | 配置 | スコープ |
+|---|---|---|
+| L0: base brain | `brain/thinking.md` | 業界共通の判断軸（OSS 配布物） |
+| L1: personal brain | `~/.claude/brain/thinking.md` | 個人（複数 PJ 横断） |
+| L2: project brain | `.claude/brain/thinking.md` | この PJ 固有 |
+
+L2 → L1 → L0 の順に `@import` で取り込まれる。詳細は ADR-0013 / `brain/thinking.md` を参照。
+
+@.claude/brain/thinking.md
 
 ---
 

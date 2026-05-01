@@ -10,8 +10,10 @@
 | `hooks/permissions` | 機械的に止める（enforcement） | 人間 + Claude | される | 長い |
 | `CLAUDE.md` | プロジェクトルール（what to do） | 人間 + Claude（合意の上） | される | 長い |
 | `CLAUDE.local.md` | 個人設定（personal preferences） | 個人 | されない | 長い |
-| `rules/thinking.md` | オーナーの判断基盤・思考OS（how to think） | 人間 + Claude（合意の上） | される | 長い |
-| `rules/*.md`（thinking.md以外） | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | 長い |
+| `brain/thinking.md` (L0) | 業界共通の判断基盤・思考OS（how to think、汎用） | Claude（合意の上、ccs 還流で更新） | される | 長い |
+| `~/.claude/brain/thinking.md` (L1) | 個人の判断軸（複数 PJ 横断、how to think、個人差分） | 個人 + Claude（feedback 昇格） | されない | 長い |
+| `<PJ>/.claude/brain/thinking.md` (L2) | PJ 固有の判断軸（how to think、PJ 差分） | 人間 + Claude（合意の上） | される | 長い |
+| `rules/*.md`（brain 以外） | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | 長い |
 | `skills/` | 繰り返し手順（how to do） | Claude（合意の上） | される | 中〜長い |
 | `agents/` | 専門実行主体の定義（who does it） | Claude（合意の上） | される | 長い |
 | `docs/decisions/` (ADR) | 設計判断記録（why we decided） | Claude（合意の上） | される | 永続 |
@@ -34,10 +36,13 @@
   ├── 機械的に止めるべきか？
   │     → Yes → hooks/permissions（最も強い。判断不要で止まる）
   │
-  ├── オーナーの判断原則・思考スタイルか？（PJを跨いで持ち運びたいか？）
-  │     → Yes → rules/thinking.md（思考OS）
+  ├── 判断原則・思考スタイルか？
+  │     ├── 業界共通（誰でも頷ける）       → L0: brain/thinking.md（ccs 還流候補）
+  │     ├── 個人の癖（複数 PJ で同じ判断） → L1: ~/.claude/brain/thinking.md
+  │     └── PJ 固有（PJ ドメイン依存）      → L2: <PJ>/.claude/brain/thinking.md
+  │     ※ 迷ったら L2 から始め、3 件ルールで L1 に昇格させる
   │
-  ├── プロジェクト全体のルールか？
+  ├── プロジェクト全体のルール（規約）か？
   │     ├── 全セクションに適用 → CLAUDE.md
   │     └── 特定領域のみ → rules/*.md
   │
@@ -53,7 +58,7 @@
   │
   ├── Claudeの行動修正か？
   │     → Yes → auto-memory の `feedback_*.md` + `MEMORY.md` 索引
-  │     → 3回以上同趣旨が溜まったら → thinking.md に昇格
+  │     → 3回以上同趣旨が溜まったら → brain (L2/L1/L0) に昇格
   │
   └── 上記いずれにも該当しない補足情報
         → auto-memory の `MEMORY.md`
@@ -65,7 +70,9 @@
 |---|---|---|
 | ユーザーの修正指示 | 「dry-run省略するな」 | auto-memory `feedback_*.md` |
 | ユーザーの承認 | 「A案でいい」 | ADR（設計判断の場合）/ 消える（軽微な場合） |
-| 設計思想・原則 | 「意図のないコードは書くな」 | thinking.md §1 |
+| 設計思想・原則（業界共通） | 「意図のないコードは書くな」 | brain L0 (`brain/thinking.md` §1) |
+| 設計思想・原則（個人） | 「確証 95% 未満は断定しない」 | brain L1 (`~/.claude/brain/thinking.md`) |
+| 設計思想・原則（PJ 固有） | 「拡張ファースト」（sidekick 特有） | brain L2 (`<PJ>/.claude/brain/thinking.md`) |
 | 事故・障害の教訓 | 「マージコマンドをテスト目的で実行しない」 | auto-memory `feedback_*.md` or CLAUDE.md Lessons Learned |
 | 実装パターン | フレームワーク固有の落とし穴等 | auto-memory `reference_*.md` |
 | 運用手順 | 「本番DBはコマンド単位で接続文字列を渡す」 | CLAUDE.md + rules/*.md |
@@ -78,27 +85,32 @@
 
 ## 昇格と圧縮のルール
 
-### 昇格（feedback → thinking.md / CLAUDE.md）
+### 昇格（feedback → brain L2 / L1 / L0）
 
-- 同趣旨のfeedbackが3回以上溜まったら、原則への昇格を検討する
-- 昇格後もfeedbackファイルは経緯記録として残す（MEMORY.md索引に「昇格済み」を明記）
+- 同趣旨の feedback が3回以上溜まったら、原則への昇格を検討する
+- 昇格パス:
+  - PJ 内同類 3 件 → L2（`<PJ>/.claude/brain/thinking.md`）に昇格
+  - 別 PJ で同類観測 → L1（`~/.claude/brain/thinking.md`）に昇格
+  - 業界共通と判明 → L0（`brain/thinking.md`）に昇格、ccs 還流候補
+- 昇格後も feedback ファイルは経緯記録として残す（MEMORY.md 索引に「昇格済み」を明記）
 - `/weekly-inventory` Step 3 で定期的に昇格候補を検出する
 
 ### 圧縮（統合・削除）
 
-- 同趣旨のfeedbackは統合する（1つにまとめ、他はアーカイブ）
+- 同趣旨の feedback は統合する（1つにまとめ、他はアーカイブ）
 - 完了済みバックログは定期的に削除する
-- thinking.md が 200行を超えたら圧縮を検討する:
+- brain ファイルが 200 行を超えたら圧縮を検討する:
   - 具体的すぎる原則は rules/ への降格を検討
   - 重複する原則は統合する
-  - プロジェクト固有の原則は CLAUDE.md §1 に移動する
+  - 上位層から下位層への適切な移動（例: L0 から L2 へ、PJ 固有と判明したもの）
 - `/weekly-inventory` で定期実行
 
-### 知識還流（プロジェクト → ベーステンプレ / 思考OS）
+### 知識還流（PJ → 個人 → 業界共通）
 
+- 還流タグ: `[L0候補]` / `[L1候補]` / `[L2固有]`
 - `/close-chat` Step 2.5 でフラグを立てる
 - `/weekly-inventory` Step 4 でフラグをまとめて処理する
-- 即座に反映しない。蓄積→パターン検出→統合の順
+- 即座に反映しない。蓄積→パターン検出→昇格→還流の順
 
 ## 書かないもの（どこにも置かない）
 
