@@ -46,8 +46,8 @@ if ! git remote | grep -q "^ccs$"; then
   exit 1
 fi
 
-# SIDEKICK_VERSION 取得
-CURRENT=$(grep -E "^SIDEKICK_VERSION:" CLAUDE.md | sed -E 's/.*"([^"]+)".*/\1/')
+# SIDEKICK_VERSION 取得（シングル/ダブルクォート両対応）
+CURRENT=$(grep -E "^SIDEKICK_VERSION:" CLAUDE.md | sed -E "s/.*['\"]([^'\"]+)['\"].*/\1/")
 LATEST=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.tag_name')
 ```
 
@@ -75,8 +75,20 @@ RANGE="v${CURRENT}..${LATEST}"
 ADRS=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*.md' | sort -u)
 RULES=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/rules/*.md' | sort -u)
 SKILLS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | grep 'SKILL.md$\|references/' | sort -u)
-OTHER=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' 'docs/migrations/' | sort -u)
+BRAIN=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'brain/' | sort -u)
+PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' '.gitignore' 'docs/migrations/' | sort -u)
 ```
+
+#### PJ-protected files（盲目的上書き禁止）
+
+下流 PJ ごとに固有値を持つファイルは **Step 6 の blind overwrite 対象外**。代わりに Step 6.4（CLAUDE.md migration）または個別案内で扱う。
+
+| ファイル | 理由 | Step |
+|---|---|---|
+| `CLAUDE.md` | Project Configuration 値・PJ §1 等が PJ 固有 | 6.4 で partial merge |
+| `README.md` / `README.ja.md` | PJ ごとに完全独自 | 6.4 で「上書きしない」案内のみ |
+| `.gitignore` | PJ ごとにパターンが異なる | 同上 |
+| `docs/migrations/` | sidekick が用意する移行ガイドは下流に flat に置く | sidekick → 下流の transient docs。`a` 適用 OK |
 
 ### Step 3: 前回スキップ項目の再提示
 
@@ -89,34 +101,42 @@ OTHER=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md
 
 ### Step 4: カテゴリ一括判断（**default モードの核心**）
 
-カテゴリごとにサマリ + 一括判断プロンプト:
+カテゴリごとにサマリ + 一括判断プロンプト。`[ADR]` `[rules]` `[skills]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
 
 ```
 === 変更サマリ (Severity: Standard) ===
 
 [ADR] 3件
-  - 新規: ADR-0010 リリース粒度の方針
-  - 改訂: ADR-0001, ADR-0005
+  - 新規: ADR-0010, ADR-0012, ADR-0013
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
   > _
 
-[rules] 11件
-  - 更新: code-quality.md, documentation.md, ... (全11件)
+[rules] 4件
+  - 新規: pii-prevention.md (HARD)
+  - 更新: code-quality, knowledge-map, task-management
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
   > _
 
-[skills] 14件
-  - 更新: adopt-sidekick-update, inventory, ... (全14件)
+[skills] 7件
+  - 更新: adopt-sidekick-update, close-chat, record-decision, setup, weekly-inventory + 2 references
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
   > _
 
-[その他] 5件
-  - CLAUDE.md, README.md, README.ja.md, CHANGELOG.md, ...
+[brain] 2件
+  - 新規: brain/thinking.md (L0 マスター)
+  - 新規: .claude/brain/thinking.md (L2 テンプレ)
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  ※ Step 6.4 で CLAUDE.md への @import 案内も実施
+  > _
+
+[PJ migration] 3件 ⚠️ PJ 固有内容を含むため**デフォルト個別判断**
+  - CLAUDE.md (Project Configuration 値が PJ 固有 → 6.4 で partial merge)
+  - README.md / README.ja.md (PJ 独自 → 通常スキップ)
+  → [n]個別判断（推奨） / [Y]全適用（注意） / [s]全スキップ
   > _
 ```
 
-**Enter 連打 = 全カテゴリ全適用**（最速経路）。
+**Enter 連打 = 上 4 カテゴリ全適用 + PJ migration は個別判断**（安全な最速経路）。
 **n を選んだカテゴリのみ** Step 5（個別）に進む。
 
 ### Step 5: 個別判断（Step 4 で n を選んだカテゴリのみ）
@@ -130,21 +150,30 @@ OTHER=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md
   > _
 ```
 
-- **a**: `git show ccs/main:<path>` で取得 → 上書き
+- **a**: `git show ${LATEST}:<path>` で取得 → 上書き（タグ参照でドリフト回避）
 - **s**: reason 入力（Critical 時は必須、通常は任意） → スキップ記録
 - **d**: reason 入力任意、defer_until 入力 → スキップ記録
 - **D**: diff 表示後に再選択
 
+PJ-protected files（CLAUDE.md / README* / .gitignore）が個別判断に来た場合は、`a` 選択後も Step 6 の blind overwrite ではなく Step 6.4 の merge 経路に入る。
+
 ### Step 6: 適用実行 + SIDEKICK_VERSION 更新 + Critical フラグ削除
 
-選択が完了したら、一括適用実行:
+選択が完了したら、一括適用実行。**PJ-protected files（CLAUDE.md / README* / .gitignore）はこのステップで上書きしない**（Step 6.4 で扱う）。
 
 ```bash
+# blind overwrite から PJ-protected files を除外
+PROTECTED='^(CLAUDE\.md|README\.md|README\.ja\.md|\.gitignore)$'
+
 for f in $APPLIED_FILES; do
-  git show "ccs/main:$f" > "$f"
+  if echo "$f" | grep -qE "$PROTECTED"; then
+    PROTECTED_PENDING+=("$f")  # Step 6.4 で扱う
+    continue
+  fi
+  git show "${LATEST}:$f" > "$f"  # タグ参照（drift 回避）
 done
 
-# SIDEKICK_VERSION を最新に
+# SIDEKICK_VERSION を最新に（CLAUDE.md は単一行 sed なので safe）
 sed -i 's/^SIDEKICK_VERSION: .*/SIDEKICK_VERSION: "'"${LATEST#v}"'"/' CLAUDE.md
 
 # Critical 未取込フラグの削除（ADR-0009 P3、検知層の解除）
@@ -152,6 +181,67 @@ if [ "$SEVERITY" = "Critical" ]; then
   FLAG="$HOME/.claude/projects/$(pwd | sed 's|/|-|g')/memory/project_critical_pending.md"
   [ -f "$FLAG" ] && rm "$FLAG" && echo "Critical フラグをクリアしました（session-start.sh の warning は停止）"
 fi
+```
+
+### Step 6.4: CLAUDE.md migration（PJ-protected の安全な取り込み）
+
+`PROTECTED_PENDING` に積まれた PJ-protected files を、PJ 固有値を保持したまま新リリースの構造に追従させる。
+
+#### 6.4a: CLAUDE.md — Project Configuration の新フィールド追加
+
+新リリースで Project Configuration に追加されたフィールドを、既存値を壊さずに append する:
+
+```bash
+# 新リリースの Project Configuration ブロックを取得
+NEW_CFG=$(git show "${LATEST}:CLAUDE.md" | awk '/^```yaml$/,/^```$/' | head -50)
+
+# 現在の CLAUDE.md にないフィールド名を抽出
+NEW_FIELDS=$(echo "$NEW_CFG" | grep -oE '^[A-Z_][A-Z_0-9]*:' | sort -u | \
+  while read field; do
+    grep -q "^${field}" CLAUDE.md || echo "$field"
+  done)
+
+if [ -n "$NEW_FIELDS" ]; then
+  echo "新規 Project Configuration フィールド検出:"
+  echo "$NEW_FIELDS"
+  echo ""
+  echo "既存 CLAUDE.md の Project Configuration ブロック末尾に追加してよいか? [Y/n]"
+  # Y なら、各 NEW_FIELD のデフォルト行（コメント含む）を $NEW_CFG から抜き出して追記
+fi
+```
+
+**判断基準**: 新フィールドはデフォルト値で追加。既存フィールドの値は触らない。
+
+#### 6.4b: CLAUDE.md — brain `@import` 接続の確認
+
+下流 PJ の CLAUDE.md が brain にリンクしていない場合、3 層構造はファイル配置されても inert になる:
+
+```bash
+if ! grep -q '@\.claude/brain/thinking\.md\|@brain/thinking\.md' CLAUDE.md; then
+  echo "⚠️  CLAUDE.md に brain への @import がありません。"
+  echo "   3 層 brain 構造を有効にするには、CLAUDE.md の §1 か任意の場所に以下を追加:"
+  echo "       @.claude/brain/thinking.md"
+  echo ""
+  echo "   下流 PJ の §1 が「プロジェクト概要」等で独自の場合、別セクション（例: §1.5 判断基盤）として追加可。"
+  echo "   自動挿入する? [y/N]"
+  # y なら CLAUDE.md の最後（## 3 等の前）に挿入。N なら案内のみ
+fi
+```
+
+**自動挿入を default `N` にする理由**: PJ ごとに §構成が違うため、機械挿入は誤配置を生む。手動で適切な位置を決めるほうが安全。
+
+#### 6.4c: README.md / README.ja.md / .gitignore
+
+これらは下流 PJ ごとに完全独自。**自動上書きしない**。差分を案内するのみ:
+
+```bash
+for f in README.md README.ja.md .gitignore; do
+  if echo "$PROTECTED_PENDING" | grep -q "^${f}$"; then
+    echo "ℹ️  ${f} は sidekick で更新があるが、PJ 固有のため自動取り込みしない:"
+    git diff "v${CURRENT}..${LATEST}" -- "$f" | head -20
+    echo "   必要な部分だけ手動で取り込んでください。"
+  fi
+done
 ```
 
 ### Step 6.5: ホーム L0 展開（ADR-0013、3 層 brain 構造）
@@ -163,10 +253,10 @@ L1（`~/.claude/brain/thinking.md`）が L0 を `@~/.claude/ccs/brain/thinking.m
 HOME_L0="$HOME/.claude/ccs/brain/thinking.md"
 HOME_L1="$HOME/.claude/brain/thinking.md"
 
-# L0 をホームに展開（ccs リポの最新版を反映）
+# L0 をホームに展開（タグ参照でドリフト回避）
 if echo "$APPLIED_FILES" | grep -q '^brain/thinking\.md$' || [ ! -f "$HOME_L0" ]; then
   mkdir -p "$(dirname "$HOME_L0")"
-  git show "ccs/main:brain/thinking.md" > "$HOME_L0"
+  git show "${LATEST}:brain/thinking.md" > "$HOME_L0"
   echo "L0 (base brain) をホームに展開: $HOME_L0"
 fi
 
@@ -220,6 +310,10 @@ vX.Y.Z-1 → vX.Y.Z
 - **永久スキップの見直し**: PJ 性質が変わったら（UI 追加等）、`/weekly-inventory` で棚卸し提案が出る
 - **ホーム L0 展開のべき等性**: Step 6.5 は `brain/thinking.md` が変更されたとき、または `~/.claude/ccs/brain/thinking.md` が未配置のときのみ動く。再実行で副作用なし
 - **L1 は自動配置しない**: 個人スコープのファイルを sidekick が勝手に作らない。案内のみで本人の同意を待つ
+- **PJ-protected files の blind overwrite 禁止**: `CLAUDE.md` `README*` `.gitignore` は Step 6 で上書きしない（Step 6.4 で扱う）。下流 PJ の Project Configuration 値や独自 README が消える事故を防ぐ
+- **brain @import の手動接続**: Step 6.4b で CLAUDE.md に `@.claude/brain/thinking.md` を自動挿入しないのが default。PJ ごとに §構成が違うため、誤配置を生む。手動位置決め推奨
+- **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり
+- **SIDEKICK_VERSION 抽出のクォート**: シングル/ダブルクォート両対応の regex を Step 0 で使う。下流 PJ で書式が揺れていても CURRENT を正しく抽出する
 
 ## 参考
 
