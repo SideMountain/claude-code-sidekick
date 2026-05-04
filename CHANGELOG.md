@@ -19,6 +19,15 @@ GitHub Release の title prefix と body 冒頭 banner に明示される。
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-05-04
+
+### Fixed
+
+- `/adopt-sidekick-update` Step 6.4a の Project Configuration 新フィールド検出が silent に失敗する事象を修正。bash のパイプ経由 `while read` ループはサブシェル化により早期終了することがあるため、heredoc (`done <<< "$VAR"`) 形式に統一
+  - 失敗モード: 検出ゼロでスキップ（エラーなし、非破壊的）
+  - 影響: 新フィールド (NOTION_JUDGMENT_SYNC 等) が下流 PJ の CLAUDE.md に追加されない
+  - 修正: Step 6.4a のロジックを heredoc + bash 配列に変更。Gotchas に「while read は heredoc で」の注意を追加
+
 ## [0.7.1] - 2026-05-04
 
 ### Fixed
