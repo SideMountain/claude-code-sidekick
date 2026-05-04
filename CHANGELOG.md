@@ -19,6 +19,22 @@ GitHub Release の title prefix と body 冒頭 banner に明示される。
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-04
+
+### Fixed
+
+`/adopt-sidekick-update` の dogfood で発見した 6 件の bug を修正。下流 PJ が新リリースを取り込む際の安全性を向上。
+
+- **CLAUDE.md / README\* / .gitignore の盲目的上書きを停止** (Step 6): PJ-protected files は専用の migration step (Step 6.4) で扱う。Project Configuration 値や PJ 独自 README が消える事故を防ぐ
+- **SIDEKICK_VERSION 抽出 regex をシングル/ダブルクォート両対応に** (Step 0): 書式揺れに耐性を持たせる
+- **`[PJ migration]` カテゴリのデフォルトを `[n]個別判断` に** (Step 4): PJ 固有内容を含むカテゴリは安全側に倒す
+- **CLAUDE.md migration step 新設** (Step 6.4): (a) Project Configuration の新フィールドを既存値を壊さず append (b) brain `@import` 接続の確認と案内 (c) README\* / .gitignore は差分案内のみ
+- **タグ参照化** (Step 5/6/6.5): `git show ${LATEST}:<path>` (リリース時点固定) に変更し、post-release commit との drift を回避
+
+### Changed
+
+- カテゴリを 5 種に再編成: `[ADR]` / `[rules]` / `[skills]` / `[brain]` / `[PJ migration]`
+
 ## [0.7.0] - 2026-05-02
 
 ### Added
