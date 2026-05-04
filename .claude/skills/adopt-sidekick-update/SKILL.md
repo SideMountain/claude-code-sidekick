@@ -193,22 +193,28 @@ fi
 
 ```bash
 # 新リリースの Project Configuration ブロックを取得
-NEW_CFG=$(git show "${LATEST}:CLAUDE.md" | awk '/^```yaml$/,/^```$/' | head -50)
+NEW_CFG=$(git show "${LATEST}:CLAUDE.md" | awk '/^```yaml$/,/^```$/')
 
-# 現在の CLAUDE.md にないフィールド名を抽出
-NEW_FIELDS=$(echo "$NEW_CFG" | grep -oE '^[A-Z_][A-Z_0-9]*:' | sort -u | \
-  while read field; do
-    grep -q "^${field}" CLAUDE.md || echo "$field"
-  done)
+# フィールド名の一覧
+ALL_FIELDS=$(echo "$NEW_CFG" | grep -oE '^[A-Z_][A-Z_0-9]*:' | sort -u)
 
-if [ -n "$NEW_FIELDS" ]; then
+# 現在の CLAUDE.md にないフィールド名を heredoc 経由で抽出（メインシェル内ループ）
+NEW_FIELDS=()
+while IFS= read -r field; do
+  [ -z "$field" ] && continue
+  grep -q "^${field}" CLAUDE.md || NEW_FIELDS+=("$field")
+done <<< "$ALL_FIELDS"
+
+if [ ${#NEW_FIELDS[@]} -gt 0 ]; then
   echo "新規 Project Configuration フィールド検出:"
-  echo "$NEW_FIELDS"
+  printf '  - %s\n' "${NEW_FIELDS[@]}"
   echo ""
   echo "既存 CLAUDE.md の Project Configuration ブロック末尾に追加してよいか? [Y/n]"
   # Y なら、各 NEW_FIELD のデフォルト行（コメント含む）を $NEW_CFG から抜き出して追記
 fi
 ```
+
+**ループ実装の注意**: `... | sort -u | while read field; do ...` のパイプ経由ループは bash の subshell 仕様で 1 イテレーションで停止する事象が観測された（dogfood 検証）。**heredoc (`<<<`) 経由でメインシェル内に入力**するパターンに統一する。配列収集 (`NEW_FIELDS+=("$field")`) も heredoc 形式なら問題なく動作する。
 
 **判断基準**: 新フィールドはデフォルト値で追加。既存フィールドの値は触らない。
 
@@ -314,6 +320,7 @@ vX.Y.Z-1 → vX.Y.Z
 - **brain @import の手動接続**: Step 6.4b で CLAUDE.md に `@.claude/brain/thinking.md` を自動挿入しないのが default。PJ ごとに §構成が違うため、誤配置を生む。手動位置決め推奨
 - **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり
 - **SIDEKICK_VERSION 抽出のクォート**: シングル/ダブルクォート両対応の regex を Step 0 で使う。下流 PJ で書式が揺れていても CURRENT を正しく抽出する
+- **`while read` は heredoc で**: パイプ経由 (`... | while read; do ...; done`) はサブシェル化により 1 イテレーション後に停止する事象あり。`done <<< "$VAR"` のヒアストリング形式を使うと配列収集も含めて確実に動く
 
 ## 参考
 
