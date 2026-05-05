@@ -19,6 +19,29 @@ GitHub Release の title prefix と body 冒頭 banner に明示される。
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-05-05 ⚠️ [CRITICAL]
+
+### Added
+- ADR-0014: sidekick の ADR は下流 PJ に配布しない方針
+
+### Changed
+- `/adopt-sidekick-update`: ADR (`docs/decisions/`) を取り込み対象から除外（ADR-0014）。下流 PJ の `docs/decisions/` は下流自身の領域として完全分離。`[ADR]` カテゴリは「参考表示のみ」に縮退
+
+### Fixed
+- `/adopt-sidekick-update`: 下流 PJ の `docs/decisions/README.md` が blind overwrite され ADR 索引が消失する Critical bug（ADR-0014 で恒久対応）
+
+### Breaking Changes
+- `/adopt-sidekick-update` が下流 PJ の `docs/decisions/` を取り込まなくなる
+- 既存下流 PJ で取り込まれた sidekick ADR ファイル（0007/0008/0009/0010/0012/0013 等）は手動削除が必要
+- 上書きされた `docs/decisions/README.md` は下流独自内容に手動復元が必要
+
+### 変更された ADR
+- `docs/decisions/0014-sidekick-adr-not-distributed.md` (新規)
+- `docs/decisions/README.md` (索引更新)
+
+### 変更された skills
+- `.claude/skills/adopt-sidekick-update/SKILL.md`
+
 ## [0.7.2] - 2026-05-04
 
 ### Fixed
