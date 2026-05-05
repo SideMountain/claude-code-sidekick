@@ -11,7 +11,7 @@ allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(gh *)"
 
 下流 PJ が `/inventory` または `/weekly-inventory` で検知した sidekick の新リリースを、**対話的に安全に取り込む**。
 
-- **カテゴリ一括判断**（ADR / rules / skills / その他）を基本にし、億劫な「ファイル1件ずつ」を避ける
+- **カテゴリ一括判断**（rules / skills / brain / その他）を基本にし、億劫な「ファイル1件ずつ」を避ける
 - 必要なカテゴリだけ**ファイル単位の深掘り**に入れる
 - スキップした項目は auto-memory の `project_skipped_updates.md` に記録（詳細 → `references/skip-record-format.md`）
 - Critical リリースは強調表示、スキップには reason 必須
@@ -72,11 +72,14 @@ esac
 git fetch ccs --tags
 RANGE="v${CURRENT}..${LATEST}"
 
-ADRS=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*.md' | sort -u)
 RULES=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/rules/*.md' | sort -u)
 SKILLS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | grep 'SKILL.md$\|references/' | sort -u)
 BRAIN=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'brain/' | sort -u)
 PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' '.gitignore' 'docs/migrations/' | sort -u)
+
+# ADR (docs/decisions/) は下流 PJ への配布対象外（ADR-0014）。
+# sidekick 側 ADR の更新有無は参考表示のみ。
+ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*.md' | sort -u)
 ```
 
 #### PJ-protected files（盲目的上書き禁止）
@@ -88,6 +91,7 @@ PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.m
 | `CLAUDE.md` | Project Configuration 値・PJ §1 等が PJ 固有 | 6.4 で partial merge |
 | `README.md` / `README.ja.md` | PJ ごとに完全独自 | 6.4 で「上書きしない」案内のみ |
 | `.gitignore` | PJ ごとにパターンが異なる | 同上 |
+| `docs/decisions/` 全体 | sidekick の ADR は sidekick 自身の判断記録。下流 PJ の判断空間とは独立（ADR-0014） | 取り込み対象外。Step 6.4d で更新有無を参考表示 |
 | `docs/migrations/` | sidekick が用意する移行ガイドは下流に flat に置く | sidekick → 下流の transient docs。`a` 適用 OK |
 
 ### Step 3: 前回スキップ項目の再提示
@@ -101,15 +105,10 @@ PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.m
 
 ### Step 4: カテゴリ一括判断（**default モードの核心**）
 
-カテゴリごとにサマリ + 一括判断プロンプト。`[ADR]` `[rules]` `[skills]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
+カテゴリごとにサマリ + 一括判断プロンプト。`[rules]` `[skills]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
 
 ```
 === 変更サマリ (Severity: Standard) ===
-
-[ADR] 3件
-  - 新規: ADR-0010, ADR-0012, ADR-0013
-  → [Y]全適用 / [n]個別判断 / [s]全スキップ
-  > _
 
 [rules] 4件
   - 新規: pii-prevention.md (HARD)
@@ -134,9 +133,13 @@ PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.m
   - README.md / README.ja.md (PJ 独自 → 通常スキップ)
   → [n]個別判断（推奨） / [Y]全適用（注意） / [s]全スキップ
   > _
+
+[ADR] 参考: 3件更新あり（取り込み対象外、ADR-0014）
+  - 新規: ADR-0010, ADR-0012, ADR-0013
+  → 詳細はリリースノート / sidekick リポを参照
 ```
 
-**Enter 連打 = 上 4 カテゴリ全適用 + PJ migration は個別判断**（安全な最速経路）。
+**Enter 連打 = 上 3 カテゴリ全適用 + PJ migration は個別判断**（安全な最速経路）。
 **n を選んだカテゴリのみ** Step 5（個別）に進む。
 
 ### Step 5: 個別判断（Step 4 で n を選んだカテゴリのみ）
@@ -144,7 +147,7 @@ PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.m
 当該カテゴリのファイルを 1 件ずつ提示:
 
 ```
-[ADR 2/3] docs/decisions/0005-downstream-integration-principles.md
+[rules 2/4] .claude/rules/code-quality.md
   [変更サマリ 2行]
   操作: a=適用 / s=永久スキップ / d=後回し / D=diff / q=カテゴリ中断
   > _
@@ -249,6 +252,20 @@ for f in README.md README.ja.md .gitignore; do
   fi
 done
 ```
+
+#### 6.4d: docs/decisions/（ADR 全体）— 取り込み対象外
+
+sidekick の ADR は sidekick 自身の設計判断記録であり、下流 PJ の判断空間とは独立している（ADR-0014）。`/adopt-sidekick-update` は ADR ファイルを下流に配布しない。
+
+```bash
+if [ -n "$ADR_NOTICE" ]; then
+  echo "ℹ️  sidekick 側で ADR が更新されています（取り込み対象外、ADR-0014）:"
+  echo "$ADR_NOTICE" | sed 's/^/    /'
+  echo "    詳細はリリースノート / sidekick リポの docs/decisions/ を参照してください。"
+fi
+```
+
+**仕様の根拠を確認したい場合**: rules / brain / CHANGELOG が一次情報源。それでも判断経緯を追いたい場合のみ sidekick リポの ADR を直接参照する。下流 PJ の `docs/decisions/` は下流自身の領域として完全独立。
 
 ### Step 6.5: ホーム L0 展開（ADR-0013、3 層 brain 構造）
 
