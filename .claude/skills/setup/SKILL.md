@@ -46,10 +46,38 @@ GitHub Template から fork した場合、sidekick 自身のファイルがル�
 | `README.md` / `README.ja.md` | 「プロジェクト固有の README に差し替えてください」 |
 | `.github/` | 「Issue テンプレートをそのまま使いますか？カスタマイズしますか？不要なら削除できます」 |
 | `LICENSE` | 「プロジェクトのライセンスに差し替えてください」 |
-| `docs/decisions/` | 「sidekick の設計判断記録です。プロジェクト固有の ADR を書く場所として残すことを推奨します（既存の ADR は削除してOK）」 |
+| `docs/decisions/` | **sidekick 由来 ADR は自動削除対象**（ADR-0014/0015 により下流 PJ には sidekick の ADR を配布しない）。`README.md` と `_template.md` のみ残し、番号付き ADR ファイル（`NNNN-*.md`）は全て削除する。下流 PJ が独自 ADR を書く空のディレクトリとして残す |
 
 > **判定方法**: `CHANGELOG.md` の冒頭が `# Changelog` かつ `sidekick` を含む場合、テンプレートから fork と判定する。
 > 該当しない場合（既存PJモードでもない）はスキップ。
+
+> **`docs/decisions/` の自動削除**: テンプレート fork 判定時、以下のコマンドで sidekick 由来 ADR を一括削除する。
+
+```bash
+# sidekick 由来の番号付き ADR を削除（README.md と _template.md は残す）
+find docs/decisions -maxdepth 1 -type f -name '????-*.md' -delete
+
+# README.md がある場合は ADR 索引を空のテーブルに初期化
+if [ -f docs/decisions/README.md ]; then
+  cat > docs/decisions/README.md <<'EOF'
+# Architecture Decision Records (ADR)
+
+このディレクトリにはプロジェクトの仕様判断を記録する ADR を格納する。
+
+## ADR一覧
+
+| 番号 | タイトル | ステータス | 日付 |
+|------|---------|----------|------|
+| (未記録) | — | — | — |
+
+## ADRとは
+
+- 仕様レベルの判断を記録するドキュメント
+- 「なぜこう決めたか」を後から参照可能にする
+- `/record-decision` スキルで作成する
+EOF
+fi
+```
 
 ### Step 1: ヒアリング
 

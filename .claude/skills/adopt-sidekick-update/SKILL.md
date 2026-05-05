@@ -253,17 +253,86 @@ for f in README.md README.ja.md .gitignore; do
 done
 ```
 
-#### 6.4d: docs/decisions/（ADR 全体）— 取り込み対象外
+#### 6.4d: docs/decisions/（ADR 全体）— 取り込み対象外 + 残骸自動清掃
 
 sidekick の ADR は sidekick 自身の設計判断記録であり、下流 PJ の判断空間とは独立している（ADR-0014）。`/adopt-sidekick-update` は ADR ファイルを下流に配布しない。
 
+加えて、ADR-0014 適用前に下流 PJ に取り込まれた sidekick 由来 ADR ファイルを自動検知し、ユーザー確認の上で削除する（ADR-0015 の自動清掃）。
+
 ```bash
+# Step 6.4d-1: ccs リモートから sidekick 側 ADR ファイル名一覧を取得
+SIDEKICK_ADRS=$(git ls-tree -r --name-only ccs/main -- 'docs/decisions/' 2>/dev/null \
+  | grep -E '^docs/decisions/.*\.md$' \
+  | grep -v '/README\.md$' \
+  | grep -v '/_template\.md$' \
+  | sort -u)
+
+# Step 6.4d-2: 下流 PJ 内の同名ファイルを検出し、内容完全一致のものだけ残骸候補にする
+STALE_CANDIDATES=()
+for adr in $SIDEKICK_ADRS; do
+  [ -f "$adr" ] || continue
+  # 内容完全一致確認（PJ 固有 ADR と偶然同名のリスクを回避）
+  if diff -q "$adr" <(git show "ccs/main:$adr") >/dev/null 2>&1; then
+    STALE_CANDIDATES+=("$adr")
+  fi
+done
+
+# Step 6.4d-3: ADR_NOTICE 表示
 if [ -n "$ADR_NOTICE" ]; then
   echo "ℹ️  sidekick 側で ADR が更新されています（取り込み対象外、ADR-0014）:"
   echo "$ADR_NOTICE" | sed 's/^/    /'
   echo "    詳細はリリースノート / sidekick リポの docs/decisions/ を参照してください。"
 fi
+
+# Step 6.4d-4: 残骸の自動清掃提案（ADR-0015）
+if [ ${#STALE_CANDIDATES[@]} -gt 0 ]; then
+  echo ""
+  echo "🧹 過去取り込みによる sidekick 由来 ADR 残骸を検知しました（ADR-0015 自動清掃）:"
+  printf '    - %s\n' "${STALE_CANDIDATES[@]}"
+  echo ""
+  echo "    これらは下流 PJ にとって不要なノイズです（ADR-0014 で配布廃止済み）。"
+  echo "    [Y]全削除（推奨） / [n]個別判断 / [s]残す"
+  read -r CLEANUP_CHOICE
+  CLEANUP_CHOICE=${CLEANUP_CHOICE:-Y}
+
+  case "$CLEANUP_CHOICE" in
+    Y|y)
+      for f in "${STALE_CANDIDATES[@]}"; do
+        rm "$f" && echo "  削除: $f"
+      done
+      # docs/decisions/README.md の索引から削除済 ADR の行を除去
+      if [ -f docs/decisions/README.md ]; then
+        for f in "${STALE_CANDIDATES[@]}"; do
+          base=$(basename "$f")
+          # ファイル名を含む行を sed で削除（リンク記法 / 表エントリの両方に対応）
+          sed -i.bak "/${base//./\\.}/d" docs/decisions/README.md && rm -f docs/decisions/README.md.bak
+        done
+        echo "  索引更新: docs/decisions/README.md"
+      fi
+      ;;
+    n)
+      for f in "${STALE_CANDIDATES[@]}"; do
+        echo "  $f を削除しますか? [Y/n]"
+        read -r CHOICE
+        if [ "${CHOICE:-Y}" = "Y" ] || [ "${CHOICE:-Y}" = "y" ]; then
+          rm "$f" && echo "    削除"
+          if [ -f docs/decisions/README.md ]; then
+            base=$(basename "$f")
+            sed -i.bak "/${base//./\\.}/d" docs/decisions/README.md && rm -f docs/decisions/README.md.bak
+          fi
+        fi
+      done
+      ;;
+    s)
+      echo "  残骸を保持します（次回の取り込みで再提示）"
+      ;;
+  esac
+fi
 ```
+
+**識別ロジック**: `git ls-tree ccs/main -- docs/decisions/` で sidekick 側 ADR ファイル名一覧を取得し、下流 PJ 内の同名ファイルとの**ファイル内容を完全比較**する。完全一致したものだけを残骸として確定する。これにより、PJ 固有 ADR が偶然同じ番号 / ファイル名を持つ場合でも誤削除を防ぐ（内容が異なれば候補から除外）。
+
+**前提**: `/inventory` が事前に実行され `git fetch ccs` 済みであること（`ccs/main` 参照が必要）。
 
 **仕様の根拠を確認したい場合**: rules / brain / CHANGELOG が一次情報源。それでも判断経緯を追いたい場合のみ sidekick リポの ADR を直接参照する。下流 PJ の `docs/decisions/` は下流自身の領域として完全独立。
 
