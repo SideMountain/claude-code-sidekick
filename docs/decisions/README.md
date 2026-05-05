@@ -18,3 +18,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0012 | [Notion 判断ログ同期](0012-notion-judgment-sync.md) | 承認済み |
 | 0013 | [思考OS の 3 層 brain 構造](0013-brain-three-layer-structure.md) | ドラフト |
 | 0014 | [sidekick の ADR は下流 PJ に配布しない](0014-sidekick-adr-not-distributed.md) | 承認済み |
+| 0015 | [下流 PJ の ccs 不意識運用原則](0015-downstream-ccs-unaware-operation.md) | 承認済み |
