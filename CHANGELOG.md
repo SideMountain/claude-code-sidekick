@@ -19,6 +19,23 @@ GitHub Release の title prefix と body 冒頭 banner に明示される。
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-05-05
+
+### Added
+- ADR-0015: 下流 PJ の ccs 不意識運用原則（`/inventory` + `/adopt-sidekick-update` のみで取り込み完結、残骸自動清掃、手動手順禁止）
+- `/adopt-sidekick-update` Step 6.4d 拡張: ファイル名照合 + 内容完全比較で sidekick 由来 ADR 残骸を自動検知し、デフォルト [Y] で削除提案。`docs/decisions/README.md` の索引行も自動的に削除
+- `/setup` Step 0.5 改修: 新規 PJ テンプレート fork 検出時に sidekick 由来 ADR を一括削除し、`docs/decisions/README.md` を空索引に初期化
+- `release-format-spec.md` に手動操作禁止原則セクションを追加（リリースノートに下流 PJ への手動手順を含めない）
+
+### 変更された ADR
+- `docs/decisions/0015-downstream-ccs-unaware-operation.md` (新規)
+- `docs/decisions/README.md` (索引更新)
+
+### 変更された skills
+- `.claude/skills/adopt-sidekick-update/SKILL.md`
+- `.claude/skills/setup/SKILL.md`
+- `.claude/skills/release/references/release-format-spec.md`
+
 ## [0.7.3] - 2026-05-05 ⚠️ [CRITICAL]
 
 ### Added
