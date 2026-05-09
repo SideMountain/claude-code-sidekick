@@ -19,6 +19,50 @@ GitHub Release の title prefix と body 冒頭 banner に明示される。
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-09
+
+### Added
+- ADR-0016: brain の 2 層モデル化と上書き禁止運用（ADR-0013 を一部 supersede。3 層 chain → 2 層構造、個人 brain の自動上書き禁止）
+- session-start hook: 個人 brain（`~/.claude/brain/thinking.md`）の存在チェック追加（不在時 warning）
+
+### Changed
+- brain 構造: L0/L1/L2 の 3 層 chain → 2 層モデル（個人 brain + PJ 固有 brain）+ 単純 1 段 `@import`
+- `brain/thinking.md` の位置づけ: 個人 brain の初期テンプレート素材としてリポ内に配置（ロード対象外）
+- `.claude/brain/thinking.md`: PJ 固有 brain として再定義（個人 brain を `@~/.claude/brain/thinking.md` で 1 段 import）
+- `CLAUDE.md` §1: 2 層モデル + 1 段 import の説明に更新
+- `.claude/rules/knowledge-map.md`: 2 層モデルに対応、還流タグ刷新
+- `/setup` Step 4.5: 個人 brain 不在時のみテンプレートから初期化、既存個人 brain は上書き禁止
+- `/adopt-sidekick-update` Step 6.5: テンプレート更新時は差分提案のみ（自動上書き禁止）
+- `/close-chat` `/weekly-inventory` の還流タグを 2 層化（references も同期）
+- ADR-0013 ステータスを「一部 Superseded by ADR-0016」に更新
+
+### Breaking Changes
+- 還流タグ: `[L0候補]/[L1候補]/[L2固有]` → `[OSS 還流候補]/[個人 brain 昇格]/[PJ 固有]`
+- 個人 brain は `/adopt-sidekick-update` で自動上書きされなくなる（差分提案のみ）
+- 既存利用者は `/adopt-sidekick-update` 実行で `<PJ>/.claude/brain/thinking.md` の `@import` 行が `@~/.claude/brain/thinking.md` に統一される
+
+### Notes
+- 過去取り込みで `<PJ>/brain/thinking.md` が PJ ローカルに残っている場合、v0.8.0 でロード対象外になる。**残骸は害なし**（@import 対象でないため context に乗らない）。自動清掃は v0.8.x で対応予定
+- **ロールバック互換性**: v0.8.0 → v0.7.x ロールバックは安全。個人 brain は `~/.claude/brain/thinking.md` に残るため、v0.7.x の chain 構造でも transitive import として機能する
+
+### 変更された ADR
+- `docs/decisions/0016-brain-two-layer-model.md` (新規)
+- `docs/decisions/0013-brain-three-layer-structure.md` (Superseded by 0016)
+- `docs/decisions/README.md` (索引更新)
+
+### 変更された rules
+- `.claude/rules/code-quality.md`
+- `.claude/rules/knowledge-map.md`
+
+### 変更された skills
+- `.claude/skills/adopt-sidekick-update/SKILL.md`
+- `.claude/skills/close-chat/SKILL.md` + `references/knowledge-reflux-guide.md`
+- `.claude/skills/setup/SKILL.md`
+- `.claude/skills/weekly-inventory/SKILL.md` + `references/feedback-compression-rules.md`
+
+### 変更された hooks
+- `.claude/hooks/session-start.sh`
+
 ## [0.7.4] - 2026-05-05
 
 ### Added
