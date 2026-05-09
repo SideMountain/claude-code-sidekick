@@ -9,6 +9,7 @@
 #   4. Existing worktree listing
 #   5. Weekly review staleness check
 #   6. Critical sidekick update pending warning (P3, ADR-0009)
+#   7. Personal brain layer health check (ADR-0016)
 #
 # chmod +x .claude/hooks/session-start.sh
 # =============================================================================
@@ -47,8 +48,8 @@ PROTECTED_BRANCHES=("main")
 echo "=== SESSION START: Automated Checks ==="
 echo ""
 
-# --- [1/6] Branch Status ---
-echo "[1/6] Branch status"
+# --- [1/7] Branch Status ---
+echo "[1/7] Branch status"
 git fetch origin 2>/dev/null
 BRANCH=$(git branch --show-current 2>/dev/null)
 echo "  Current branch: $BRANCH"
@@ -78,9 +79,9 @@ else
   echo "  INFO: Not on a protected branch. Ensure this is intentional."
 fi
 
-# --- [2/6] Uncommitted Changes ---
+# --- [2/7] Uncommitted Changes ---
 echo ""
-echo "[2/6] Uncommitted changes"
+echo "[2/7] Uncommitted changes"
 CHANGES=$(git status --short 2>/dev/null)
 if [ -n "$CHANGES" ]; then
   echo "  WARNING: Uncommitted changes detected:"
@@ -89,23 +90,23 @@ else
   echo "  OK: clean"
 fi
 
-# --- [3/6] Active Work ---
+# --- [3/7] Active Work ---
 echo ""
-echo "[3/6] Active Work (parallel work board)"
+echo "[3/7] Active Work (parallel work board)"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   sed -n '/^## Active Work/,/^## [^A]/p' "$MEMORY_FILE" | head -30 | sed 's/^/  /'
 else
   echo "  (MEMORY.md not found)"
 fi
 
-# --- [4/6] Existing Worktrees ---
+# --- [4/7] Existing Worktrees ---
 echo ""
-echo "[4/6] Existing worktrees"
+echo "[4/7] Existing worktrees"
 git worktree list 2>/dev/null | sed 's/^/  /'
 
-# --- [5/6] Maintenance ---
+# --- [5/7] Maintenance ---
 echo ""
-echo "[5/6] Maintenance"
+echo "[5/7] Maintenance"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   LAST_REVIEW=$(grep -o '最終棚卸し: [0-9-]*' "$MEMORY_FILE" 2>/dev/null | head -1 | sed 's/最終棚卸し: //')
   if [ -n "$LAST_REVIEW" ]; then
@@ -130,8 +131,8 @@ else
 fi
 
 echo ""
-# --- [6/6] Critical sidekick update pending (ADR-0009 P3) ---
-echo "[6/6] Critical sidekick update"
+# --- [6/7] Critical sidekick update pending (ADR-0009 P3) ---
+echo "[6/7] Critical sidekick update"
 CRITICAL_FLAG=""
 if [ -n "$MEM_DIR" ]; then
   CRITICAL_FLAG="$MEM_DIR/project_critical_pending.md"
@@ -142,6 +143,18 @@ if [ -n "$CRITICAL_FLAG" ] && [ -f "$CRITICAL_FLAG" ]; then
   echo "     → /adopt-sidekick-update で取り込み推奨（stop hook 等の致命的修正を含む可能性）"
 else
   echo "  OK: no critical update pending"
+fi
+
+echo ""
+# --- [7/7] Personal brain layer health check (ADR-0016) ---
+echo "[7/7] Personal brain layer"
+PERSONAL_BRAIN="$HOME/.claude/brain/thinking.md"
+if [ -f "$PERSONAL_BRAIN" ]; then
+  echo "  OK: $PERSONAL_BRAIN"
+else
+  echo "  WARNING: 個人 brain が未配置: $PERSONAL_BRAIN"
+  echo "     → /setup または /adopt-sidekick-update でテンプレートから初期化を提案できます"
+  echo "     → 不在のままでも PJ brain は機能しますが、個人横断の判断軸が context に乗りません"
 fi
 
 echo ""

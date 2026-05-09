@@ -18,23 +18,23 @@ close-chat が「セッション単位の蓄積」なら、weekly-inventory は�
 
 ## 手順
 
-### Step 0: brain（L0/L1/L2）健康度チェック
+### Step 0: brain（個人 brain / PJ brain）健康度チェック
 
 brain ファイル群とフィードバックの育ち具合を確認する。
 
 #### 0a. feedback 昇格漏れの検出
 
-feedback_*.md を確認し、3件以上の同趣旨フィードバックが brain（L0/L1/L2）に未昇格のまま溜まっていないかチェックする。
+feedback_*.md を確認し、3件以上の同趣旨フィードバックが brain（PJ brain / 個人 brain）に未昇格のまま溜まっていないかチェックする。
 溜まっている場合は Step 3c（昇格候補の検出）で優先的に処理する。
 
-#### 0b. L1 / L2 カスタマイズ状態
+#### 0b. 個人 brain / PJ brain カスタマイズ状態
 
-`~/.claude/brain/thinking.md` (L1) や `<PJ>/.claude/brain/thinking.md` (L2) が空 or テンプレートのデフォルトのまま（個人 / PJ 固有の判断軸が追記されていない）場合:
+`~/.claude/brain/thinking.md`（個人 brain）や `<PJ>/.claude/brain/thinking.md`（PJ brain）が空 or テンプレートのデフォルトのまま（個人 / PJ 固有の判断軸が追記されていない）場合:
 
 ```
 💡 brain は判断軸を定義するファイル群です。
-   L1 (~/.claude/brain/thinking.md): 個人の判断軸（複数 PJ 横断）
-   L2 (<PJ>/.claude/brain/thinking.md): PJ 固有の判断軸
+   個人 brain (~/.claude/brain/thinking.md): 個人の判断軸（複数 PJ 横断、利用者が育てる）
+   PJ brain (<PJ>/.claude/brain/thinking.md): PJ 固有の判断軸
    §1 を自分・PJ の判断軸に追記すると Claude の提案精度が変わります。
    いくつか質問に答えるだけでカスタマイズできます。やってみますか？
 ```
@@ -44,7 +44,7 @@ feedback_*.md を確認し、3件以上の同趣旨フィードバックが brai
 2. 迷ったときの判断基準（ユーザー影響 / スピード / 安全性）
 3. やらないと決めていること（自由記入）
 
-回答を L1（個人の場合）または L2（PJ 固有の場合）に反映する。判定の質問: 「同じ自分が別 PJ に行ってもこの判断するか?」 YES → L1、NO → L2。
+回答を個人 brain（複数 PJ で適用したい場合）または PJ brain（この PJ に閉じる場合）に反映する。判定の質問: **「全 PJ で適用したい判断軸か?」** YES → 個人 brain、NO → PJ brain。
 
 ### Step 0.5: sidekick 未取込更新の棚卸し
 
@@ -163,7 +163,7 @@ memory/feedback_*.md を全件読み込み、以下を実行する。
 
 #### 3a. 昇格済みの整理
 
-brain（L0/L1/L2）に昇格済みの feedback を確認:
+brain（PJ brain / 個人 brain / OSS テンプレート還流）に昇格済みの feedback を確認:
 - 昇格済みと明記されているか
 - feedback の内容と brain ファイルの記述に乖離がないか
 
@@ -178,22 +178,22 @@ brain（L0/L1/L2）に昇格済みの feedback を確認:
 
 #### 3c. brain 昇格候補の検出
 
-昇格判定基準・統合ルール・確認フォーマットは `references/feedback-compression-rules.md` を参照。3 件以上溜まった同趣旨 feedback を L2/L1/L0 のいずれかに昇格させる。
+昇格判定基準・統合ルール・確認フォーマットは `references/feedback-compression-rules.md` を参照。3 件以上溜まった同趣旨 feedback を PJ brain / 個人 brain / OSS テンプレート還流候補のいずれかに昇格させる。
 
 ### Step 4: 知識還流フラグ処理
 
-Backlog 内の `[L0候補]` `[L1候補]` `[L2固有]` プレフィックス付き項目を一括確認。
+Backlog 内の `[OSS 還流候補]` `[個人 brain 昇格]` `[PJ 固有]` プレフィックス付き項目を一括確認。
 
 ```
 === 知識還流フラグ ===
-[L0候補] (業界共通 → ccs 還流):
-1. 内容 → brain L0 (`brain/thinking.md`) のどこに反映するか
+[OSS 還流候補] (業界共通 → sidekick OSS テンプレートへ手動 PR):
+1. 内容 → OSS テンプレート (sidekick `brain/thinking.md`) のどこに反映するか
 
-[L1候補] (個人 → 複数 PJ 横断):
-1. 内容 → ホーム L1 (`~/.claude/brain/thinking.md`) への昇格
+[個人 brain 昇格] (複数 PJ 横断):
+1. 内容 → 個人 brain (`~/.claude/brain/thinking.md`) への昇格
 
-[L2固有] (PJ ドメイン依存):
-1. 内容 → PJ L2 (`<PJ>/.claude/brain/thinking.md`) への昇格
+[PJ 固有] (PJ ドメイン依存):
+1. 内容 → PJ brain (`<PJ>/.claude/brain/thinking.md`) への昇格
 
 ─────────────────
 まとめて処理しますか？ 個別に判断しますか？
@@ -297,9 +297,9 @@ fi
   - 昇格: X件
 
 [知識還流] X件のフラグ
-  - L0候補: X件
-  - L1候補: X件
-  - L2固有: X件
+  - OSS 還流候補: X件
+  - 個人 brain 昇格: X件
+  - PJ 固有: X件
 
 [ADR] X件の要対応
 

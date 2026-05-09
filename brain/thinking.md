@@ -1,17 +1,17 @@
-# brain — 思考OS の base layer (L0)
+# brain — 個人 brain の OSS テンプレート
 
-> このファイルは思考OS の **L0 (base brain)** — 業界共通の判断軸を保持する。
+> このファイルは sidekick が配布する「個人 brain の初期テンプレート」素材。
+> **ロード対象ではない**。`/setup` 実行時に利用者の `~/.claude/brain/thinking.md` 不在を検知した場合のみ、コピー元として使われる。
 >
-> 3 層 brain 構造:
-> - **L0 (このファイル)**: `brain/thinking.md` — 業界共通の判断軸（OSS 配布物）
-> - **L1**: `~/.claude/brain/thinking.md` — 個人の判断軸（複数 PJ 横断）
-> - **L2**: `<PJ>/.claude/brain/thinking.md` — PJ 固有の判断軸
+> 2 層 brain 構造（ADR-0016）:
+> - **個人 brain**: `~/.claude/brain/thinking.md` — 個人の判断軸（複数 PJ 横断）。利用者が育てる
+> - **PJ 固有 brain**: `<PJ>/.claude/brain/thinking.md` — PJ 固有の判断軸
 >
-> 各層は `@import` でチェーン化される（L2 → L1 → L0）。詳細は ADR-0013 参照。
+> このテンプレートをロード対象にしないことで、利用者が育てた個人 brain の上書きを構造的に防ぐ。
 >
-> §1（判断原則）はオーナーごとに L1 / L2 で上書き・追加できる。共通として残す原則と個人差分・PJ 差分を分離する。
+> §1（判断原則）は利用者が個人 brain として育てる際の出発点。
 > §2-4（セルフレビュー・フェーズ別・コミュニケーション）は共通フレームワーク。
-> session 中の feedback が蓄積 → `/weekly-inventory` でパターン検出 → L2/L1 に昇格 → 業界共通と判明したら L0 還流。
+> session 中の feedback が蓄積 → `/weekly-inventory` でパターン検出 → 個人 brain に昇格 → 業界共通と判明したら OSS テンプレートに還流（手動 PR）。
 
 ---
 
@@ -60,7 +60,7 @@
 3. **NGフィルター照合**: 既存ルール（CLAUDE.md）・過去の却下理由（memory/feedback_*.md）と照合する
 4. **一貫性チェック**: 以下と矛盾しないか確認する
    - CLAUDE.md のルール・方針
-   - brain（L0/L1/L2）の判断原則
+   - brain（個人 brain / PJ 固有 brain）の判断原則
    - 直前の確定事項・既存の ADR
    - memory/feedback_*.md の過去の修正指示
 5. **「なんで？」「やらなくていいものが混じってないか？」「ユーザー影響は？」** を自問する

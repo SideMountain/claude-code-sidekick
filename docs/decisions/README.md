@@ -13,9 +13,10 @@ sidekick の設計判断とその根拠を記録する。
 | 0007 | [thinking.md を入れ替え可能な思考OSとして位置づけ](0007-thinking-os-positioning.md) | 承認済み |
 | 0008 | [project-root MEMORY.md を廃止し auto-memory に一本化](0008-memory-md-to-auto-memory.md) | 承認済み |
 | 0009 | [リリース取り込み設計（温度感・思想漏洩防止・スキップ制御）](0009-release-adoption-design.md) | 承認済み |
-| 0010 | [思考OS の2層構造（L0/L1）と配布・還流メカニズム](0010-thinking-os-layers-and-reflow.md) | 承認済み（一部 Superseded by 0013） |
+| 0010 | [思考OS の2層構造（L0/L1）と配布・還流メカニズム](0010-thinking-os-layers-and-reflow.md) | 承認済み（一部 Superseded by 0013, 0016） |
 | 0011 | （予約: v1.0 破壊変更内容を後日定義） | — |
 | 0012 | [Notion 判断ログ同期](0012-notion-judgment-sync.md) | 承認済み |
-| 0013 | [思考OS の 3 層 brain 構造](0013-brain-three-layer-structure.md) | ドラフト |
+| 0013 | [思考OS の 3 層 brain 構造](0013-brain-three-layer-structure.md) | 一部 Superseded by 0016 |
 | 0014 | [sidekick の ADR は下流 PJ に配布しない](0014-sidekick-adr-not-distributed.md) | 承認済み |
 | 0015 | [下流 PJ の ccs 不意識運用原則](0015-downstream-ccs-unaware-operation.md) | 承認済み |
+| 0016 | [brain の 2 層モデル化と上書き禁止運用](0016-brain-two-layer-model.md) | ドラフト |
