@@ -219,44 +219,84 @@ Step 3 で配置した場合のみ追記:
 
 ### Step 4.5: brain (思考OS) のセットアップ
 
-判断基盤の格納先を 3 層構造で設定する（ADR-0013）。
+判断基盤の格納先を 2 層構造で設定する（ADR-0016）。
 
-| 層 | 配置 | スコープ |
-|---|---|---|
-| L0: base brain | `brain/thinking.md`（OSS 配布物） | 業界共通 |
-| L1: personal brain | `~/.claude/brain/thinking.md` | 個人（複数 PJ 横断） |
-| L2: project brain | `<PJ>/.claude/brain/thinking.md` | この PJ 固有 |
+| 層 | 配置 | スコープ | ロード対象 |
+|---|---|---|---|
+| 個人 brain | `~/.claude/brain/thinking.md` | 個人（複数 PJ 横断）。利用者が育てる | ✅ |
+| PJ 固有 brain | `<PJ>/.claude/brain/thinking.md` | この PJ 固有 | ✅ |
 
-**配置パターンを確認する:**
+OSS テンプレート（sidekick の `brain/thinking.md`）は配布素材としてリポに含まれるが、ロード対象ではない。`/setup` が個人 brain 不在時のみコピー元として利用する。
 
-| 選択肢 | `.claude/brain/thinking.md` の中身 | 用途 |
-|---|---|---|
-| (a) PJ に物理コピー | L0 内容を直接コピー（import なし、自己完結） | チーム共有・git で固定化 |
-| (b) ホーム L1 のみ import | `@~/.claude/brain/thinking.md` の薄い import | 個人運用、PJ 固有判断軸なし |
-| **(c) 3 層 import chain（推奨）** | `@~/.claude/brain/thinking.md` + PJ 固有判断軸セクション | 個人 × PJ 固有あり |
+#### 個人 brain の初期化（不在時のみ、上書き禁止）
 
-**デフォルトは (c)**。`/adopt-sidekick-update` で `~/.claude/brain/thinking.md` (L1) と `~/.claude/ccs/brain/thinking.md` (L0) がホーム展開される前提。L1 が未展開なら案内する。
+```bash
+PERSONAL_BRAIN="$HOME/.claude/brain/thinking.md"
 
-**選択 (a) を選んだ場合の注意**: L1/L0 を読み込まないため、sidekick 更新時に判断原則の更新が個別反映になる（自動取り込みされない）。
+if [ ! -f "$PERSONAL_BRAIN" ]; then
+  mkdir -p "$HOME/.claude/brain"
 
-CLAUDE.md §1 は brain への参照（`@.claude/brain/thinking.md`）のみで構成し、PJ 固有判断軸は L2 に書く。
+  # テンプレート取得: ローカル優先（新規 PJ モード時の fork 直後）、なければ ccs remote から
+  if [ -f "brain/thinking.md" ]; then
+    cp "brain/thinking.md" "$PERSONAL_BRAIN"
+    echo "個人 brain を初期化しました（ローカル brain/thinking.md からコピー）: $PERSONAL_BRAIN"
+  elif git remote | grep -q "^ccs$"; then
+    git fetch ccs --tags 2>/dev/null
+    LATEST_TAG=$(git ls-remote --tags ccs 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+    if [ -n "$LATEST_TAG" ]; then
+      git show "${LATEST_TAG}:brain/thinking.md" > "$PERSONAL_BRAIN" 2>/dev/null \
+        && echo "個人 brain を初期化しました（ccs ${LATEST_TAG} からコピー）: $PERSONAL_BRAIN" \
+        || echo "⚠️  ccs ${LATEST_TAG} から brain/thinking.md を取得できませんでした"
+    else
+      echo "⚠️  ccs remote にタグが見つかりません。/inventory でリリース確認後、再実行してください"
+    fi
+  else
+    echo "⚠️  ローカル brain/thinking.md も ccs remote も見つかりません"
+    echo "   Step 3.5 で ccs remote を追加後、再実行してください"
+  fi
+  echo "（今後は利用者が育てる、自動上書きしない）"
+else
+  echo "個人 brain は既に存在: $PERSONAL_BRAIN（触らない）"
+fi
+```
+
+**重要: 既存の個人 brain は絶対に上書きしない**。育てた判断軸を失う事故を防ぐ。
+OSS テンプレートに更新があった場合の取り込みは `/adopt-sidekick-update` 経由で対話的に行う（自動上書きしない）。
+
+#### PJ 固有 brain の配置
+
+`<PJ>/.claude/brain/thinking.md` をテンプレートから配置する（既存ファイルがあれば上書きしない）。冒頭は個人 brain への 1 段 import:
+
+```markdown
+# brain — <PROJECT_NAME> PJ 固有 brain
+
+@~/.claude/brain/thinking.md
+
+> このファイルは <PROJECT_NAME> PJ 固有の判断軸を保持する。
+> 上記 @import で個人 brain を取り込む。個人 brain 不在時は silent ignore され、PJ brain だけがロードされる。
+> 2 層 brain モデルの詳細は ADR-0016 を参照。
+```
+
+PJ 固有判断軸は本ファイル下部に追記する（Step 5 で対話的に記入）。
+
+CLAUDE.md §1 は `@.claude/brain/thinking.md` で PJ brain を取り込む。PJ brain が個人 brain を transitive import する 1 段構造。
 
 ### Step 5: オーナー情報の記録（任意・全スキップ可）
 
 > 「全スキップ」と言われたら即 Step 6 へ。使いながら自然に蓄積される設計なので、ここで埋まらなくても問題ない。
 
-brain L2（PJ 固有判断軸）のカスタマイズ用。選択肢から選ぶか、自由記入か、スキップ。
+PJ 固有 brain のカスタマイズ用。選択肢から選ぶか、自由記入か、スキップ。
 
 | 質問 | 選択肢の例 | 記録先 |
 |---|---|---|
-| 設計で重視すること | シンプルさ / パフォーマンス / 拡張性 / 堅牢性 / 自由記入 | brain L2 §1 |
-| 判断スピード | 70%で動く / 慎重派 / 状況による / 自由記入 | brain L2 §1 |
-| 技術的負債への態度 | 返す派 / 動けば良い / 重要箇所だけ / 自由記入 | brain L2 §1 |
+| 設計で重視すること | シンプルさ / パフォーマンス / 拡張性 / 堅牢性 / 自由記入 | PJ brain §1 |
+| 判断スピード | 70%で動く / 慎重派 / 状況による / 自由記入 | PJ brain §1 |
+| 技術的負債への態度 | 返す派 / 動けば良い / 重要箇所だけ / 自由記入 | PJ brain §1 |
 | テスト方針 | TDD / 後追い / 重要箇所のみ / 書かない / 自由記入 | CLAUDE.md |
 | ドキュメント管理 | Notion / Google Docs / docs/ だけ / なし | rules/documentation.md |
 
-回答があれば `.claude/brain/thinking.md` (L2) §1 に反映する。なければ import のみの薄い L2 のまま。
-複数 PJ で同じ判断をする場合は L1（`~/.claude/brain/thinking.md`）に書く方が DRY。判定基準: 「同じ自分が別 PJ に行っても同じ判断するか?」 YES → L1、NO → L2。
+回答があれば `.claude/brain/thinking.md`（PJ brain）§1 に反映する。なければ import のみの薄い PJ brain のまま。
+複数 PJ で同じ判断をする場合は個人 brain（`~/.claude/brain/thinking.md`）に書く方が DRY。判定基準: 「全 PJ で適用したい判断軸か?」 YES → 個人 brain、NO → PJ brain。
 
 ### Step 5.5: 外部DB連携（オプション）
 
@@ -327,7 +367,8 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 - .claude/settings.local.json の有無
 - settings.local.json に additionalDirectories（WT用）が設定されているか
 - ccs remote（/adopt-sidekick-update 用）の有無（ADR-0009）
-- `.claude/brain/thinking.md` の有無、`.claude/rules/thinking.md` の有無（brain 移行状態の判定、ADR-0013）
+- `.claude/brain/thinking.md` の有無、`.claude/rules/thinking.md` の有無（brain 移行状態の判定、ADR-0016）
+- `~/.claude/brain/thinking.md`（個人 brain）の有無（不在なら初期化候補、存在すれば触らない）
 ```
 
 ### Step 2E: 差分案内
@@ -352,7 +393,8 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 | .gitignore パターン | 上記で配置したファイルに応じて自動追記 | 新規PJモードの Step 4 と同じロジック |
 | settings.local.json | 「テスト・ビルドコマンドの自動許可設定を追加しますか？」 | 新規PJモードの Step 2b と同じ |
 | additionalDirectories | （確認不要・自動設定） | settings.local.json に親ディレクトリを追加（Step 2b 参照） |
-| brain (3 層構造) | 「判断基盤を 3 層構造（L0/L1/L2）に移行しますか？」（旧 `.claude/rules/thinking.md` を保持中の PJ のみ） | 新規PJモードの Step 4.5 と同じ。旧 thinking.md は過渡期は共存可、強制移行は行わない |
+| brain (2 層構造) | 「判断基盤を 2 層モデル（個人 brain + PJ 固有 brain）に移行しますか？」（旧 `.claude/rules/thinking.md` または旧 3 層 chain を保持中の PJ のみ） | 新規PJモードの Step 4.5 と同じ。旧 thinking.md は過渡期は共存可、強制移行は行わない。**既存の個人 brain は絶対上書きしない** |
+| 個人 brain (`~/.claude/brain/thinking.md`) 不在 | （確認不要・自動提案） | Step 4.5 の個人 brain 初期化ロジックを実行（OSS テンプレート → home コピー、不在時のみ） |
 
 ### Step 3E: オーナー情報（任意）
 

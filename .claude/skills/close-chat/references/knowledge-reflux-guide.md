@@ -6,11 +6,11 @@
 
 | 分類 | 基準 | 行き先 |
 |------|------|--------|
-| L0 候補 | 業界共通の判断軸（誰が使ってもベースとして有効） → Yes | `brain/thinking.md`（ccs 還流候補） |
-| L1 候補 | 個人の判断軸（同じ自分が別 PJ でも同じ判断） → Yes | `~/.claude/brain/thinking.md` 昇格候補 |
-| L2 固有 | この PJ ドメイン・成熟度・チーム文化に依存 | `<PJ>/.claude/brain/thinking.md` 昇格 |
+| OSS 還流候補 | 業界共通の判断軸（誰が使ってもベースとして有効） → Yes | sidekick OSS テンプレート（`brain/thinking.md`）への手動 PR |
+| 個人 brain 昇格 | 複数 PJ 横断の判断軸（同じ自分が別 PJ でも同じ判断） → Yes | `~/.claude/brain/thinking.md` 昇格候補 |
+| PJ 固有 | この PJ ドメイン・成熟度・チーム文化に依存 | `<PJ>/.claude/brain/thinking.md` 昇格 |
 
-判定の質問: **「同じ自分が別 PJ に行ってもこの判断するか?」** YES → L1、NO → L2。L1 の中で「業界共通か?」YES → L0。迷った場合は L2 から始め、3 件ルールで L1 / L0 に昇格させる。
+判定の質問: **「全 PJ で適用したい判断軸か?」** YES → 個人 brain、NO → PJ brain。個人 brain の中で「業界共通として外部公開する価値があるか?」YES → OSS 還流候補。迷った場合は PJ brain から始め、3 件ルールで個人 brain / OSS 還流候補に昇格させる。
 
 ## 抽出対象
 
@@ -21,7 +21,7 @@
 
 ## 抽出しないもの
 
-- 既に feedback_*.md や brain（L0/L1/L2）に記録済みのもの
+- 既に feedback_*.md や brain（PJ brain / 個人 brain / OSS テンプレート）に記録済みのもの
 - 単なるタスクの進捗（Step 2 で扱う）
 - セッション固有の一時的な判断
 
@@ -29,8 +29,8 @@
 
 | 分類 | 記録先 | 備考 |
 |------|--------|------|
-| L0 候補 | feedback_*.md + MEMORY.md Backlog に `[L0候補]` | 実際の還流は棚卸し時 |
-| L1 候補 | feedback_*.md + MEMORY.md Backlog に `[L1候補]` | L1 への昇格は棚卸し時 |
-| L2 固有 | feedback_*.md + MEMORY.md Backlog に `[L2固有]` | L2 への昇格は棚卸し時、必要なら ADR も |
+| OSS 還流候補 | feedback_*.md + MEMORY.md Backlog に `[OSS 還流候補]` | 実際の還流は棚卸し時、sidekick リポへの手動 PR |
+| 個人 brain 昇格 | feedback_*.md + MEMORY.md Backlog に `[個人 brain 昇格]` | 個人 brain への昇格は棚卸し時 |
+| PJ 固有 | feedback_*.md + MEMORY.md Backlog に `[PJ 固有]` | PJ brain への昇格は棚卸し時、必要なら ADR も |
 
 **重要: 即座に brain ファイルを更新しない。** フラグを立てるだけ。統合は棚卸し時にまとめてやる。

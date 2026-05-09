@@ -4,13 +4,13 @@
 
 ## 昇格判定基準
 
-以下の条件を満たす feedback は brain（L0/L1/L2）への昇格を検討する:
+以下の条件を満たす feedback は brain（PJ brain / 個人 brain / OSS テンプレート還流）への昇格を検討する:
 
 1. **3回以上**: 同趣旨の指摘が 3 件以上蓄積
-2. **昇格先の判定**: 「同じ自分が別 PJ に行ってもこの判断するか?」
-   - YES + 業界共通 → **L0** (`brain/thinking.md`、ccs 還流候補)
-   - YES + 個人の癖 → **L1** (`~/.claude/brain/thinking.md`)
-   - NO（PJ 依存）→ **L2** (`<PJ>/.claude/brain/thinking.md`)
+2. **昇格先の判定**: 「全 PJ で適用したい判断軸か?」
+   - YES + 業界共通として外部公開価値あり → **OSS 還流候補** (sidekick `brain/thinking.md` への手動 PR)
+   - YES + 個人横断 → **個人 brain** (`~/.claude/brain/thinking.md`)
+   - NO（PJ 依存）→ **PJ brain** (`<PJ>/.claude/brain/thinking.md`)
 3. **パターン化**: 個別事例ではなく、一般化できる原則に昇華できる
 
 ## 統合ルール
@@ -35,8 +35,8 @@
    理由: 同趣旨。Aの方が具体的なので A をベースに B の事例を追記
 
 === 昇格候補 ===
-1. feedback_C → L1 (`~/.claude/brain/thinking.md`) §1「○○」として昇格
-   理由: 3回以上の指摘。複数 PJ で同じ判断をしている個人の癖
-2. feedback_D → L0 (`brain/thinking.md`) §1「○○」として昇格、ccs 還流候補
+1. feedback_C → 個人 brain (`~/.claude/brain/thinking.md`) §1「○○」として昇格
+   理由: 3回以上の指摘。複数 PJ で同じ判断をしている横断軸
+2. feedback_D → OSS 還流候補（sidekick `brain/thinking.md` §1「○○」へ手動 PR）として昇格
    理由: 業界共通の判断軸。誰でも頷ける
 ```

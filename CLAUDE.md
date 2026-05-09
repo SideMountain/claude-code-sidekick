@@ -36,15 +36,16 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 
 ## 1. オーナーの判断軸
 
-判断基盤は **brain (3 層構造)** に定義する。各層は `@import` でチェーン化される。
+判断基盤は **brain (2 層構造)** に定義する。
 
-| 層 | 配置 | スコープ |
-|---|---|---|
-| L0: base brain | `brain/thinking.md` | 業界共通の判断軸（OSS 配布物） |
-| L1: personal brain | `~/.claude/brain/thinking.md` | 個人（複数 PJ 横断） |
-| L2: project brain | `.claude/brain/thinking.md` | この PJ 固有 |
+| 層 | 配置 | スコープ | ロード対象 |
+|---|---|---|---|
+| 個人 brain | `~/.claude/brain/thinking.md` | 個人（複数 PJ 横断）。利用者が育てる | ✅ |
+| PJ 固有 brain | `.claude/brain/thinking.md` | この PJ 固有 | ✅ |
 
-L2 → L1 → L0 の順に `@import` で取り込まれる。詳細は ADR-0013 / `brain/thinking.md` を参照。
+PJ 固有 brain が `@~/.claude/brain/thinking.md` で個人 brain を 1 段 `@import` する。個人 brain 不在時は silent ignore され、PJ brain だけがロードされる（フェイルセーフ）。
+
+OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート素材としてリポに含まれるが、ロード対象ではない（`/setup` で個人 brain を初期化する際の素材）。詳細は ADR-0016 を参照。
 
 @.claude/brain/thinking.md
 

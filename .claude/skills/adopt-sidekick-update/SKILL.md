@@ -121,10 +121,10 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
   > _
 
-[brain] 2件
-  - 新規: brain/thinking.md (L0 マスター)
-  - 新規: .claude/brain/thinking.md (L2 テンプレ)
+[brain] 1件
+  - 更新: brain/thinking.md (OSS テンプレート、Step 6.5 で個人 brain への取り込みを案内)
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  ※ PJ ローカルの brain/thinking.md はロード対象外。個人 brain (~/.claude/brain/thinking.md) は Step 6.5 で別扱い（自動上書きしない）
   ※ Step 6.4 で CLAUDE.md への @import 案内も実施
   > _
 
@@ -223,14 +223,15 @@ fi
 
 #### 6.4b: CLAUDE.md — brain `@import` 接続の確認
 
-下流 PJ の CLAUDE.md が brain にリンクしていない場合、3 層構造はファイル配置されても inert になる:
+下流 PJ の CLAUDE.md が PJ brain にリンクしていない場合、2 層構造はファイル配置されても inert になる:
 
 ```bash
-if ! grep -q '@\.claude/brain/thinking\.md\|@brain/thinking\.md' CLAUDE.md; then
-  echo "⚠️  CLAUDE.md に brain への @import がありません。"
-  echo "   3 層 brain 構造を有効にするには、CLAUDE.md の §1 か任意の場所に以下を追加:"
+if ! grep -q '@\.claude/brain/thinking\.md' CLAUDE.md; then
+  echo "⚠️  CLAUDE.md に PJ brain への @import がありません。"
+  echo "   2 層 brain 構造（ADR-0016）を有効にするには、CLAUDE.md の §1 か任意の場所に以下を追加:"
   echo "       @.claude/brain/thinking.md"
   echo ""
+  echo "   PJ brain が `@~/.claude/brain/thinking.md` で個人 brain を transitive import する 1 段構造。"
   echo "   下流 PJ の §1 が「プロジェクト概要」等で独自の場合、別セクション（例: §1.5 判断基盤）として追加可。"
   echo "   自動挿入する? [y/N]"
   # y なら CLAUDE.md の最後（## 3 等の前）に挿入。N なら案内のみ
@@ -336,38 +337,51 @@ fi
 
 **仕様の根拠を確認したい場合**: rules / brain / CHANGELOG が一次情報源。それでも判断経緯を追いたい場合のみ sidekick リポの ADR を直接参照する。下流 PJ の `docs/decisions/` は下流自身の領域として完全独立。
 
-### Step 6.5: ホーム L0 展開（ADR-0013、3 層 brain 構造）
+### Step 6.5: 個人 brain の取り扱い（ADR-0016、2 層 brain モデル）
 
-`brain/thinking.md` が変更対象に含まれていた場合、または `~/.claude/ccs/brain/thinking.md` が未配置の場合に、ホーム L0 を最新化する。
-L1（`~/.claude/brain/thinking.md`）が L0 を `@~/.claude/ccs/brain/thinking.md` で import する前提。
+OSS テンプレート（`brain/thinking.md`）に変更があった場合、または利用者の個人 brain（`~/.claude/brain/thinking.md`）が未配置の場合に、案内を出す。
+
+**個人 brain は絶対に自動上書きしない**。利用者が育てた判断軸を失う事故を防ぐ（ADR-0016）。
 
 ```bash
-HOME_L0="$HOME/.claude/ccs/brain/thinking.md"
-HOME_L1="$HOME/.claude/brain/thinking.md"
+PERSONAL_BRAIN="$HOME/.claude/brain/thinking.md"
+# テンプレート変更検知は Step 2 の BRAIN 変数（git diff 結果）を使う。
+# APPLIED_FILES（適用済みのみ）を使うと、利用者が [brain] 全スキップした場合に
+# 差分提案が発火しないため不適切。
+TEMPLATE_CHANGED=$(printf '%s\n' "$BRAIN" | grep -q '^brain/thinking\.md$' && echo "yes" || echo "no")
 
-# L0 をホームに展開（タグ参照でドリフト回避）
-if echo "$APPLIED_FILES" | grep -q '^brain/thinking\.md$' || [ ! -f "$HOME_L0" ]; then
-  mkdir -p "$(dirname "$HOME_L0")"
-  git show "${LATEST}:brain/thinking.md" > "$HOME_L0"
-  echo "L0 (base brain) をホームに展開: $HOME_L0"
-fi
-
-# L1 が未配置なら案内のみ（自動配置はしない、個人スコープなので明示的同意が必要）
-if [ ! -f "$HOME_L1" ]; then
+# (1) 個人 brain 未配置時: 初期化を提案
+if [ ! -f "$PERSONAL_BRAIN" ]; then
   echo ""
-  echo "ℹ️  L1 (personal brain) が未配置: $HOME_L1"
-  echo "   個人の判断軸を持つには以下のいずれか:"
-  echo "   (i)  L0 を直接 import する薄い L1 を配置（推奨初期形）:"
-  echo "        echo '@~/.claude/ccs/brain/thinking.md' > $HOME_L1"
-  echo "   (ii) スキップ（L2 が直接 L0 を import するパターンに切替）"
+  echo "ℹ️  個人 brain が未配置: $PERSONAL_BRAIN"
+  echo "   OSS テンプレート (brain/thinking.md) から初期化しますか? [Y/n]"
+  read -r CHOICE
+  if [ "${CHOICE:-Y}" = "Y" ] || [ "${CHOICE:-Y}" = "y" ]; then
+    mkdir -p "$(dirname "$PERSONAL_BRAIN")"
+    git show "${LATEST}:brain/thinking.md" > "$PERSONAL_BRAIN"
+    echo "個人 brain を初期化しました（今後は利用者が育てる、自動上書きしない）"
+  else
+    echo "スキップ（後で /setup または再実行で初期化可能）"
+  fi
+
+# (2) 個人 brain 既存 + テンプレート変更あり: 差分提案のみ（自動上書き禁止）
+elif [ "$TEMPLATE_CHANGED" = "yes" ]; then
+  echo ""
+  echo "📝 OSS テンプレートに更新があります。個人 brain との差分を表示:"
+  diff "$PERSONAL_BRAIN" <(git show "${LATEST}:brain/thinking.md") | head -60
+  echo ""
+  echo "個人 brain は自動上書きしません（ADR-0016「上書き禁止運用」）。"
+  echo "必要な部分だけ手動で取り込んでください: $PERSONAL_BRAIN"
+  echo '  比較コマンド例: diff "$HOME/.claude/brain/thinking.md" <(git show "'"${LATEST}"':brain/thinking.md")'
+
+# (3) その他: 何もしない
 fi
 ```
 
 判断基準:
-- **L0 はホーム展開を自動化してよい**: ccs 配布物（OSS）であり個人差分が乗らない。冪等な上書きで安全
-- **L1 は自動配置しない**: 個人の判断軸を保持する層なので、初回展開時のみ案内し、内容は本人に委ねる
-
-ADR-0013 の最小実装: ホーム L0 展開のみ自動化、L1 は案内のみ。
+- **OSS テンプレートはリポ内ファイル**: ロード対象外。`brain/` カテゴリで blind overwrite される（PJ ローカルファイルとして）が、利用者の context には影響しない
+- **個人 brain は利用者領域**: `/setup` 初回 or `/adopt-sidekick-update` での明示的同意でのみ初期化。以降は触らない
+- **差分マージは手動**: 利用者の判断軸との衝突を機械では判定できない
 
 ### Step 7: 取り込み結果 → commit 提案
 
@@ -400,8 +414,9 @@ vX.Y.Z-1 → vX.Y.Z
 - **SIDEKICK_VERSION 更新漏れ**: Step 6 で必ず更新。次回 `/inventory` が同じ差分を再検知する
 - **対話型なので Agent 委譲しない**: ユーザー判断が頻繁
 - **永久スキップの見直し**: PJ 性質が変わったら（UI 追加等）、`/weekly-inventory` で棚卸し提案が出る
-- **ホーム L0 展開のべき等性**: Step 6.5 は `brain/thinking.md` が変更されたとき、または `~/.claude/ccs/brain/thinking.md` が未配置のときのみ動く。再実行で副作用なし
-- **L1 は自動配置しない**: 個人スコープのファイルを sidekick が勝手に作らない。案内のみで本人の同意を待つ
+- **個人 brain は絶対上書きしない**: Step 6.5 で `~/.claude/brain/thinking.md` を自動更新しない。育てた判断軸を失う事故を防ぐ（ADR-0016）。不在時のみ初期化を提案、存在時は差分提案のみ
+- **OSS テンプレートはリポ内のみ**: `brain/thinking.md` は配布素材としてリポ内に配置されるが、ロード対象外。利用者が育てるのは個人 brain のみ
+- **Step 6.5 / 6.4d の `read` は対話前提**: `--all` 等の auto モード対応は本スキル全体の課題。本 Step だけ対応すると整合崩れ。auto モードでは Step 6.5 (1) の初期化プロンプトと Step 6.4d の cleanup プロンプトでハングし得る点に注意（auto 化は別タスク）
 - **PJ-protected files の blind overwrite 禁止**: `CLAUDE.md` `README*` `.gitignore` は Step 6 で上書きしない（Step 6.4 で扱う）。下流 PJ の Project Configuration 値や独自 README が消える事故を防ぐ
 - **brain @import の手動接続**: Step 6.4b で CLAUDE.md に `@.claude/brain/thinking.md` を自動挿入しないのが default。PJ ごとに §構成が違うため、誤配置を生む。手動位置決め推奨
 - **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり

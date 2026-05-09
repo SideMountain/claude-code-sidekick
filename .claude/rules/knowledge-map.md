@@ -5,26 +5,28 @@
 
 ## 格納レイヤーと役割
 
-| レイヤー | 役割 | 書く人 | Git管理 | 寿命 |
-|---|---|---|---|---|
-| `hooks/permissions` | 機械的に止める（enforcement） | 人間 + Claude | される | 長い |
-| `CLAUDE.md` | プロジェクトルール（what to do） | 人間 + Claude（合意の上） | される | 長い |
-| `CLAUDE.local.md` | 個人設定（personal preferences） | 個人 | されない | 長い |
-| `brain/thinking.md` (L0) | 業界共通の判断基盤・思考OS（how to think、汎用） | Claude（合意の上、ccs 還流で更新） | される | 長い |
-| `~/.claude/brain/thinking.md` (L1) | 個人の判断軸（複数 PJ 横断、how to think、個人差分） | 個人 + Claude（feedback 昇格） | されない | 長い |
-| `<PJ>/.claude/brain/thinking.md` (L2) | PJ 固有の判断軸（how to think、PJ 差分） | 人間 + Claude（合意の上） | される | 長い |
-| `rules/*.md`（brain 以外） | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | 長い |
-| `skills/` | 繰り返し手順（how to do） | Claude（合意の上） | される | 中〜長い |
-| `agents/` | 専門実行主体の定義（who does it） | Claude（合意の上） | される | 長い |
-| `docs/decisions/` (ADR) | 設計判断記録（why we decided） | Claude（合意の上） | される | 永続 |
-| `agent-memory/` | エージェントの学習記録（PJスコープ共有） | Agent（自動） | される | 可変（棚卸しで整理） |
-| `agent-memory-local/` | エージェントの学習記録（個人ローカル） | Agent（自動） | されない | 可変 |
-| `skills/*/.data/` | スキル永続データ（分析履歴・キャッシュ） | Claude（自動） | されない | 可変 |
-| auto-memory `feedback_*.md` | 行動修正の経緯記録（what not to do） | Claude（自動） | されない | 中（昇格 or 統合で整理） |
-| auto-memory `reference_*.md` | 外部システム・設定へのポインタ | Claude（自動） | されない | 長い |
-| auto-memory `project_*.md` | 進行中の作業・ゴール・マイルストーン | Claude（自動） | されない | 中（作業完了で整理） |
-| auto-memory `user_*.md` | ユーザーの役割・好み・知識 | Claude（自動） | されない | 長い |
-| auto-memory `MEMORY.md` | 索引 + Active Work + Backlog | Claude（自動） | されない | 可変（棚卸しで整理） |
+| レイヤー | 役割 | 書く人 | Git管理 | ロード対象 | 寿命 |
+|---|---|---|---|---|---|
+| `hooks/permissions` | 機械的に止める（enforcement） | 人間 + Claude | される | — | 長い |
+| `CLAUDE.md` | プロジェクトルール（what to do） | 人間 + Claude（合意の上） | される | ✅ | 長い |
+| `CLAUDE.local.md` | 個人設定（personal preferences） | 個人 | されない | ✅ | 長い |
+| `~/.claude/brain/thinking.md` | 個人 brain — 個人の判断軸（複数 PJ 横断、how to think） | 個人 + Claude（feedback 昇格） | されない | ✅ | 長い |
+| `<PJ>/.claude/brain/thinking.md` | PJ 固有 brain — PJ 固有の判断軸（how to think、PJ 差分） | 人間 + Claude（合意の上） | される | ✅ | 長い |
+| `brain/thinking.md`（sidekick リポ内） | OSS テンプレート — 個人 brain の初期テンプレート素材（配布物） | Claude（合意の上、OSS 還流で更新） | される | ❌ | 長い |
+| `rules/*.md`（brain 以外） | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | ✅（path-scoped） | 長い |
+| `skills/` | 繰り返し手順（how to do） | Claude（合意の上） | される | 呼び出し時 | 中〜長い |
+| `agents/` | 専門実行主体の定義（who does it） | Claude（合意の上） | される | 呼び出し時 | 長い |
+| `docs/decisions/` (ADR) | 設計判断記録（why we decided） | Claude（合意の上） | される | — | 永続 |
+| `agent-memory/` | エージェントの学習記録（PJスコープ共有） | Agent（自動） | される | — | 可変（棚卸しで整理） |
+| `agent-memory-local/` | エージェントの学習記録（個人ローカル） | Agent（自動） | されない | — | 可変 |
+| `skills/*/.data/` | スキル永続データ（分析履歴・キャッシュ） | Claude（自動） | されない | — | 可変 |
+| auto-memory `feedback_*.md` | 行動修正の経緯記録（what not to do） | Claude（自動） | されない | — | 中（昇格 or 統合で整理） |
+| auto-memory `reference_*.md` | 外部システム・設定へのポインタ | Claude（自動） | されない | — | 長い |
+| auto-memory `project_*.md` | 進行中の作業・ゴール・マイルストーン | Claude（自動） | されない | — | 中（作業完了で整理） |
+| auto-memory `user_*.md` | ユーザーの役割・好み・知識 | Claude（自動） | されない | — | 長い |
+| auto-memory `MEMORY.md` | 索引 + Active Work + Backlog | Claude（自動） | されない | ✅ | 可変（棚卸しで整理） |
+
+brain は 2 層構造（ADR-0016）。OSS テンプレート（`brain/thinking.md`）は配布素材で、`/setup` で個人 brain 不在時のみコピーされる（既存個人 brain は上書き禁止）。
 
 ## 判断フロー
 
@@ -37,10 +39,9 @@
   │     → Yes → hooks/permissions（最も強い。判断不要で止まる）
   │
   ├── 判断原則・思考スタイルか？
-  │     ├── 業界共通（誰でも頷ける）       → L0: brain/thinking.md（ccs 還流候補）
-  │     ├── 個人の癖（複数 PJ で同じ判断） → L1: ~/.claude/brain/thinking.md
-  │     └── PJ 固有（PJ ドメイン依存）      → L2: <PJ>/.claude/brain/thinking.md
-  │     ※ 迷ったら L2 から始め、3 件ルールで L1 に昇格させる
+  │     ├── 全 PJ で適用したい（複数 PJ 横断） → 個人 brain（~/.claude/brain/thinking.md）
+  │     └── PJ 固有（PJ ドメイン依存）         → PJ brain（<PJ>/.claude/brain/thinking.md）
+  │     ※ 迷ったら PJ brain から始め、3 件ルールで個人 brain に昇格させる
   │
   ├── プロジェクト全体のルール（規約）か？
   │     ├── 全セクションに適用 → CLAUDE.md
@@ -58,7 +59,7 @@
   │
   ├── Claudeの行動修正か？
   │     → Yes → auto-memory の `feedback_*.md` + `MEMORY.md` 索引
-  │     → 3回以上同趣旨が溜まったら → brain (L2/L1/L0) に昇格
+  │     → 3回以上同趣旨が溜まったら → brain（PJ brain / 個人 brain）に昇格
   │
   └── 上記いずれにも該当しない補足情報
         → auto-memory の `MEMORY.md`
@@ -70,9 +71,9 @@
 |---|---|---|
 | ユーザーの修正指示 | 「dry-run省略するな」 | auto-memory `feedback_*.md` |
 | ユーザーの承認 | 「A案でいい」 | ADR（設計判断の場合）/ 消える（軽微な場合） |
-| 設計思想・原則（業界共通） | 「意図のないコードは書くな」 | brain L0 (`brain/thinking.md` §1) |
-| 設計思想・原則（個人） | 「確証 95% 未満は断定しない」 | brain L1 (`~/.claude/brain/thinking.md`) |
-| 設計思想・原則（PJ 固有） | 「拡張ファースト」（sidekick 特有） | brain L2 (`<PJ>/.claude/brain/thinking.md`) |
+| 設計思想・原則（業界共通） | 「意図のないコードは書くな」 | OSS テンプレート（`brain/thinking.md`、配布物として PR） |
+| 設計思想・原則（個人横断） | 「確証 95% 未満は断定しない」 | 個人 brain（`~/.claude/brain/thinking.md`） |
+| 設計思想・原則（PJ 固有） | 「拡張ファースト」（sidekick 特有） | PJ brain（`<PJ>/.claude/brain/thinking.md`） |
 | 事故・障害の教訓 | 「マージコマンドをテスト目的で実行しない」 | auto-memory `feedback_*.md` or CLAUDE.md Lessons Learned |
 | 実装パターン | フレームワーク固有の落とし穴等 | auto-memory `reference_*.md` |
 | 運用手順 | 「本番DBはコマンド単位で接続文字列を渡す」 | CLAUDE.md + rules/*.md |
@@ -85,13 +86,13 @@
 
 ## 昇格と圧縮のルール
 
-### 昇格（feedback → brain L2 / L1 / L0）
+### 昇格（feedback → PJ brain → 個人 brain → OSS テンプレート還流）
 
 - 同趣旨の feedback が3回以上溜まったら、原則への昇格を検討する
 - 昇格パス:
-  - PJ 内同類 3 件 → L2（`<PJ>/.claude/brain/thinking.md`）に昇格
-  - 別 PJ で同類観測 → L1（`~/.claude/brain/thinking.md`）に昇格
-  - 業界共通と判明 → L0（`brain/thinking.md`）に昇格、ccs 還流候補
+  - PJ 内同類 3 件 → PJ brain（`<PJ>/.claude/brain/thinking.md`）に昇格
+  - 別 PJ で同類観測 → 個人 brain（`~/.claude/brain/thinking.md`）に昇格
+  - 業界共通と判明 → OSS テンプレート（sidekick リポ `brain/thinking.md`）への手動 PR で還流
 - 昇格後も feedback ファイルは経緯記録として残す（MEMORY.md 索引に「昇格済み」を明記）
 - `/weekly-inventory` Step 3 で定期的に昇格候補を検出する
 
@@ -102,15 +103,16 @@
 - brain ファイルが 200 行を超えたら圧縮を検討する:
   - 具体的すぎる原則は rules/ への降格を検討
   - 重複する原則は統合する
-  - 上位層から下位層への適切な移動（例: L0 から L2 へ、PJ 固有と判明したもの）
+  - 上位層から下位層への適切な移動（例: 個人 brain から PJ brain へ、PJ 固有と判明したもの）
 - `/weekly-inventory` で定期実行
 
-### 知識還流（PJ → 個人 → 業界共通）
+### 知識還流（PJ → 個人 → OSS テンプレート）
 
-- 還流タグ: `[L0候補]` / `[L1候補]` / `[L2固有]`
+- 還流タグ: `[PJ 固有]` / `[個人 brain 昇格]` / `[OSS 還流候補]`
 - `/close-chat` Step 2.5 でフラグを立てる
 - `/weekly-inventory` Step 4 でフラグをまとめて処理する
 - 即座に反映しない。蓄積→パターン検出→昇格→還流の順
+- OSS 還流は手動 PR（sidekick リポへ）。自動同期はしない
 
 ## 書かないもの（どこにも置かない）
 
