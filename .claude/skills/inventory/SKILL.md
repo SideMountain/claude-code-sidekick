@@ -98,11 +98,20 @@ auto-memory の MEMORY.md（`~/.claude/projects/<slug>/memory/MEMORY.md`）の `
 CURRENT=$(grep -E "^SIDEKICK_VERSION:" CLAUDE.md | sed -E 's/.*"([^"]+)".*/\1/')
 LATEST=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.tag_name')
 TITLE=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.name')
+BODY=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.body')
 
-case "$TITLE" in
-  *"[CRITICAL]"*) SEVERITY="Critical" ;;
-  *"[ENHANCEMENT]"*) SEVERITY="Enhancement" ;;
-  *) SEVERITY="Standard" ;;
+# 第一ソース: body の構造化マーカー（> severity: ...）。printf でパース安全に（CLAUDE.md §3）
+MARKER=$(printf '%s\n' "$BODY" | grep -oE 'severity:[[:space:]]*(critical|standard|enhancement)' | head -1 | sed -E 's/.*:[[:space:]]*//')
+case "$MARKER" in
+  critical)    SEVERITY="Critical" ;;
+  enhancement) SEVERITY="Enhancement" ;;
+  standard)    SEVERITY="Standard" ;;
+  *)  # フォールバック: 旧リリース（v0.8.0 以前、マーカー無し）は title prefix で判定
+    case "$TITLE" in
+      *"[CRITICAL]"*)    SEVERITY="Critical" ;;
+      *"[ENHANCEMENT]"*) SEVERITY="Enhancement" ;;
+      *)                 SEVERITY="Standard" ;;
+    esac ;;
 esac
 ```
 

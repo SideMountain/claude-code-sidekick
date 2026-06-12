@@ -55,12 +55,24 @@ LATEST=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.t
 
 ### Step 1: severity 判定
 
+`/inventory` Step 5a と**同一ロジック**（body の構造化マーカーを第一ソース、無ければ title prefix にフォールバック）。2箇所で判定がずれないよう揃える:
+
 ```bash
 TITLE=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.name')
-case "$TITLE" in
-  *"[CRITICAL]"*) SEVERITY="Critical" ;;
-  *"[ENHANCEMENT]"*) SEVERITY="Enhancement" ;;
-  *) SEVERITY="Standard" ;;
+BODY=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.body')
+
+# 第一ソース: body の構造化マーカー（> severity: ...）。printf でパース安全に（CLAUDE.md §3）
+MARKER=$(printf '%s\n' "$BODY" | grep -oE 'severity:[[:space:]]*(critical|standard|enhancement)' | head -1 | sed -E 's/.*:[[:space:]]*//')
+case "$MARKER" in
+  critical)    SEVERITY="Critical" ;;
+  enhancement) SEVERITY="Enhancement" ;;
+  standard)    SEVERITY="Standard" ;;
+  *)  # フォールバック: 旧リリース（v0.8.0 以前、マーカー無し）は title prefix で判定
+    case "$TITLE" in
+      *"[CRITICAL]"*)    SEVERITY="Critical" ;;
+      *"[ENHANCEMENT]"*) SEVERITY="Enhancement" ;;
+      *)                 SEVERITY="Standard" ;;
+    esac ;;
 esac
 ```
 
