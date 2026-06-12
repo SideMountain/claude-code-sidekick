@@ -120,6 +120,7 @@ CLAUDE.md の `Project Configuration` をヒアリング結果で埋める。
 - `TEST_COMMAND`, `TYPECHECK_COMMAND`, `BUILD_COMMAND`, `LINT_COMMAND`
 - `ORM_TYPE`, `STG_DB_PATTERN`, `PRD_DB_PATTERN`（DB設定。詳細は rules/database.md）
 - `NOTION_ENABLED`
+- `SIDEKICK_VERSION`（このPJを生成した ccs テンプレートのバージョン。ここでは空のまま。Step 3.6 で ccs remote の最新タグから自動スタンプする。空のままだと `/inventory`・`/adopt-sidekick-update` のバージョンチェックがスキップされる）
 
 #### 2b. .claude/settings.local.json の生成
 
@@ -200,6 +201,36 @@ fi
 ```
 
 **既存PJモードでも同様**: Step 1E の確認項目に `ccs remote の有無` を追加し、未設定なら自動追加（ADR-0009）。
+
+### Step 3.6: SIDEKICK_VERSION のスタンプ（新規PJモード）
+
+生成した CLAUDE.md の `SIDEKICK_VERSION` を、このPJを生成した ccs テンプレートのバージョンで埋める。
+これを省略すると `SIDEKICK_VERSION: ""` のままになり、`/inventory` のバージョンチェックと
+`/adopt-sidekick-update`（いずれも非空を前提）が永久にスキップされ、新規PJが更新を取り込めなくなる。
+
+> **バージョンの取得元**: ccs remote の最新タグを正とする。GitHub Template fork は git タグを
+> 引き継がないためローカルの `git describe` は当てにできない。Step 3.5 で追加・fetch 済みの
+> `ccs` remote のタグを参照する（Step 4.5 の個人 brain 初期化と同じ取得経路）。
+
+```bash
+git fetch ccs --tags 2>/dev/null
+CCS_TAG=$(git ls-remote --tags ccs 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+if [ -n "$CCS_TAG" ]; then
+  # SIDEKICK_VERSION は v プレフィックスなしで格納（例: "0.8.0"）
+  sed -i 's/^SIDEKICK_VERSION: .*/SIDEKICK_VERSION: "'"${CCS_TAG#v}"'"/' CLAUDE.md
+  echo "SIDEKICK_VERSION を ${CCS_TAG#v} に設定しました（このPJは ccs ${CCS_TAG} から生成）"
+else
+  echo "⚠️  ccs remote にタグが見つかりません。SIDEKICK_VERSION は空のままです。"
+  echo "   ccs remote 追加後（Step 3.5）に /setup を再実行するか、手動で CLAUDE.md の"
+  echo "   SIDEKICK_VERSION を最新リリース番号に設定してください（空のままだと /inventory・"
+  echo "   /adopt-sidekick-update のバージョンチェックがスキップされます）。"
+fi
+```
+
+> **既存PJモードでも同様**: Step 1E で `SIDEKICK_VERSION` が空（テンプレート初期値のまま）と判明した
+> 場合のみ、上記と同じロジックで ccs 最新タグからスタンプする（本 fix 以前に取り込んで空のまま
+> deadlock している既存PJの救済）。**既に非空の値が入っている PJ は上書きしない**（意図的な
+> version pin を壊さないため）。
 
 ### Step 4: .gitignore 連動
 
@@ -395,6 +426,7 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 | additionalDirectories | （確認不要・自動設定） | settings.local.json に親ディレクトリを追加（Step 2b 参照） |
 | brain (2 層構造) | 「判断基盤を 2 層モデル（個人 brain + PJ 固有 brain）に移行しますか？」（旧 `.claude/rules/thinking.md` または旧 3 層 chain を保持中の PJ のみ） | 新規PJモードの Step 4.5 と同じ。旧 thinking.md は過渡期は共存可、強制移行は行わない。**既存の個人 brain は絶対上書きしない** |
 | 個人 brain (`~/.claude/brain/thinking.md`) 不在 | （確認不要・自動提案） | Step 4.5 の個人 brain 初期化ロジックを実行（OSS テンプレート → home コピー、不在時のみ） |
+| `SIDEKICK_VERSION` が空 | （確認不要・自動提案） | 空（テンプレート初期値）なら Step 3.6 のロジックで ccs 最新タグからスタンプ。非空なら触らない（version pin を尊重）。空のまま放置すると `/inventory`・`/adopt-sidekick-update` がスキップされ更新を取り込めない |
 
 ### Step 3E: オーナー情報（任意）
 
