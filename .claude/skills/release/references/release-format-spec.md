@@ -17,6 +17,22 @@ ADR-0009 で定義した温度感伝達方式（title prefix + body banner）の
 
 ---
 
+## severity マーカー（機械可読・必須）
+
+body の**最冒頭**（banner より前）に、機械検知用の severity マーカーを1行必ず置く。
+
+| 温度感 | マーカー |
+|---|---|
+| Critical | `> severity: critical` |
+| Standard | `> severity: standard` |
+| Enhancement | `> severity: enhancement` |
+
+- **形式**: blockquote の1行、小文字1語（`grep -oE 'severity:[[:space:]]*(critical|standard|enhancement)'` で安定パース）。HTML コメント（`<!-- ... -->`）は GitHub のサニタイズで消える可能性があるため使わない。**見える行**で確実に残す。
+- **Standard も必ず明示**する（`> severity: standard`）。マーカー欠落（= v0.8.0 以前の旧リリース）と Standard を区別でき、検知が堅牢になる。
+- **title prefix・body banner・severity マーカーの3点は必ず一致**させる（ADR-0009 が要求する「二箇所での一致維持」を3点に拡張）。`/inventory` Step 5a と `/adopt-sidekick-update` Step 1 はこのマーカーを第一ソースとして読み、無ければ title prefix にフォールバックする。
+
+---
+
 ## Body Banner（冒頭表示）
 
 Title prefix と一致した severity のバナーを body 冒頭に配置する。
@@ -47,6 +63,8 @@ Title prefix と一致した severity のバナーを body 冒頭に配置する
 以下のセクションは必ず含める。順序もこの通り。
 
 ```markdown
+> severity: {critical|standard|enhancement}
+
 {banner}
 
 ## Highlights

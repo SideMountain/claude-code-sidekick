@@ -130,6 +130,7 @@ git push origin vX.Y.Z  # 要ユーザー確認
 
 **GitHub Release 作成** — ここが本スキルの核心。**必ず `references/release-format-spec.md` を Read** してフォーマットを確認する:
 
+- severity マーカー行（`> severity: critical|standard|enhancement`、body 最冒頭）— `/inventory`・`/adopt-sidekick-update` が機械検知に使う第一ソース。title prefix・banner と必ず一致させる
 - Title prefix（Critical / Standard / Enhancement 別）
 - Body banner（severity 別の文言）
 - 必須セクション（Highlights、Changes、変更された ADR、変更された rules、変更された skills、Full Changelog）
