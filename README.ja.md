@@ -17,7 +17,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 
 | 🛡️ 安全ガード | 🧰 再利用ワークフロー | 🧠 思考OS |
 |---|---|---|
-| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**15スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
+| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**16スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
 
 最後の「思考OS」が sidekick の一番の差別化です。
 
@@ -74,7 +74,7 @@ Claude : → Worktree 作成（main は触らない）
 | | 素の Claude Code | 一般的なテンプレ | **sidekick** |
 |---|:---:|:---:|:---:|
 | 危険操作の物理ブロック | ❌ | △（ルール記述のみ） | ✅ hooks で強制 |
-| 再利用スキル | ❌ | △ | ✅ 15 種類 |
+| 再利用スキル | ❌ | △ | ✅ 16 種類 |
 | **あなたの判断軸を学習** | ❌ | ❌ | ✅ **思考OS** |
 | 完全自動実装（寝てる間に PR） | ❌ | ❌ | ✅ `/auto-implement` |
 | ADR で設計判断を追跡可能 | ❌ | △ | ✅ |
@@ -124,6 +124,17 @@ Claude : → Worktree 作成（main は触らない）
 ---
 
 ## クイックスタート
+
+### 入手方法
+
+| あなたの状況 | 経路 | コマンド / アクション |
+|---|---|---|
+| **新規**プロジェクトを始める | GitHub テンプレート（推奨） | `gh repo create my-project --template SideMountain/claude-code-sidekick --private --clone` |
+| **手元にコピー**して学習・フォークしたい | `git clone` | `git clone https://github.com/SideMountain/claude-code-sidekick.git` |
+| **既存**プロジェクトに入れる | 手動オーバーレイ | `cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/` の後 `/setup` |
+| 既に sidekick 導入済みで**新バージョン**が欲しい | `/adopt-sidekick-update` | プロジェクトで `/adopt-sidekick-update` を実行 |
+
+新規 → GitHub テンプレート。既存 → 手動オーバーレイ + `/setup`。導入済み → `/adopt-sidekick-update`。
 
 ### 1. テンプレートから作る
 
@@ -201,21 +212,21 @@ flowchart LR
 
 **昇格判断は必ずあなたが確認します**（完全自動昇格ではない）。`/weekly-inventory` でパターンが提示され、OK を出したものだけが `thinking.md` に入ります。
 
-#### 何が `thinking.md` に入る？
+#### 判断軸はどこに置かれる？ — 2層 brain（ADR-0016）
 
-`thinking.md` §1 はあなた専用の判断軸です。次のような内容を書きます:
+sidekick は判断軸を2つのファイルに分け、個人の原則は**あなた**について回り、プロジェクト固有のルールは**ローカル**に留まるようにします:
 
-- 何を最優先するか（スピード / 安全性 / ユーザー影響）
-- 絶対にやらないこと（過剰設計 / テスト省略 / 金曜デプロイ）
-- 自分の失敗パターン（どこで判断を間違えがちか）
+- **個人 brain** — `~/.claude/brain/thinking.md`: 全プロジェクト横断のあなたの判断軸（何を最優先するか、絶対にやらないこと、自分の失敗パターン）。あなたが育てる。`/adopt-sidekick-update` は決して上書きしない。
+- **PJ brain** — `<project>/.claude/brain/thinking.md`: このプロジェクト固有の判断。個人 brain を1段 `@import` する。個人 brain が不在なら import は silent ignore され（フェイルセーフ）、PJ brain だけがロードされる。
 
-フレームワーク（セルフレビュー手順、フェーズ別プロトコル）は共通のまま。**判断軸だけがあなた色**になります。
+リポジトリルートの `brain/thinking.md` は**テンプレート（ロード対象外）**で、`/setup` が個人 brain 不在時のみ `~/.claude/brain/thinking.md` にコピーする（既存の個人 brain は決して壊さない）。フレームワーク（セルフレビュー手順、フェーズ別プロトコル）は共通のまま。**判断軸だけがあなた色**になります。
 
 #### ファイルの役割分担
 
 | ファイル | 何を定義？ | 変わるタイミング |
 |---|---|---|
-| `thinking.md` | **あなた**の判断原則（人に紐づく、PJ をまたいで運ぶ） | あなたの考え方が変わったとき |
+| `~/.claude/brain/thinking.md` | **あなた**の判断原則 — 全プロジェクト横断（個人 brain） | あなたの考え方が変わったとき |
+| `<project>/.claude/brain/thinking.md` | **このプロジェクト**の判断軸（PJ brain、個人 brain を `@import`） | PJ 固有の判断が変わったとき |
 | `rules/*.md` | **プロジェクト**固有ルール（コーディング規約、DB、Git） | プロジェクトが変わったとき |
 | `CLAUDE.md` | プロジェクト設定 + HARD/SOFT/GUIDE ルール | プロジェクトが変わったとき |
 
@@ -244,7 +255,7 @@ flowchart LR
 3. **HARD ルール** — Claude があなたに確認してから実行: `git push`（feature）, `gh pr create`, `gh pr merge`
 4. **それ以外** — `Bash(*)` で自動承認（ダイアログなし）
 
-### 🧰 15 スキル — すぐ使えるワークフロー
+### 🧰 16 スキル — すぐ使えるワークフロー
 
 | カテゴリ | スキル | 用途 |
 |---|---|---|
@@ -252,9 +263,10 @@ flowchart LR
 | **レビュー** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | 変更スコープに応じて必要な観点だけ実行 |
 | **ライフサイクル** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | セッション・プロジェクト管理 |
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
+| **更新・リリース** | `/adopt-sidekick-update`, `/release` | 上流の更新を取り込む / バージョン付きリリースを切る |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
 
-<sub>※ `/sync-oss` は sidekick 保守者向けの内部スキル（下流プロジェクトでは使わない）のため、本表から除外しています。</sub>
+<sub>※ `/sync-oss` と `/news-upstream` は sidekick 保守者専用スキルで、配布物には含まれません。</sub>
 
 ### 🔄 スキル同士のつながり
 
@@ -373,6 +385,8 @@ flowchart LR
 ```
 sidekick/
 ├── CLAUDE.md                    # ルール・設定（HARD/SOFT/GUIDE）
+├── brain/
+│   └── thinking.md              # 個人 brain テンプレート（ロード対象外。/setup が ~/.claude/brain/ にコピー）
 ├── .claude/
 │   ├── hooks/                   # 安全の強制層
 │   │   ├── guard-bash.sh        # 9ガード（push, rm, prisma, env 等）
@@ -381,13 +395,14 @@ sidekick/
 │   │   ├── guard-protected-branch-edit.sh
 │   │   ├── prompt-reminder.sh
 │   │   └── session-start.sh
-│   ├── skills/                  # 15 の再利用ワークフロー
+│   ├── skills/                  # 16 の再利用ワークフロー
 │   │   ├── review/              # オーケストレーター + agents/ + references/
 │   │   ├── auto-implement/      # 全自動パイプライン
 │   │   ├── close-chat/          # セッション締め + 学習ループ記録
 │   │   └── ...
-│   ├── rules/                   # ガイドライン + 思考OS
-│   │   ├── thinking.md          # 思考OS — あなたの判断原則（入れ替え可能）
+│   ├── brain/                   # 思考OS — PJ brain（2層、ADR-0016）
+│   │   └── thinking.md          # PJ 判断軸（~/.claude/brain/thinking.md を @import）
+│   ├── rules/                   # プロジェクト固有ルール（コーディング規約、DB、Git）
 │   │   ├── knowledge-map.md     # 知識の配置先マップ
 │   │   ├── code-quality.md      # コーディング規約
 │   │   └── ...
@@ -414,6 +429,15 @@ sidekick/
 
 sidekick を使っていて「ここが良い」「困った」「こうして欲しい」があれば、[Downstream Feedback](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) へ。
 
+## sidekick（開発） と claude-code-sidekick（配布）
+
+sidekick は2つのリポジトリに分かれ、一方向に流れます:
+
+- **sidekick**（上流・非公開） — テンプレートを*開発*する場所: ADR、ドッグフーディング、保守者専用スキル（`/sync-oss`, `/news-upstream`）、最先端。
+- **claude-code-sidekick**（本リポ・公開） — あなたが使う*配布物*: フィルタ済みのリリース可能なサブセット。プロダクト・プロセス固有の要素は配布時に除去されます。
+
+変更は**一方向（sidekick → claude-code-sidekick）**に流れ、ここでバージョン付き GitHub Release が切られます。非公開リポに依存することはありません — claude-code-sidekick を独立した自己完結テンプレートとして扱ってください。取り込み済みバージョンは `SIDEKICK_VERSION` で追跡し、更新は `/adopt-sidekick-update` で取り込みます（後述）。
+
 ## バージョン管理
 
 sidekick は **git tag + GitHub Releases** でバージョン管理しています。プロジェクトルートに VERSION ファイルは置きません。
@@ -434,7 +458,15 @@ SIDEKICK_VERSION: "0.4.1"
 - **(プレフィックスなし)**: Standard — 通常の機能追加・修正（デフォルト）
 - **💡 [ENHANCEMENT]**: opt-in な改善。**後回し可**
 
-温度感は GitHub Release の title prefix と body 冒頭 banner に明示され、`/inventory` が緊急度を下流 PJ に伝えます。リリースは `/release` スキルで切り、変更された ADR / rules / skills が機械的にリリースノートに含まれるため、設計意図の漏洩がありません。
+温度感は GitHub Release の title prefix と body 冒頭 banner に明示され、さらに body 内に機械可読な `severity:` マーカーとして出力されます。`/inventory` はこのマーカー（無ければ title）を読み、緊急度を下流 PJ に伝えます。リリースは `/release` スキルで切り、変更された ADR / rules / skills が機械的にリリースノートに含まれるため、設計意図の漏洩がありません。
+
+### 更新の受け取り方（`/adopt-sidekick-update`）
+
+下流プロジェクトは **`/adopt-sidekick-update`** スキルで sidekick の新リリースを取り込みます。対話型・カテゴリ一括方式で、対象リリースとの差分を取り、カテゴリ（rules / skills / hooks / docs / ADR）ごとにまとめて承認するか、ファイル単位で個別確認できます。見送った項目は auto-memory に記録され、毎回再提案されません。
+
+**個人 brain**（`~/.claude/brain/thinking.md`）は決して自動上書きされません — テンプレート側の更新は、あなたが承認する差分として提示されます（ADR-0016）。
+
+典型フロー: `/inventory`（最新リリースとの差分と温度感を検出）→ `/adopt-sidekick-update`（適用）→ `CLAUDE.md` の `SIDEKICK_VERSION` を更新。
 
 ## ライセンス
 

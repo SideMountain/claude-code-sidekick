@@ -19,7 +19,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 
 | 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
 |---|---|---|
-| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **15 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **16 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
 
 The "Thinking OS" is what sets sidekick apart from other templates.
 
@@ -76,7 +76,7 @@ In other words, **you stop repeating yourself**.
 | | Vanilla Claude Code | Typical template | **sidekick** |
 |---|:---:|:---:|:---:|
 | Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
-| Reusable skills | ❌ | △ | ✅ 15 skills |
+| Reusable skills | ❌ | △ | ✅ 16 skills |
 | **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
 | Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
 | Tracks design decisions (ADR) | ❌ | △ | ✅ |
@@ -126,6 +126,17 @@ That said, the core idea — **teaching your judgment to an AI** — is tool-agn
 ---
 
 ## Quick Start
+
+### How to obtain sidekick
+
+| You are... | Path | Command / Action |
+|---|---|---|
+| Starting a **brand-new** project | GitHub template (recommended) | `gh repo create my-project --template SideMountain/claude-code-sidekick --private --clone` |
+| Want a **local copy** to study or fork | `git clone` | `git clone https://github.com/SideMountain/claude-code-sidekick.git` |
+| Adding to an **existing** project | Manual overlay | `cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/`, then run `/setup` |
+| Already on sidekick, want a **newer version** | `/adopt-sidekick-update` | run `/adopt-sidekick-update` in the project |
+
+New projects → GitHub template. Existing projects → manual overlay + `/setup`. Already-adopted projects → `/adopt-sidekick-update`.
 
 ### 1. Create from template
 
@@ -204,21 +215,21 @@ flowchart LR
 
 **Promotion always requires your approval** (not fully automatic). `/weekly-inventory` surfaces candidates; only what you approve enters `thinking.md`.
 
-#### What goes in `thinking.md`?
+#### Where your judgment lives — the two-layer brain (ADR-0016)
 
-`thinking.md` §1 is your personal judgment axis:
+sidekick splits judgment into two files so personal principles travel with **you** while project-specific rules stay **local**:
 
-- What you prioritize (speed / safety / user impact)
-- What you never do (over-engineer / skip tests / deploy on Fridays)
-- Your failure patterns (where you tend to misjudge)
+- **Personal brain** — `~/.claude/brain/thinking.md`: your decision axis, shared across every project (what you prioritize, what you never do, your failure patterns). You grow it; `/adopt-sidekick-update` never overwrites it.
+- **PJ brain** — `<project>/.claude/brain/thinking.md`: this project's judgment. It `@import`s your personal brain in one hop; if the personal brain is absent the import is silently ignored (fail-safe), so the project still loads.
 
-The framework (self-review protocol, phase protocols) stays shared. **Only the judgment axis becomes yours.**
+The shipped `brain/thinking.md` at the repo root is a **template only (not loaded)** — `/setup` copies it to `~/.claude/brain/thinking.md` only when you don't already have one, so an existing personal brain is never clobbered. The framework (self-review protocol, phase protocols) stays shared; **only the judgment axis becomes yours.**
 
 #### File responsibilities
 
 | File | Defines | Changes when... |
 |---|---|---|
-| `thinking.md` | **Your** decision principles (tied to you, portable across projects) | Your thinking changes |
+| `~/.claude/brain/thinking.md` | **Your** decision principles — portable across all projects (personal brain) | Your thinking changes |
+| `<project>/.claude/brain/thinking.md` | **This project's** judgment axis (PJ brain; `@import`s your personal brain) | Project-specific judgment changes |
 | `rules/*.md` | **Project** rules (coding standards, DB, Git strategy) | The project changes |
 | `CLAUDE.md` | Project config + HARD/SOFT/GUIDE rules | The project changes |
 
@@ -247,7 +258,7 @@ flowchart LR
 3. **HARD rules** — Claude asks you first: `git push` (feature), `gh pr create`, `gh pr merge`
 4. **Everything else** — auto-approved via `Bash(*)` (no dialogs)
 
-### 🧰 15 Skills — ready-to-use workflows
+### 🧰 16 Skills — ready-to-use workflows
 
 | Category | Skills | Purpose |
 |---|---|---|
@@ -255,9 +266,10 @@ flowchart LR
 | **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Runs only relevant perspectives based on change scope |
 | **Lifecycle** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | Session & project management |
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
+| **Updates & Release** | `/adopt-sidekick-update`, `/release` | Pull upstream updates / cut a versioned release |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
 
-<sub>* `/sync-oss` is an internal skill for sidekick maintainers (not intended for downstream projects) and is omitted from this table.</sub>
+<sub>* `/sync-oss` and `/news-upstream` are sidekick-maintainer-only skills and are not part of the distribution.</sub>
 
 ### 🔄 How the skills connect
 
@@ -376,6 +388,8 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 ```
 sidekick/
 ├── CLAUDE.md                    # Rules & config (HARD/SOFT/GUIDE)
+├── brain/
+│   └── thinking.md              # Personal-brain TEMPLATE (not loaded; /setup copies to ~/.claude/brain/)
 ├── .claude/
 │   ├── hooks/                   # Safety enforcement layer
 │   │   ├── guard-bash.sh        # 9 guards (push, rm, prisma, env, etc.)
@@ -384,13 +398,14 @@ sidekick/
 │   │   ├── guard-protected-branch-edit.sh
 │   │   ├── prompt-reminder.sh
 │   │   └── session-start.sh
-│   ├── skills/                  # 15 reusable workflows
+│   ├── skills/                  # 16 reusable workflows
 │   │   ├── review/              # Orchestrator + agents/ + references/
 │   │   ├── auto-implement/      # Full automation pipeline
 │   │   ├── close-chat/          # Session wrap-up + learning loop capture
 │   │   └── ...
-│   ├── rules/                   # Guidelines + thinking OS
-│   │   ├── thinking.md          # Thinking OS — your decision principles (pluggable)
+│   ├── brain/                   # Thinking OS — PJ brain (2-layer, ADR-0016)
+│   │   └── thinking.md          # PJ judgment axis (@imports ~/.claude/brain/thinking.md)
+│   ├── rules/                   # Project rules (coding standards, DB, Git strategy)
 │   │   ├── knowledge-map.md     # Where knowledge goes
 │   │   ├── code-quality.md      # Coding standards
 │   │   └── ...
@@ -419,6 +434,15 @@ Using sidekick? Tell us what works, what doesn't, and what's missing.
 
 File a [Downstream Feedback issue](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) — it helps improve the template for everyone.
 
+## sidekick (development) vs claude-code-sidekick (distribution)
+
+sidekick lives in two repositories with one direction of flow:
+
+- **sidekick** (upstream, private) — where the template is *developed*: ADRs, dogfooding, maintainer-only skills (`/sync-oss`, `/news-upstream`), and the bleeding edge.
+- **claude-code-sidekick** (this repo, public) — the *distribution* you consume: the filtered, releasable subset. Product- and process-specific bits are stripped on the way out.
+
+Changes flow **one way: sidekick → claude-code-sidekick**, then a versioned GitHub Release is cut here. You never depend on the private repo — treat claude-code-sidekick as a standalone, self-contained template. Track your adopted version with `SIDEKICK_VERSION` and pull updates with `/adopt-sidekick-update` (below).
+
 ## Versioning
 
 sidekick uses **git tags + GitHub Releases** for version management. No VERSION file in your project root.
@@ -439,7 +463,15 @@ Releases are classified into 3 severity levels ([ADR-0009](./docs/decisions/0009
 - **(No prefix)**: Standard — normal feature/fix release (default).
 - **💡 [ENHANCEMENT]**: Opt-in improvements. Safe to defer.
 
-The severity is shown in the GitHub Release title prefix and body banner. `/inventory` uses this to signal urgency. Releases are cut via the `/release` skill, which ensures release notes include machine-generated lists of changed ADRs, rules, and skills (no missed design intent).
+The severity is shown in the GitHub Release title prefix and body banner, and emitted as a machine-readable `severity:` marker in the body. `/inventory` reads the marker (falling back to the title) to signal urgency. Releases are cut via the `/release` skill, which ensures release notes include machine-generated lists of changed ADRs, rules, and skills (no missed design intent).
+
+### Receiving updates (`/adopt-sidekick-update`)
+
+Downstream projects pull new sidekick releases with the **`/adopt-sidekick-update`** skill. It is interactive and category-batched: it diffs your project against the target release, groups changes (rules / skills / hooks / docs / ADRs), and lets you accept per category or drill into individual files. Declined items are remembered in auto-memory so they aren't re-proposed every run.
+
+Your **personal brain** (`~/.claude/brain/thinking.md`) is never auto-overwritten — template updates to it are offered as a diff you approve (ADR-0016).
+
+Typical flow: `/inventory` (detects the gap vs the latest Release and its severity) → `/adopt-sidekick-update` (apply) → `SIDEKICK_VERSION` in `CLAUDE.md` is bumped.
 
 ## License
 
