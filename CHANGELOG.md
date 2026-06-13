@@ -23,13 +23,43 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-14
+
+### Added
+- PII 強制層の pre-commit hook（`.claude/githooks/pre-commit`）— 公開ファイルへの個人情報・固有名詞の混入を commit 時にブロックする。`core.hooksPath .claude/githooks` で各環境が有効化（`/setup` が案内）。単一リポ化（ADR-0006）の前提となる強制層
+- 設計思想ダイジェスト `docs/design.md` / `docs/design.ja.md`（評価者向け・番号なし・mermaid 図解、EN/JA パリティ）
+- ADR-0006: 単一リポ統合 — 開発と配布を1リポに集約（旧2リポ運用を supersede）
+- ADR-0018: 北極星と最小ループ — 能動層は3動詞、他は配管に徹する設計指針
+- ADR-0019: UI/UX ハーネス 3 層 — design-system / 検知 hook / VRT の段階導入
+
+### Changed
+- README / README.ja を北極星（最小ループ）中心に再構成し、mermaid 等でビジュアル強化。設計思想ダイジェスト `docs/design.md` への導線を追加
+- cron / playwright セットアップガイドを刷新（ASCII 図 → mermaid、安全策を表化）。CHANGELOG の温度感 legend を表形式に整理
+- リリース severity を機械可読マーカー化（Release body に `> severity: …` を必須出力）。`/inventory`・`/adopt-sidekick-update` がマーカーを一次ソース化（title フォールバックで後方互換）
+- README / README.ja を v0.8 実体へ同期（skill 数 16・2層 brain・入手経路・更新受取）
+
 ### Fixed
 - `/setup`: 新規/既存PJで `SIDEKICK_VERSION` を ccs 最新タグから自動スタンプ（空のままだと `/inventory`・`/adopt-sidekick-update` がスキップされ、新規PJが更新を取り込めなくなる deadlock を解消）
 - `.claude/brain/thinking.md`: 旧3層（L2・ADR-0013）の stale 残骸を 2層 PJ brain（ADR-0016）に置換
 
-### Changed
-- リリース severity を機械可読マーカー化（Release body に `> severity: …` を必須出力）。`/inventory`・`/adopt-sidekick-update` がマーカーを一次ソース化（title フォールバックで後方互換）
-- README / README.ja を v0.8 実体へ同期（skill 数 16・2層 brain・入手経路・更新受取）
+### 変更された ADR
+- `docs/decisions/0006-single-repo-consolidation.md` (新規)
+- `docs/decisions/0018-north-star-and-minimal-loop.md` (新規)
+- `docs/decisions/0019-uiux-harness-three-layer.md` (新規)
+- `docs/decisions/0009-release-adoption-design.md` (severity マーカー補足)
+- `docs/decisions/README.md` (索引更新)
+
+### 変更された rules
+- `.claude/rules/pii-prevention.md`
+
+### 変更された skills
+- `.claude/skills/setup/SKILL.md`
+- `.claude/skills/inventory/SKILL.md`
+- `.claude/skills/adopt-sidekick-update/SKILL.md`
+- `.claude/skills/release/SKILL.md`
+
+### 変更された hooks
+- `.claude/githooks/pre-commit` (新規)
 
 ## [0.8.0] - 2026-05-09
 
