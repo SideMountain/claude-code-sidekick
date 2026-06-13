@@ -11,18 +11,15 @@ Claude Code CLI をローカル PC 上で cron 実行し、Issue 駆動の自動
 
 ## アーキテクチャ
 
-```
-approved Issue
-      ↓
-  cron（1時間おき）
-      ↓
-  SIDEKICK_AUTO=true claude --dangerouslySkipPermissions
-      ↓
-  /auto-implement（Phase 0→5 全自動）
-      ↓
-  PR 作成 ← ここまで無人
-      ↓
-  オーナーが朝に PR レビュー・マージ ← ここだけ人間
+```mermaid
+flowchart TD
+    subgraph auto["🤖 無人ゾーン（ここまで自動）"]
+        I["approved ラベルの Issue"] --> CR["cron（1時間おき）"]
+        CR --> CL["SIDEKICK_AUTO=true claude<br/>--dangerouslySkipPermissions"]
+        CL --> AI["/auto-implement<br/>Phase 0→5 全自動"]
+        AI --> PR["PR 作成"]
+    end
+    PR --> RV["👤 オーナーが朝に PR レビュー・マージ<br/>（ここだけ人間）"]
 ```
 
 ## cron スケジュール
@@ -141,25 +138,11 @@ done
 
 ## 安全策
 
-### 絶対に自動実行しないもの（SIDEKICK_AUTO でも止まる）
-
-- `prisma db push`（Guard 6: ハードブロック）
-- 保護ブランチへの直接 push（Guard 2: ハードブロック）
-- `rm -rf`（Guard 5: ハードブロック）
-- `.env DATABASE_URL` の変更（Guard 4: ハードブロック）
-- PR マージ（Guard 8: 保護ブランチ対象はハードブロック）
-
-### 自動承認されるもの（SIDEKICK_AUTO=true 時）
-
-- `git push`（feature ブランチへ）
-- `gh pr create`
-- `gh pr merge`（保護ブランチ以外）
-
-### 人間が判断するもの
-
-- PR のレビュー・マージ（朝のルーティンで確認）
-- DB マイグレーション
-- 本番デプロイ
+| 区分 | 対象 |
+|---|---|
+| 🚫 **絶対に自動実行しない**（SIDEKICK_AUTO でも止まる） | `prisma db push`（Guard 6）/ 保護ブランチへの直接 push（Guard 2）/ `rm -rf`（Guard 5）/ `.env DATABASE_URL` の変更（Guard 4）/ 保護ブランチへの PR マージ（Guard 8）— いずれもハードブロック |
+| ✅ **自動承認**（SIDEKICK_AUTO=true 時） | `git push`（feature ブランチ）/ `gh pr create` / `gh pr merge`（保護ブランチ以外） |
+| 👤 **人間が判断** | PR のレビュー・マージ（朝のルーティン）/ DB マイグレーション / 本番デプロイ |
 
 ## SIDEKICK_AUTO の使い方
 
