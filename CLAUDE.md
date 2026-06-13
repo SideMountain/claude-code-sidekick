@@ -122,6 +122,7 @@ OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート
 | `rm -rf` / 再帰削除 | guard-bash.sh | — |
 | `prisma db push` | guard-bash.sh | H3 |
 | メインWSでの `git checkout` | guard-bash.sh | H12 |
+| 公開ファイルへの PII 混入（commit 時） | .claude/githooks/pre-commit | pii-prevention.md (HARD) |
 
 #### 承認必須（不可逆な操作。確認なしで実行しない）
 

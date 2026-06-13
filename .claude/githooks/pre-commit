@@ -1,0 +1,53 @@
+#!/bin/bash
+# =============================================================================
+# Git pre-commit hook — PII 強制層
+#
+# .claude/rules/pii-prevention.md（HARD グレード）の「強制」レイヤー。
+# staged な公開ファイルに個人・固有情報が含まれていたら commit を中止する。
+# scan ロジックの spec は pii-prevention.md（本フックはその enforcement 実装）。
+#
+# 有効化（clone ごとに 1 回。/setup が自動設定する）:
+#   git config core.hooksPath .claude/githooks
+#
+# 誤検知が確実な場合のみのバイパス（非推奨）: git commit --no-verify
+# =============================================================================
+set -uo pipefail
+
+# staged な公開ファイル（追加/変更）。local 層（git 非追跡）は対象外。
+# 対象集合は pii-prevention.md の scan_staged_public と一致させる。
+TARGETS=$(git diff --cached --name-only --diff-filter=AM 2>/dev/null | \
+  grep -E '^(docs/|README|CHANGELOG|LICENSE|brain/|\.claude/rules/|\.claude/skills/|\.github/)' | \
+  grep -vE '(MEMORY\.md|CLAUDE\.local\.md|settings\.local\.json|\.data/|agent-memory-local/)' || true)
+
+[ -z "$TARGETS" ] && exit 0
+
+FOUND=0
+emit() { printf '%s\n' "$1"; FOUND=1; }
+
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  # working tree ではなく staged 内容を検査する（コミットされる実体）
+  content=$(git show ":$f" 2>/dev/null) || continue
+
+  hits=$(printf '%s\n' "$content" | grep -nE '[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|notion\.so/[0-9a-f]{8}') \
+    && { echo "[$f] Notion UUID / URL:"; emit "$hits"; }
+
+  hits=$(printf '%s\n' "$content" | grep -nE 'slack\.com/[a-zA-Z0-9]|docs\.google\.com/[a-zA-Z0-9]|drive\.google\.com/[a-zA-Z0-9]') \
+    && { echo "[$f] 内部 URL:"; emit "$hits"; }
+
+  hits=$(printf '%s\n' "$content" | grep -nE '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' | grep -vE 'noreply@|example\.(com|org|net)|@anthropic\.com') \
+    && { echo "[$f] email:"; emit "$hits"; }
+
+  # --- PJ 固有の人名 / PJ名 / 接続先はここに追記（各 PJ が /setup 後にカスタマイズ）---
+  # hits=$(printf '%s\n' "$content" | grep -inE 'your-private-pj|client-name') \
+  #   && { echo "[$f] PJ 固有名:"; emit "$hits"; }
+done <<< "$TARGETS"
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "❌ pre-commit blocked: staged な公開ファイルに PII を検出（.claude/rules/pii-prevention.md）。"
+  echo "   汎用表現に置換、または auto-memory（git 非追跡）へ退避してから再コミットしてください。"
+  echo "   誤検知が確実な場合のみ: git commit --no-verify"
+  exit 1
+fi
+exit 0

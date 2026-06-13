@@ -160,6 +160,20 @@ PJの特性に応じてスキルの活用方針を案内する:
 - DB を使わないPJでは review-code の DB 観点をスキップ対象とする
 - auto-implement の適用範囲を案内する（「推奨ユースケース」セクション参照）
 
+#### 2d. PII pre-commit hook の有効化（core.hooksPath）
+
+`.claude/githooks/pre-commit`（PII 強制層、`.claude/rules/pii-prevention.md` の enforcement 実装）を有効化する。
+`core.hooksPath` は git 非追跡の per-repo 設定なので、clone ごとに 1 回必要:
+
+```bash
+git config core.hooksPath .claude/githooks
+echo "PII pre-commit hook を有効化しました（公開ファイルへの PII 混入を commit 時に物理ブロック）"
+```
+
+> **注意**: `core.hooksPath` は `.git/hooks/` を置き換える。既に独自 git hook を `.git/hooks/` に持つ PJ では、それらを `.claude/githooks/` に移すか統合する。
+> **PJ 固有名のカスタマイズ**: `.claude/githooks/pre-commit` 末尾のコメント部に、当該 PJ の人名・PJ名・接続先パターンを追記する（`pii-prevention.md` の scan_pii と同じ運用）。
+> **既存PJモードでも同様**: Step 1E で `core.hooksPath` 未設定なら設定する。worktree は共通 git config を参照するため、設定は全 worktree に効く。
+
 ### Step 3: テンプレート配置
 
 `.claude/templates/` から必要なファイルをルートにコピーする。
