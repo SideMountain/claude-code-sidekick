@@ -17,6 +17,12 @@
 - `session-start.sh` がフラグの有無をチェック → warning 継続表示（取り込み忘れ防止）
 - `/weekly-inventory` で Critical の経過日数を表示（3日で警告、8日で「即対応推奨」）
 
+**実装補足（severity の機械マーカー化）**:
+- リリース body 冒頭に機械可読な severity マーカー（`> severity: critical|standard|enhancement`、見える行）を必須出力する
+- `/inventory`・`/adopt-sidekick-update` はこのマーカーを**一次ソース**として読み、マーカーのない旧リリースは title prefix にフォールバックする
+- title prefix・body banner・severity マーカーの**3 点を必ず一致**させる。title prefix のみを機械検知対象とすると body を読まずに終わる弱点があり、機械可読マーカーでこれを閉じる
+- HTML コメント形式は配信先のサニタイズで欠落しうるため使わず、見える行で確実に残す
+
 ## 背景
 
 v0.5.0 リリース切り時（2026-04-18）に、以下の構造的課題が顕在化した:

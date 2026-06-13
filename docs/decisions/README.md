@@ -9,7 +9,7 @@ sidekick の設計判断とその根拠を記録する。
 | 0003 | [無人実行のアーキテクチャ](0003-slack-cron-architecture.md) | 承認済み |
 | 0004 | [Git を Source of Truth、外部DBはオプション](0004-context-consolidation-claude-code-first.md) | 承認済み |
 | 0005 | [下流統合設計原則](0005-downstream-integration-principles.md) | 承認済み |
-| 0006 | [sidekick と claude-code-sidekick の2リポ管理](0006-two-repo-management.md) | 承認済み |
+| 0006 | [開発と配布を単一リポに統合する](0006-single-repo-consolidation.md) | 採用（2026-06-13、二リポ運用版を supersede） |
 | 0007 | [thinking.md を入れ替え可能な思考OSとして位置づけ](0007-thinking-os-positioning.md) | 承認済み |
 | 0008 | [project-root MEMORY.md を廃止し auto-memory に一本化](0008-memory-md-to-auto-memory.md) | 承認済み |
 | 0009 | [リリース取り込み設計（温度感・思想漏洩防止・スキップ制御）](0009-release-adoption-design.md) | 承認済み |
@@ -20,3 +20,5 @@ sidekick の設計判断とその根拠を記録する。
 | 0014 | [sidekick の ADR は下流 PJ に配布しない](0014-sidekick-adr-not-distributed.md) | 承認済み |
 | 0015 | [下流 PJ の ccs 不意識運用原則](0015-downstream-ccs-unaware-operation.md) | 承認済み |
 | 0016 | [brain の 2 層モデル化と上書き禁止運用](0016-brain-two-layer-model.md) | ドラフト |
+| 0018 | [北極星と最小ループ（3 動詞）](0018-north-star-and-minimal-loop.md) | 採用（2026-06-13） |
+| 0019 | [UI/UX ハーネスの段階導入（3 層）](0019-uiux-harness-three-layer.md) | 採用（2026-06-13、v0.8.x で P1 着手） |
