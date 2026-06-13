@@ -2,12 +2,14 @@
 
 **Claude Code に判断を教える。そして任せる。**
 
+[English README is here](README.md)
+
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Claude Code](https://img.shields.io/badge/for-Claude%20Code-orange.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 Claude Code を「安全に・あなたの判断軸で・自動化する」ためのリポジトリテンプレートです。
-30秒で分かる説明 → すぐ試す → 深掘り、の順で並んでいます。
+上から順に読めます: 何か → 回すループ → 仕組み。
 
 ---
 
@@ -25,11 +27,28 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
   <img src="docs/images/three-layers-ja.svg" alt="3層構造 — 安全ガード、スキル、思考OS" width="720"/>
 </p>
 
-**この3層目（思考OS）がどう育つか:**
+---
 
-<p align="center">
-  <img src="docs/images/learning-loop-ja.svg" alt="知識が複利で効く — 学習ループ" width="720"/>
-</p>
+## 実際に回すループ
+
+日々あなたが触れるのは**3つの動詞**だけ。残りは自動で動く配管で、覚える必要はありません。
+
+```mermaid
+flowchart LR
+    N["① /news<br/>変更点に<br/>キャッチアップ"] --> W["② あなたの作業<br/>worktree・テスト・<br/>/review・PR は Claude が処理"]
+    W --> C["③ /close-chat<br/>締め &<br/>学習ループ記録"]
+    C -.->|"週次"| WI["/weekly-inventory<br/>memory 整理 &<br/>原則に昇格"]
+    WI -.-> N
+```
+
+| 動詞 | タイミング | やってくれること |
+|---|---|---|
+| **`/news`** | session 開始 | 前回からの変更点にキャッチアップ |
+| **（あなたの作業）** | — | worktree 作成・スコープ限定テスト・`/review` 自己レビュー・PR 作成（マージはあなたの判断） |
+| **`/close-chat`** | session 終了 | 締め、バックログ記録、フィードバックを学習ループに記録 |
+| **`/weekly-inventory`** | 週次 | memory を整理し、繰り返しのフィードバックを原則に昇格 |
+
+> **意識する面積はこれだけ。** 他のスキルは適切な瞬間に自動で呼ばれます。どれを使うか覚える必要はありません。
 
 ---
 
@@ -61,11 +80,15 @@ Claude : → Worktree 作成（main は触らない）
 ```
 セッション1: 「DB モックじゃなくステージング DB 使って」とフィードバック
 セッション2: 同じ指摘（2回目を検出）
-セッション3: 3回目 → 原則として thinking.md に昇格
+セッション3: 3回目 → 原則としてあなたの brain に昇格
 セッション4以降: Claude の方から「ステージング DB で実行します」と提案
 ```
 
 つまり、**毎回同じことを指摘する疲れ** がなくなります。
+
+<p align="center">
+  <img src="docs/images/learning-loop-ja.svg" alt="知識が複利で効く — 学習ループ" width="720"/>
+</p>
 
 ---
 
@@ -81,44 +104,21 @@ Claude : → Worktree 作成（main は触らない）
 
 **一言でいうと**、他のテンプレが「ルール集（= 静的なドキュメント）」なのに対して、sidekick は「**育つ判断軸（= 動的なシステム）**」を提供します。
 
----
-
-## よくある質問
-
 <details>
-<summary><b>Q. Claude Code 専用ですか？ Cursor / Cline / Gemini でも使える？</b></summary>
+<summary><b>よくある質問 — Claude Code 専用？ 個人/チーム？ 課金？ 既存PJ？</b></summary>
 
-**はい、Claude Code 専用です。**
+**Q. Claude Code 専用ですか？ Cursor / Cline / Gemini でも使える？**
+はい、Claude Code 専用です。hooks / skills / settings.json のフォーマットは Claude Code 仕様です。ただし「**あなたの判断軸を AI に学習させる**」という設計思想自体は他のツールにも応用できます。
 
-- hooks / skills / settings.json のフォーマットは Claude Code 仕様
-- Cursor / Cline / Gemini では動きません
+**Q. 個人開発でも使える？ チーム向け？**
+両方 OK。「エンタープライズ版」は用意していません。同じ設定を規模に応じてスケールさせます（Worktree が並行作業で必須に、`/review` がチームゲートに、`PROTECTED_BRANCHES` が増えます）。
 
-ただし「**あなたの判断軸を AI に学習させる**」という設計思想自体は他のツールにも応用可能です。
-</details>
+**Q. API 従量課金？ Claude Max サブスク？**
+Claude Max サブスクリプション上で動きます。API 従量課金は不要。10 プロジェクト動かしても月 $100 固定。（[ADR-0003](./docs/decisions/0003-slack-cron-architecture.md)）
 
-<details>
-<summary><b>Q. 個人開発でも使える？ チーム向け？</b></summary>
+**Q. 既存プロジェクトに後から入れられる？**
+入れられます。運用保守フェーズのプロジェクトには、**まず安全ガード（hooks）と `/review` だけ** 導入するのがおすすめ。思考OS は後から育てていけます。
 
-**両方 OK。**「エンタープライズ版」は用意していません。同じ設定を規模に応じてスケールさせます。
-
-| 設定 | 個人開発 | チーム |
-|---|---|---|
-| Worktree | 任意 | 必須（並行作業） |
-| `/review` | セルフレビュー | チームレビューゲート |
-| `PROTECTED_BRANCHES` | `main` | `main`, `release/stg` |
-| auto-memory | 個人メモ（個別） | 個別（メンバーごとに別保持） |
-</details>
-
-<details>
-<summary><b>Q. API 従量課金？ Claude Max サブスク？</b></summary>
-
-**Claude Max サブスクリプション上で動きます。** API 従量課金は不要。10 プロジェクト動かしても月 $100 固定。（[ADR-0003](./docs/decisions/0003-slack-cron-architecture.md)）
-</details>
-
-<details>
-<summary><b>Q. 既存プロジェクトに後から入れられる？</b></summary>
-
-**入れられます。** 運用保守フェーズのプロジェクトには、**まず安全ガード（hooks）と `/review` だけ** 導入するのがおすすめ。思考OS は後から育てていけます。
 </details>
 
 ---
@@ -134,26 +134,9 @@ Claude : → Worktree 作成（main は触らない）
 | **既存**プロジェクトに入れる | 手動オーバーレイ | `cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/` の後 `/setup` |
 | 既に sidekick 導入済みで**新バージョン**が欲しい | `/adopt-sidekick-update` | プロジェクトで `/adopt-sidekick-update` を実行 |
 
-新規 → GitHub テンプレート。既存 → 手動オーバーレイ + `/setup`。導入済み → `/adopt-sidekick-update`。
+### `/setup` を実行する
 
-### 1. テンプレートから作る
-
-```bash
-gh repo create my-project --template SideMountain/claude-code-sidekick --private --clone
-cd my-project
-claude
-```
-
-既存プロジェクトに入れる場合:
-
-```bash
-cp -r sidekick/CLAUDE.md sidekick/.claude/ your-project/
-cd your-project && claude
-```
-
-### 2. `/setup` を実行する
-
-Claude Code 起動後、`/setup` を叩くと対話形式で次が進みます（所要 **約5分**）:
+Claude Code 起動後、`/setup` を叩くと対話形式で進みます（所要 **約5分**）:
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -165,35 +148,28 @@ Claude Code 起動後、`/setup` を叩くと対話形式で次が進みます�
 │  rm -rf, .env 上書き, main 直 push をブロック     │
 │  → settings.json + hooks/                         │
 ├──────────────────────────────────────────────────┤
-│ Step 3 : テンプレート配置                         │
+│ Step 3 : テンプレート + brain 配置                │
 │  CLAUDE.local.md（個人設定、gitignore 済み）      │
-│  （セッション記憶は auto-memory で自動管理）       │
+│  個人 brain（~/.claude/brain/thinking.md）        │
 ├──────────────────────────────────────────────────┤
 │ Step 4 : あなたの判断原則（任意・スキップ可）     │
 │  「何を最優先？ スピード / 安全性 / ユーザー影響」│
-│  「絶対にやらないこと？」                         │
-│  → thinking.md に記録（後から育てても OK）        │
+│  → 後から自然に育つ（スキップ OK）                │
 └──────────────────────────────────────────────────┘
 ```
 
-### 3. 試しに一つ頼んでみる
+### 試しに一つ頼んでみる
 
 ```
 「README の誤字を修正して PR 出して」
 ```
 
-sidekick ありだと、Claude は自動で:
-
-1. Worktree を作る（main は守る）
-2. 誤字を修正
-3. `/review` で自己レビュー
-4. PR を作成 → あなたがマージ
-
-この一連が最初の体験になります。
+Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 → `/review` で自己レビュー → PR 作成（あなたがマージ）。この一連が最初の体験になります。
 
 ---
 
-## 仕組み
+<details>
+<summary><b>🔍 仕組み（深掘り）</b></summary>
 
 ### 🧠 思考OS — あなたの判断軸を学習する
 
@@ -204,13 +180,13 @@ flowchart LR
     S["セッションの気づき<br/>(指摘・修正)"] --> F["feedback_*.md<br/>に記録"]
     F --> P["/weekly-inventory<br/>パターン検出"]
     P -->|"3回以上<br/>出現"| C{"昇格<br/>承認?"}
-    C -->|"Yes"| T["thinking.md §1<br/>原則として定着"]
+    C -->|"Yes"| T["個人 brain に<br/>原則として定着"]
     C -->|"No"| F
     T --> A["Claude が<br/>自動適用"]
     A --> S
 ```
 
-**昇格判断は必ずあなたが確認します**（完全自動昇格ではない）。`/weekly-inventory` でパターンが提示され、OK を出したものだけが `thinking.md` に入ります。
+**昇格判断は必ずあなたが確認します**（完全自動昇格ではない）。`/weekly-inventory` で候補が提示され、OK を出したものだけが brain に入ります。
 
 #### 判断軸はどこに置かれる？ — 2層 brain（ADR-0016）
 
@@ -219,9 +195,7 @@ sidekick は判断軸を2つのファイルに分け、個人の原則は**あ�
 - **個人 brain** — `~/.claude/brain/thinking.md`: 全プロジェクト横断のあなたの判断軸（何を最優先するか、絶対にやらないこと、自分の失敗パターン）。あなたが育てる。`/adopt-sidekick-update` は決して上書きしない。
 - **PJ brain** — `<project>/.claude/brain/thinking.md`: このプロジェクト固有の判断。個人 brain を1段 `@import` する。個人 brain が不在なら import は silent ignore され（フェイルセーフ）、PJ brain だけがロードされる。
 
-リポジトリルートの `brain/thinking.md` は**テンプレート（ロード対象外）**で、`/setup` が個人 brain 不在時のみ `~/.claude/brain/thinking.md` にコピーする（既存の個人 brain は決して壊さない）。フレームワーク（セルフレビュー手順、フェーズ別プロトコル）は共通のまま。**判断軸だけがあなた色**になります。
-
-#### ファイルの役割分担
+リポジトリルートの `brain/thinking.md` は**テンプレート（ロード対象外）**で、`/setup` が個人 brain 不在時のみ `~/.claude/brain/thinking.md` にコピーする（既存の個人 brain は決して壊さない）。
 
 | ファイル | 何を定義？ | 変わるタイミング |
 |---|---|---|
@@ -255,7 +229,9 @@ flowchart LR
 3. **HARD ルール** — Claude があなたに確認してから実行: `git push`（feature）, `gh pr create`, `gh pr merge`
 4. **それ以外** — `Bash(*)` で自動承認（ダイアログなし）
 
-### 🧰 16 スキル — すぐ使えるワークフロー
+### 🧰 16 スキル
+
+上の3動詞（`/news`, `/close-chat`, `/weekly-inventory`）が手で実行するもの。残りは配管で、必要な瞬間に呼ばれます。
 
 | カテゴリ | スキル | 用途 |
 |---|---|---|
@@ -265,8 +241,6 @@ flowchart LR
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
 | **更新・リリース** | `/adopt-sidekick-update`, `/release` | 上流の更新を取り込む / バージョン付きリリースを切る |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
-
-<sub>※ `/sync-oss` と `/news-upstream` は sidekick 保守者専用スキルで、配布物には含まれません。</sub>
 
 ### 🔄 スキル同士のつながり
 
@@ -280,16 +254,9 @@ flowchart LR
     AI --> R["/review<br/>6観点"]
     R --> PR["📤 PR"]
     PR --> CC["/close-chat<br/>学習ループ記録"]
-    CC -.->|"フィードバック"| TH["thinking.md<br/>（原則に昇格）"]
+    CC -.->|"フィードバック"| TH["個人 brain<br/>（原則に昇格）"]
     TH -.->|"次セッションで<br/>自動適用"| Idea
 ```
-
-**実運用でのイメージ:**
-
-- アイデアが曖昧 → `/discover` が設計とタスクリストに落とす
-- 設計確定済み → `/auto-implement` が PR まで自動で回す
-- セッション中のフィードバック → `/close-chat` が記録、`/weekly-inventory` が `thinking.md` に昇格
-- 次のセッションはより賢くなる — ループが閉じる
 
 ### 🌙 自動モード — 寝てる間に PR ができる
 
@@ -299,7 +266,6 @@ Claude: → 3つの Worktree を並列作成
         → 各 Issue を独立実装
         → /review を各 PR に実行
         → push して PR を3つ作成
-        → 学習ループに記録
 あなた: （朝）PR をレビュー・マージ
 ```
 
@@ -321,35 +287,29 @@ flowchart LR
     P3 -..->|"BLOCKER"| STOP
 ```
 
-**朝起きて見るレポート例:**
-
-```
-=== /auto-implement 完了レポート（並列3件） ===
-[全体結果] 2件成功 / 1件停止
-
--- Issue #10: ユーザー認証 -- OK
-  [PR] #43 / 変更: 8ファイル（+342, -28）
-  テスト: 156 passed / レビュー: OK（Ops WARN 1件 → 修正済み）
-  学習ループ: 1件 / バックログ: 2件
-
--- Issue #11: メール通知テンプレ -- OK
-  [PR] #44 / 変更: 4ファイル（+89, -12）
-  テスト: 160 passed / レビュー: OK
-
--- Issue #12: 管理画面ダッシュボード -- STOPPED
-  [停止Phase] Phase 3（レビュー）
-  [停止理由] BLOCKER: N+1 クエリ（lib/dashboard.ts L45）
-  [再開方法] 修正後、/auto-implement #12 で再実行
-
--- 次のアクション --
-  → PR #43, #44 をレビュー・マージ
-  → Issue #12 は対話モードで修正
-==========================================================
-```
-
-**自動でも人間が判断するもの:** PR の main へのマージ / DB マイグレーション / 本番デプロイ
-
+**自動でも人間が判断するもの:** PR の main へのマージ / DB マイグレーション / 本番デプロイ。
 高度な設定（cron, Slack 連携）→ [cron-setup-guide.md](./docs/cron-setup-guide.md)
+
+### 🗂️ アーキテクチャ
+
+```
+your-project/
+├── CLAUDE.md                    # ルール・設定（HARD/SOFT/GUIDE）
+├── brain/
+│   └── thinking.md              # 個人 brain テンプレート（ロード対象外。/setup が ~/.claude/brain/ にコピー）
+├── .claude/
+│   ├── hooks/                   # 安全の強制層（guard-bash, db-operation, session-start, …）
+│   ├── skills/                  # 16 の再利用ワークフロー
+│   ├── brain/
+│   │   └── thinking.md          # PJ brain（~/.claude/brain/thinking.md を @import）
+│   ├── rules/                   # プロジェクト固有ルール（コーディング規約、DB、Git）
+│   ├── templates/               # /setup が opt-in で配置するファイル
+│   └── settings.json            # 権限、hooks、deny リスト
+└── docs/
+    └── decisions/               # ADR（設計判断記録）
+```
+
+</details>
 
 ---
 
@@ -379,96 +339,40 @@ flowchart LR
 
 ---
 
-<details>
-<summary><b>アーキテクチャ詳細</b></summary>
+## バージョン管理と更新
 
-```
-sidekick/
-├── CLAUDE.md                    # ルール・設定（HARD/SOFT/GUIDE）
-├── brain/
-│   └── thinking.md              # 個人 brain テンプレート（ロード対象外。/setup が ~/.claude/brain/ にコピー）
-├── .claude/
-│   ├── hooks/                   # 安全の強制層
-│   │   ├── guard-bash.sh        # 9ガード（push, rm, prisma, env 等）
-│   │   ├── guard-commit-message.sh
-│   │   ├── guard-db-operation.sh
-│   │   ├── guard-protected-branch-edit.sh
-│   │   ├── prompt-reminder.sh
-│   │   └── session-start.sh
-│   ├── skills/                  # 16 の再利用ワークフロー
-│   │   ├── review/              # オーケストレーター + agents/ + references/
-│   │   ├── auto-implement/      # 全自動パイプライン
-│   │   ├── close-chat/          # セッション締め + 学習ループ記録
-│   │   └── ...
-│   ├── brain/                   # 思考OS — PJ brain（2層、ADR-0016）
-│   │   └── thinking.md          # PJ 判断軸（~/.claude/brain/thinking.md を @import）
-│   ├── rules/                   # プロジェクト固有ルール（コーディング規約、DB、Git）
-│   │   ├── knowledge-map.md     # 知識の配置先マップ
-│   │   ├── code-quality.md      # コーディング規約
-│   │   └── ...
-│   ├── templates/               # /setup が opt-in で配置するファイル
-│   │   ├── CLAUDE.local.md      # 個人設定テンプレート
-│   │   └── github/              # GitHub Issue テンプレート・ラベル定義
-│   ├── docs/                    # 開発者リファレンス
-│   │   └── skill-agent-design.md
-│   └── settings.json            # 権限、hooks、deny リスト
-├── docs/
-│   ├── decisions/               # ADR（設計判断記録）
-│   ├── cron-setup-guide.md      # 自動実行ガイド
-│   └── playwright-setup-guide.md
-└── .github/                     # sidekick リポ自身用
-    ├── ISSUE_TEMPLATE/
-    └── labels.yml
-```
-
-</details>
-
----
-
-## フィードバック
-
-sidekick を使っていて「ここが良い」「困った」「こうして欲しい」があれば、[Downstream Feedback](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) へ。
-
-## sidekick（開発） と claude-code-sidekick（配布）
-
-sidekick は2つのリポジトリに分かれ、一方向に流れます:
-
-- **sidekick**（上流・非公開） — テンプレートを*開発*する場所: ADR、ドッグフーディング、保守者専用スキル（`/sync-oss`, `/news-upstream`）、最先端。
-- **claude-code-sidekick**（本リポ・公開） — あなたが使う*配布物*: フィルタ済みのリリース可能なサブセット。プロダクト・プロセス固有の要素は配布時に除去されます。
-
-変更は**一方向（sidekick → claude-code-sidekick）**に流れ、ここでバージョン付き GitHub Release が切られます。非公開リポに依存することはありません — claude-code-sidekick を独立した自己完結テンプレートとして扱ってください。取り込み済みバージョンは `SIDEKICK_VERSION` で追跡し、更新は `/adopt-sidekick-update` で取り込みます（後述）。
-
-## バージョン管理
-
-sidekick は **git tag + GitHub Releases** でバージョン管理しています。プロジェクトルートに VERSION ファイルは置きません。
-
-各プロジェクトの `CLAUDE.md` の Project Configuration に取り込み済みバージョンを記録:
+sidekick は **git tag + GitHub Releases** でバージョン管理します。各プロジェクトは取り込み済みバージョンを `CLAUDE.md` に記録:
 
 ```yaml
-SIDEKICK_VERSION: "0.4.1"
+SIDEKICK_VERSION: "0.8.0"
 ```
 
 `/inventory` で最新の GitHub Release と比較し、更新を確認できます。
 
 ### リリース温度感
 
-リリースは3段階の温度感に分類されます（[ADR-0009](./docs/decisions/0009-release-adoption-design.md)）:
+リリースは3段階に分類されます（[ADR-0009](./docs/decisions/0009-release-adoption-design.md)）:
 
 - **⚠️ [CRITICAL]**: セキュリティ / 致命的バグ修正。**即取り込み推奨**
 - **(プレフィックスなし)**: Standard — 通常の機能追加・修正（デフォルト）
 - **💡 [ENHANCEMENT]**: opt-in な改善。**後回し可**
 
-温度感は GitHub Release の title prefix と body 冒頭 banner に明示され、さらに body 内に機械可読な `severity:` マーカーとして出力されます。`/inventory` はこのマーカー（無ければ title）を読み、緊急度を下流 PJ に伝えます。リリースは `/release` スキルで切り、変更された ADR / rules / skills が機械的にリリースノートに含まれるため、設計意図の漏洩がありません。
+温度感は Release の title と banner に出るほか、body に機械可読な `severity:` マーカーとして出力されます。`/inventory` はこのマーカー（無ければ title）を読み、緊急度を伝えます。
 
 ### 更新の受け取り方（`/adopt-sidekick-update`）
 
-下流プロジェクトは **`/adopt-sidekick-update`** スキルで sidekick の新リリースを取り込みます。対話型・カテゴリ一括方式で、対象リリースとの差分を取り、カテゴリ（rules / skills / hooks / docs / ADR）ごとにまとめて承認するか、ファイル単位で個別確認できます。見送った項目は auto-memory に記録され、毎回再提案されません。
+**`/adopt-sidekick-update`** で新リリースを取り込みます。対話型・カテゴリ一括方式で、対象リリースとの差分を取り、カテゴリ（rules / skills / hooks / docs）ごとにまとめて承認するか、ファイル単位で個別確認できます。見送った項目は記録され、再提案されません。
 
 **個人 brain**（`~/.claude/brain/thinking.md`）は決して自動上書きされません — テンプレート側の更新は、あなたが承認する差分として提示されます（ADR-0016）。
 
-典型フロー: `/inventory`（最新リリースとの差分と温度感を検出）→ `/adopt-sidekick-update`（適用）→ `CLAUDE.md` の `SIDEKICK_VERSION` を更新。
+典型フロー: `/inventory`（差分 + 温度感を検出）→ `/adopt-sidekick-update`（適用）→ `SIDEKICK_VERSION` 更新。
+
+---
+
+## フィードバック
+
+sidekick を使っていて「ここが良い」「困った」「こうして欲しい」があれば、[Downstream Feedback](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) へ。テンプレートの改善に役立ちます。
 
 ## ライセンス
 
 MIT
-
