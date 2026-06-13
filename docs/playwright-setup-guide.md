@@ -29,6 +29,13 @@ e2e/
 | critical-path | STG デプロイ後 | 主要ユーザーフローの確認 |
 | regression | PR 作成時 | バグ再発防止 |
 
+```mermaid
+flowchart LR
+    A["PR 作成時"] --> RG["regression<br/>（再発防止）"]
+    B["デプロイ後"] --> SM["smoke<br/>（正常性確認）"]
+    C["STG デプロイ後"] --> CP["critical-path<br/>（主要フロー）"]
+```
+
 ## playwright.config.ts テンプレート
 
 ```typescript

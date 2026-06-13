@@ -10,14 +10,26 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 各リリースは3段階の温度感に分類される（ADR-0009）:
 
-- **[CRITICAL]** (`⚠️`): セキュリティ / 致命的バグ修正。即取り込み推奨
-- **(No prefix)**: Standard — 通常の機能追加・修正（デフォルト）
-- **[ENHANCEMENT]** (`💡`): opt-in な改善。後回し可
+| 温度感 | マーカー | 意味 |
+|---|---|---|
+| **Critical** | `⚠️ [CRITICAL]` | セキュリティ / 致命的バグ修正。即取り込み推奨 |
+| **Standard** | （prefix なし） | 通常の機能追加・修正（デフォルト） |
+| **Enhancement** | `💡 [ENHANCEMENT]` | opt-in な改善。後回し可 |
 
-GitHub Release の title prefix と body 冒頭 banner に明示される。
-`/release` スキルが切る時に判定する。
+温度感は GitHub Release の title prefix と body banner に出るほか、body に機械可読な
+`severity:` マーカー（`> severity: critical|standard|enhancement`）として出力される。
+`/inventory` はこのマーカーを一次ソースとして読み（無ければ title にフォールバック）、緊急度を伝える。
+判定は `/release` スキルが切る時に行う。
 
 ## [Unreleased]
+
+### Fixed
+- `/setup`: 新規/既存PJで `SIDEKICK_VERSION` を ccs 最新タグから自動スタンプ（空のままだと `/inventory`・`/adopt-sidekick-update` がスキップされ、新規PJが更新を取り込めなくなる deadlock を解消）
+- `.claude/brain/thinking.md`: 旧3層（L2・ADR-0013）の stale 残骸を 2層 PJ brain（ADR-0016）に置換
+
+### Changed
+- リリース severity を機械可読マーカー化（Release body に `> severity: …` を必須出力）。`/inventory`・`/adopt-sidekick-update` がマーカーを一次ソース化（title フォールバックで後方互換）
+- README / README.ja を v0.8 実体へ同期（skill 数 16・2層 brain・入手経路・更新受取）
 
 ## [0.8.0] - 2026-05-09
 
