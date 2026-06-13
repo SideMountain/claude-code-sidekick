@@ -337,6 +337,8 @@ your-project/
 4. **固定費、PJ 比例しない**: Claude Max 上で動く。API 従量課金なし。10 PJ でも $100/月。（[ADR-0003](./docs/decisions/0003-slack-cron-architecture.md)）
 5. **Git が Source of Truth**: 外部 DB 不要。CLAUDE.md + ADR + GitHub Issues + auto-memory で完結。Notion はオプション。（[ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md)）
 
+> 📐 設計思想の全体像は **[`docs/design.ja.md`](./docs/design.ja.md)** に1枚でまとまっています（現行の設計を一望できるダイジェスト）。
+
 ---
 
 ## バージョン管理と更新
