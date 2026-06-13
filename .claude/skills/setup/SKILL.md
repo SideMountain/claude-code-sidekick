@@ -310,16 +310,29 @@ OSS テンプレートに更新があった場合の取り込みは `/adopt-side
 
 #### PJ 固有 brain の配置
 
-`<PJ>/.claude/brain/thinking.md` をテンプレートから配置する（既存ファイルがあれば上書きしない）。冒頭は個人 brain への 1 段 import:
+`<PJ>/.claude/brain/thinking.md` を配置する。**既存ファイルがあれば上書きしない**（fork 由来 / 既に育てた PJ brain を保護）。冒頭で個人 brain を 1 段 import する薄いファイルを決定論的に生成する:
 
-```markdown
-# brain — <PROJECT_NAME> PJ 固有 brain
+```bash
+PJ_BRAIN=".claude/brain/thinking.md"
+
+if [ ! -f "$PJ_BRAIN" ]; then
+  mkdir -p ".claude/brain"
+  # PROJECT_NAME を CLAUDE.md から取得（未設定なら汎用名）
+  PROJECT_NAME=$(grep -E '^PROJECT_NAME:' CLAUDE.md 2>/dev/null | sed -E 's/.*"([^"]*)".*/\1/')
+  [ -z "$PROJECT_NAME" ] && PROJECT_NAME="this project"
+  cat > "$PJ_BRAIN" <<EOF
+# brain — ${PROJECT_NAME} PJ 固有 brain
 
 @~/.claude/brain/thinking.md
 
-> このファイルは <PROJECT_NAME> PJ 固有の判断軸を保持する。
+> このファイルは ${PROJECT_NAME} PJ 固有の判断軸を保持する。
 > 上記 @import で個人 brain を取り込む。個人 brain 不在時は silent ignore され、PJ brain だけがロードされる。
 > 2 層 brain モデルの詳細は ADR-0016 を参照。
+EOF
+  echo "PJ 固有 brain を生成しました: $PJ_BRAIN"
+else
+  echo "PJ 固有 brain は既に存在: $PJ_BRAIN（触らない）"
+fi
 ```
 
 PJ 固有判断軸は本ファイル下部に追記する（Step 5 で対話的に記入）。
