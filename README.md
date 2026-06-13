@@ -337,6 +337,8 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 4. **Fixed cost, not per-project**: Runs on Claude Max. No API charges. 10 projects for the same $100/month. ([ADR-0003](./docs/decisions/0003-slack-cron-architecture.md))
 5. **Git is the source of truth**: No external DB required. CLAUDE.md + ADR + GitHub Issues + auto-memory. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
 
+> 📐 For the full design philosophy at a glance, see **[`docs/design.md`](./docs/design.md)** — a one-page digest of how sidekick is designed today.
+
 ---
 
 ## Versioning & updates
