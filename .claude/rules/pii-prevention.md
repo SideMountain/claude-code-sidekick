@@ -90,11 +90,16 @@ scan_staged_public() {
 
 ## 自動実行ポイント
 
-| タイミング | 実行スキル | 対象 |
-|---|---|---|
-| ADR ドラフト完成後 | `/record-decision` | 当該 ADR ファイル |
-| セッション終了時 | `/close-chat` | ステージ済み + 未ステージの公開ファイル |
-| OSS 同期時 | `/sync-oss` | sync 候補ファイル全件 |
-| PR 作成前 | `/review` | 変更ファイル全件 |
+仕組み化の3層でいう **認知**（スキルが scan する）と **強制**（commit を物理ブロックする）を両立させる。
 
-各スキルが本ルールの `scan_pii` を呼び出す責務を持つ。
+| タイミング | レイヤー | 実行主体 | 対象 |
+|---|---|---|---|
+| ADR ドラフト完成後 | 認知 | `/record-decision` | 当該 ADR ファイル |
+| セッション終了時 | 認知 | `/close-chat` | ステージ済み + 未ステージの公開ファイル |
+| OSS 同期時 | 認知 | `/sync-oss` | sync 候補ファイル全件 |
+| PR 作成前 | 認知 | `/review` | 変更ファイル全件 |
+| **commit 時** | **強制** | **`.claude/githooks/pre-commit`** | **staged な公開ファイル（検出時は commit を中止）** |
+
+スキル（認知層）が `scan_pii` を呼び出し、pre-commit hook（強制層）が最終ゲートとして commit を物理ブロックする。
+hook は `/setup` が `core.hooksPath` を設定して有効化する（clone ごと、`git config core.hooksPath .claude/githooks`）。
+PJ 固有の人名・PJ名・接続先は scan_pii のコメント例と hook 末尾の両方でカスタマイズする。
