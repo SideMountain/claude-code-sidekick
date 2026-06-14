@@ -40,6 +40,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Fixed
 - `/setup`: 新規/既存PJで `SIDEKICK_VERSION` を ccs 最新タグから自動スタンプ（空のままだと `/inventory`・`/adopt-sidekick-update` がスキップされ、新規PJが更新を取り込めなくなる deadlock を解消）
+- `/setup` Step 4.5: PJ 固有 brain を決定論的に生成（markdown 例示のみ → 冪等・非上書きの bash 生成ブロックへ。真の新規 PJ で brain 生成が漏れるのを防ぐ。fork 由来の既存 brain は保護）
 - `.claude/brain/thinking.md`: 旧3層（L2・ADR-0013）の stale 残骸を 2層 PJ brain（ADR-0016）に置換
 
 ### 変更された ADR
