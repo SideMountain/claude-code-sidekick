@@ -219,9 +219,13 @@ preloaded されたスキルに従い、変更を分析して判定を返して�
 | `allowed-tools` | 制御が効かない | [#18837](https://github.com/anthropics/claude-code/issues/18837) |
 | VSCode バリデータ | 基本フィールドのみ認識 | [#25380](https://github.com/anthropics/claude-code/issues/25380) |
 
+> **2026-06 更新**: `context: fork` は公式 changelog で skill の正式フィールドとして定着（Skill 内 lifecycle hooks・`agent:` 種別指定・`disable-model-invocation` 等と併記、v2.1.x 系）。ただし本番採用前に当環境での成功率を再検証する（旧 #18394 の不安定が解消されたかは未確認・確度: 未検証）。
+
 ### 移行計画
 
-`context: fork` が安定したら:
+> **判断軸（一律移行はしない）**: `context: fork` が安定しても、**宣言的 fork =「単純な隔離」/ 手続き的 Agent 委譲 =「細粒度制御が要る隔離」** で使い分ける。SKILL.md 本文がそのまま subagent prompt になる宣言的 fork は保守性が高い一方、動的パラメータ・条件分岐・複数 Agent の調停が要るケース（`/review` のオーケストレーション、`/auto-implement` のフェーズ制御等）は手続き呼びが勝る。スキルごとに判断する。
+
+`context: fork` が安定したら（単純隔離のスキルから順に）:
 
 1. 各タスク型スキルの frontmatter に `context: fork` を追加
 2. 「実行方式」セクションを削除（frontmatter が自動で隔離する）

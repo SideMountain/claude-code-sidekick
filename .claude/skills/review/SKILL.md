@@ -137,6 +137,8 @@ CLAUDE.md または `.claude/rules/notion.md` に定義された対応表に基�
     - ...
 ```
 
+> **静的 → 動的の橋渡し**: 上記は静的レビュー。`PR作成可` でも挙動に不安があれば、公式 `/verify` でアプリを実際に動かして確認する（下記「公式 bundled スキルとの使い分け」参照）。
+
 ## 個別実行
 
 各観点は個別に実行することもできる:
@@ -145,6 +147,19 @@ CLAUDE.md または `.claude/rules/notion.md` に定義された対応表に基�
 - `/review-ops` — デプロイ前の運用確認
 - `/review-design` — UI変更後のデザイン一貫性確認
 - `/review-spec` — API変更後の仕様整合性確認
+
+## 公式 bundled スキルとの使い分け
+
+`/review` は **ccs 統合オーケストレーター**（6観点・CLAUDE.md 不変条件・動的スキップ・PJ 文脈込み）。Claude Code 公式 bundled の単機能スキルとは目的が異なるため、置き換えではなく**補完的に**使う:
+
+| 公式スキル | 役割 | `/review` との関係 |
+|---|---|---|
+| `/code-review` | diff にフォーカスした correctness バグ + reuse/simplify 検出（low〜ultra の effort 段階、cloud 隔離も可） | `/review` の code 観点の高速スポット版。PR 直前の追加パスとして併用可 |
+| `/simplify` | 変更コードの reuse/簡潔化/効率の cleanup（品質のみ、バグは探さない） | `/review-code` 指摘後の整形に。バグ検出は `/review` 側 |
+| `/verify` | アプリを実際に動かして挙動を確認（テストでなく実挙動） | `/review`（静的）の後の動的確認 |
+| `/security-review` | セキュリティ専用の深掘りパス | `/review-code` が `[needs-security-review]` を出したら委譲 |
+
+**原則**: PR 前ゲートは `/review`（統合）を主とし、公式 bundled は「特定観点を深掘りするスポット」として重ねる。**新スキルは作らず、公式を呼び分ける**（ADR-0018 の最小ループ — 能動面を増やさず配管で吸収）。
 
 ## Gotchas
 
