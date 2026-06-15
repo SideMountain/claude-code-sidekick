@@ -42,6 +42,7 @@ sidekick（開発リポ）と claude-code-sidekick（配布リポ）を分離す
 - claude-code-sidekick を開発・配布双方の canonical リポとする
 - 一方向同期スキル（`/sync-oss`）は廃止する
 - 開発リポ（sidekick）は統合先にたたみ、アーカイブする（物理統合は段階実施）
+- リリースタグ・GitHub Release は配布リポ（claude-code-sidekick）に集約する。旧開発リポ（sidekick）は tagless 運用だったため、単一リポ化後も release / tag の canonical home は配布リポのままで整合する
 
 ### 2. 保守者専用スキルの行き先
 

@@ -89,6 +89,7 @@ brain は 2 層構造（ADR-0016）。OSS テンプレート（`brain/thinking.m
 ### 昇格（feedback → PJ brain → 個人 brain → OSS テンプレート還流）
 
 - 同趣旨の feedback が3回以上溜まったら、原則への昇格を検討する
+  - **例外（クリティカル class）**: 事故・障害・セキュリティ等、再発時の被害が大きい教訓は N=1（単発観測）でも記録・昇格してよい。3 件ルールは「失っても致命的でない知見」の蓄積閾値であり、致命クラスには適用しない
 - 昇格パス:
   - PJ 内同類 3 件 → PJ brain（`<PJ>/.claude/brain/thinking.md`）に昇格
   - 別 PJ で同類観測 → 個人 brain（`~/.claude/brain/thinking.md`）に昇格
