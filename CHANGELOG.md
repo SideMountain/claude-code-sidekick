@@ -23,6 +23,11 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Changed
+- `/review`: 公式 bundled スキル（`/code-review`・`/simplify`・`/verify`・`/security-review`）との使い分け Note を追加（置き換えでなく補完。新スキルは作らない）
+- `skill-agent-design.md`: §7 を 2026-06 ステータスに更新し、宣言的 `context: fork` vs 手続き的 Agent 委譲の判断軸を明文化
+- `brain/thinking.md`（OSS テンプレ）: weekly-inventory で昇格判定した設計原則を追記（dogfood=検知層 / リリース前ローカル検証 / 手動手順は仕組み化のサイン / 配布物の自己完結 / 媒体別の視認性 / 動作担保は実装で検証）
+
 ## [0.8.1] - 2026-06-14
 
 ### Added
