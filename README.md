@@ -19,7 +19,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 
 | 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
 |---|---|---|
-| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **16 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **17 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
 
 The "Thinking OS" is what sets sidekick apart from other templates.
 
@@ -97,7 +97,7 @@ In other words, **you stop repeating yourself.**
 | | Vanilla Claude Code | Typical template | **sidekick** |
 |---|:---:|:---:|:---:|
 | Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
-| Reusable skills | ❌ | △ | ✅ 16 skills |
+| Reusable skills | ❌ | △ | ✅ 17 skills |
 | **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
 | Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
 | Tracks design decisions (ADR) | ❌ | △ | ✅ |
@@ -229,7 +229,7 @@ flowchart LR
 3. **HARD rules** — Claude asks you first: `git push` (feature), `gh pr create`, `gh pr merge`
 4. **Everything else** — auto-approved via `Bash(*)` (no dialogs)
 
-### 🧰 The 16 skills
+### 🧰 The 17 skills
 
 The three verbs above (`/news`, `/close-chat`, `/weekly-inventory`) are the ones you run by hand. The rest are plumbing — called when the moment comes.
 
@@ -238,6 +238,7 @@ The three verbs above (`/news`, `/close-chat`, `/weekly-inventory`) are the ones
 | **Ideation** | `/discover` | Idea → requirements (gap analysis, task breakdown) |
 | **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Runs only relevant perspectives based on change scope |
 | **Lifecycle** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | Session & project management |
+| **Health** | `/tune` | Speed up tests/CI, prune-free test inventory (consolidate/strengthen), code dedup — read-only audit → human-gated |
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
 | **Updates & Release** | `/adopt-sidekick-update`, `/release` | Pull upstream updates / cut a versioned release |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
@@ -299,7 +300,7 @@ your-project/
 │   └── thinking.md              # Personal-brain TEMPLATE (not loaded; /setup copies to ~/.claude/brain/)
 ├── .claude/
 │   ├── hooks/                   # Safety enforcement layer (guard-bash, db-operation, session-start, …)
-│   ├── skills/                  # 16 reusable workflows
+│   ├── skills/                  # 17 reusable workflows
 │   ├── brain/
 │   │   └── thinking.md          # PJ brain (@imports personal brain ~/.claude/brain/thinking.md)
 │   ├── rules/                   # Project rules (coding standards, DB, Git strategy)
