@@ -22,3 +22,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0016 | [brain の 2 層モデル化と上書き禁止運用](0016-brain-two-layer-model.md) | ドラフト |
 | 0018 | [北極星と最小ループ（3 動詞）](0018-north-star-and-minimal-loop.md) | 採用（2026-06-13） |
 | 0019 | [UI/UX ハーネスの段階導入（3 層）](0019-uiux-harness-three-layer.md) | 採用（2026-06-13、v0.8.x で P1 着手） |
+| 0020 | [Spine-Driven の棚卸しと構想の凍結（ledger 型）](0020-spine-driven-ledger.md) | 採用（2026-06-17、ledger 型・新機能なし） |
