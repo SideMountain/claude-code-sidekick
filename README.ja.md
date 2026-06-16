@@ -300,7 +300,7 @@ your-project/
 │   └── thinking.md              # 個人 brain テンプレート（ロード対象外。/setup が ~/.claude/brain/ にコピー）
 ├── .claude/
 │   ├── hooks/                   # 安全の強制層（guard-bash, db-operation, session-start, …）
-│   ├── skills/                  # 16 の再利用ワークフロー
+│   ├── skills/                  # 17 の再利用ワークフロー
 │   ├── brain/
 │   │   └── thinking.md          # PJ brain（~/.claude/brain/thinking.md を @import）
 │   ├── rules/                   # プロジェクト固有ルール（コーディング規約、DB、Git）

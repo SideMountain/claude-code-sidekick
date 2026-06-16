@@ -80,12 +80,10 @@ Commands（ユーザー入力）
 3. メインコンテキストには結果サマリのみが残る
 ```
 
-> **将来の移行パス**: Claude Code の `context: fork` フロントマターが安定したら
-> （現時点では不安定: [#18394](https://github.com/anthropics/claude-code/issues/18394)）、
-> frontmatter ベースの宣言的な隔離に移行する。
-> その際、スキル本文の「実行方式」セクションは不要になり、
-> frontmatter に `context: fork` を追加するだけで済む。
-> Return Contract はそのまま活用できる。
+> **移行パス**: `context: fork` は**安定済み**（§7 参照。旧 #18394 の不安定は解消）。
+> frontmatter ベースの宣言的隔離（スキル本文の「実行方式」セクションを `context: fork`
+> 追加に置換）への移行は §7 の移行計画に従う（当環境での成功率を確認の上）。
+> Return Contract は隔離手段に依存しないためそのまま活用できる。
 
 ### サマリ設計（Return Contract）
 
