@@ -96,7 +96,6 @@ scan_staged_public() {
 |---|---|---|---|
 | ADR ドラフト完成後 | 認知 | `/record-decision` | 当該 ADR ファイル |
 | セッション終了時 | 認知 | `/close-chat` | ステージ済み + 未ステージの公開ファイル |
-| OSS 同期時 | 認知 | `/sync-oss` | sync 候補ファイル全件 |
 | PR 作成前 | 認知 | `/review` | 変更ファイル全件 |
 | **commit 時** | **強制** | **`.claude/githooks/pre-commit`** | **staged な公開ファイル（検出時は commit を中止）** |
 

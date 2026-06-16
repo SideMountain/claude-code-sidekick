@@ -23,11 +23,18 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+- `.claude/rules/oss-doc-authoring.md`: OSS ドキュメント作法ルールを配布物に追加（単一リポ化 ADR-0006 に伴い開発リポから移行）
+
 ### Changed
+- `/release`: 説明・目的・「いつ使うか」を単一リポ（ccs）前提に統一（二リポ連動の記述を削除）
 - `/review`: 公式 bundled スキル（`/code-review`・`/simplify`・`/verify`・`/security-review`）との使い分け Note を追加（置き換えでなく補完。新スキルは作らない）
 - `skill-agent-design.md`: §7 を 2026-06 ステータスに更新し、宣言的 `context: fork` vs 手続き的 Agent 委譲の判断軸を明文化
 - `brain/thinking.md`（OSS テンプレ）: weekly-inventory で昇格判定した設計原則を追記（dogfood=検知層 / リリース前ローカル検証 / 手動手順は仕組み化のサイン / 配布物の自己完結 / 媒体別の視認性 / 動作担保は実装で検証）
 - `knowledge-map.md` / ADR-0006: 知識昇格の3件ルールに「クリティカル class は N=1 でも記録」例外を明文化 + release/tag は配布リポに集約する旨を補足
+
+### Removed
+- `/sync-oss` 連動の記述を退役（単一リポ化 ADR-0006）。`/release` の Step 7（二リポ連動）と関連 gotcha/参考、`pii-prevention.md` の sync-oss 自動実行行を削除
 
 ## [0.8.1] - 2026-06-14
 
