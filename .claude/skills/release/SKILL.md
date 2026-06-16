@@ -1,6 +1,6 @@
 ---
 name: release
-description: "sidekick / claude-code-sidekick のリリース切り。温度感判定・機械的変更リスト生成・CHANGELOG bump・タグ作成・GitHub Release 作成までを対話型で一貫実行する。"
+description: "claude-code-sidekick（ccs）のリリース切り。温度感判定・機械的変更リスト生成・CHANGELOG bump・タグ作成・GitHub Release 作成までを対話型で一貫実行する。"
 user-invocable: true
 allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(gh *)"
 ---
@@ -9,7 +9,7 @@ allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(gh *)"
 
 ## 目的
 
-sidekick / claude-code-sidekick のリリースを **手順漏れなく**切る。特に以下を保証する:
+claude-code-sidekick（ccs）のリリースを **手順漏れなく**切る。特に以下を保証する:
 
 - **思想漏洩防止**: リリースノートに「変更された ADR / rules」を機械的に列挙
 - **温度感の明示**: Critical / Standard / Enhancement の3段階を title/body に明記
@@ -20,8 +20,7 @@ ADR-0009 で定義した設計に準拠する。
 
 ## いつ使うか
 
-- sidekick 本体で `[Unreleased]` に変更が溜まり、リリースとして切りたいとき
-- claude-code-sidekick（OSS）側の CHANGELOG bump + tag + GitHub Release 作成
+- `[Unreleased]` に変更が溜まり、リリースとして切りたいとき（CHANGELOG bump + tag + GitHub Release 作成）
 - 緊急バグ修正を hotfix リリースとして切るとき（Critical 温度感）
 
 ## いつ使わないか
@@ -139,15 +138,7 @@ git push origin vX.Y.Z  # 要ユーザー確認
 gh release create vX.Y.Z --repo {owner}/{repo} --title "{title}" --notes "{body}"  # 要ユーザー確認
 ```
 
-### Step 7: sidekick → OSS への連動リリース
-
-sidekick 側でリリースを切ったら、OSS 側も必ず切る:
-
-1. `/sync-oss` で変更を同期
-2. OSS 側で `/release` を再実行（同じバージョン番号）
-3. OSS 側 CHANGELOG は OSS 利用者目線で書き直す（sidekick 内部の固有名詞を含めない）
-
-### Step 8: 完了記録
+### Step 7: 完了記録
 
 - auto-memory MEMORY.md の Active Work を「完了」に更新
 - Worktree 削除（ユーザー明言後）
@@ -160,7 +151,6 @@ sidekick 側でリリースを切ったら、OSS 側も必ず切る:
 - **機械リストを人間記述で上書きしない**: Step 3 生成物（`## 変更された ADR` 等）は削除・編集しない。人間の記述は Highlights セクションで
 - **Critical の即時性**: Critical は単独で切る。「Critical + 新機能」の batch は避ける
 - **タグ push のタイミング**: PR マージ **後** にタグを打つ。マージ前のタグは branch 側を指してしまう
-- **OSS との整合性**: sidekick 側先行リリース禁止。同じバージョン番号で両リポを切る
 - **対話型スキルなので Agent 委譲しない**: ユーザー判断が多数挟まるため、メインコンテキストで実行する（skill-agent-design.md §2 参照）
 
 ## 参考
@@ -168,4 +158,3 @@ sidekick 側でリリースを切ったら、OSS 側も必ず切る:
 - ADR-0009: リリース取り込み設計
 - ADR-0001: 配信方式（/inventory + GitHub Releases）
 - `references/release-format-spec.md`: Title / Body / Banner 仕様の詳細
-- `/sync-oss`: OSS 連動同期
