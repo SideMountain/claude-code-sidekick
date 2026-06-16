@@ -30,7 +30,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 ### Changed
 - `/release`: 説明・目的・「いつ使うか」を単一リポ（ccs）前提に統一（二リポ連動の記述を削除）
 - `/review`: 公式 bundled スキル（`/code-review`・`/simplify`・`/verify`・`/security-review`）との使い分け Note を追加（置き換えでなく補完。新スキルは作らない）
-- `skill-agent-design.md`: 公式標準と突合し最新化 — §7 の判断軸（宣言的 `context: fork` vs 手続き的 Agent 委譲）に加え、`context: fork`=安定・カスタムサブエージェント=推奨へ是正、frontmatter 追補（effort/paths/hooks 等）、冒頭に「最終検証」スタンプを追加
+- `skill-agent-design.md`: 公式標準と突合し最新化 — §7 の判断軸（宣言的 `context: fork` vs 手続き的 Agent 委譲）に加え、`context: fork`=安定・カスタムサブエージェント=推奨へ是正、frontmatter 追補（effort/paths/hooks 等）、冒頭に「最終検証」スタンプを追加。さらに 2026-06-17 に公式 docs（skills.md / sub-agents.md）で再裏取りし、`agent:` フィールド（`context: fork` 時の subagent 種別・公式文書化済み）の確度を是正、frontmatter 表に `disallowed-tools`・`when_to_use` 等を補完
 - `brain/thinking.md`（OSS テンプレ）: weekly-inventory で昇格判定した設計原則を追記（dogfood=検知層 / リリース前ローカル検証 / 手動手順は仕組み化のサイン / 配布物の自己完結 / 媒体別の視認性 / 動作担保は実装で検証）
 - `knowledge-map.md` / ADR-0006: 知識昇格の3件ルールに「クリティカル class は N=1 でも記録」例外を明文化 + release/tag は配布リポに集約する旨を補足
 
