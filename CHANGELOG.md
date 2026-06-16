@@ -24,12 +24,13 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 ## [Unreleased]
 
 ### Added
+- `/tune` スキル新設: PJ健全性テコ入れ（テスト実行/CI高速化・テスト棚卸し〔削除せず統合/補強/格上げ〕・コード共通化）を read-only 監査 → 人手ゲートで是正。`weekly-inventory` の兄弟（パターンD）。安全ガードレール（テスト削除提案ゼロ / E2E除外 / 夜間ループ対象外 / mutation を削除根拠にしない）を references に明文化
 - `.claude/rules/oss-doc-authoring.md`: OSS ドキュメント作法ルールを配布物に追加（単一リポ化 ADR-0006 に伴い開発リポから移行）
 
 ### Changed
 - `/release`: 説明・目的・「いつ使うか」を単一リポ（ccs）前提に統一（二リポ連動の記述を削除）
 - `/review`: 公式 bundled スキル（`/code-review`・`/simplify`・`/verify`・`/security-review`）との使い分け Note を追加（置き換えでなく補完。新スキルは作らない）
-- `skill-agent-design.md`: §7 を 2026-06 ステータスに更新し、宣言的 `context: fork` vs 手続き的 Agent 委譲の判断軸を明文化
+- `skill-agent-design.md`: 公式標準と突合し最新化 — §7 の判断軸（宣言的 `context: fork` vs 手続き的 Agent 委譲）に加え、`context: fork`=安定・カスタムサブエージェント=推奨へ是正、frontmatter 追補（effort/paths/hooks 等）、冒頭に「最終検証」スタンプを追加
 - `brain/thinking.md`（OSS テンプレ）: weekly-inventory で昇格判定した設計原則を追記（dogfood=検知層 / リリース前ローカル検証 / 手動手順は仕組み化のサイン / 配布物の自己完結 / 媒体別の視認性 / 動作担保は実装で検証）
 - `knowledge-map.md` / ADR-0006: 知識昇格の3件ルールに「クリティカル class は N=1 でも記録」例外を明文化 + release/tag は配布リポに集約する旨を補足
 

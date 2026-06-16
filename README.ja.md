@@ -19,7 +19,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 
 | 🛡️ 安全ガード | 🧰 再利用ワークフロー | 🧠 思考OS |
 |---|---|---|
-| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**16スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
+| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**17スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
 
 最後の「思考OS」が sidekick の一番の差別化です。
 
@@ -97,7 +97,7 @@ Claude : → Worktree 作成（main は触らない）
 | | 素の Claude Code | 一般的なテンプレ | **sidekick** |
 |---|:---:|:---:|:---:|
 | 危険操作の物理ブロック | ❌ | △（ルール記述のみ） | ✅ hooks で強制 |
-| 再利用スキル | ❌ | △ | ✅ 16 種類 |
+| 再利用スキル | ❌ | △ | ✅ 17 種類 |
 | **あなたの判断軸を学習** | ❌ | ❌ | ✅ **思考OS** |
 | 完全自動実装（寝てる間に PR） | ❌ | ❌ | ✅ `/auto-implement` |
 | ADR で設計判断を追跡可能 | ❌ | △ | ✅ |
@@ -229,7 +229,7 @@ flowchart LR
 3. **HARD ルール** — Claude があなたに確認してから実行: `git push`（feature）, `gh pr create`, `gh pr merge`
 4. **それ以外** — `Bash(*)` で自動承認（ダイアログなし）
 
-### 🧰 16 スキル
+### 🧰 17 スキル
 
 上の3動詞（`/news`, `/close-chat`, `/weekly-inventory`）が手で実行するもの。残りは配管で、必要な瞬間に呼ばれます。
 
@@ -238,6 +238,7 @@ flowchart LR
 | **アイデア発想** | `/discover` | アイデア → 要件定義（ギャップ分析・タスク分解） |
 | **レビュー** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | 変更スコープに応じて必要な観点だけ実行 |
 | **ライフサイクル** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | セッション・プロジェクト管理 |
+| **健全性** | `/tune` | テスト/CI高速化・テスト棚卸し（削除せず統合/補強）・コード共通化（read-only 監査→人手ゲート） |
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
 | **更新・リリース** | `/adopt-sidekick-update`, `/release` | 上流の更新を取り込む / バージョン付きリリースを切る |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
@@ -299,7 +300,7 @@ your-project/
 │   └── thinking.md              # 個人 brain テンプレート（ロード対象外。/setup が ~/.claude/brain/ にコピー）
 ├── .claude/
 │   ├── hooks/                   # 安全の強制層（guard-bash, db-operation, session-start, …）
-│   ├── skills/                  # 16 の再利用ワークフロー
+│   ├── skills/                  # 17 の再利用ワークフロー
 │   ├── brain/
 │   │   └── thinking.md          # PJ brain（~/.claude/brain/thinking.md を @import）
 │   ├── rules/                   # プロジェクト固有ルール（コーディング規約、DB、Git）
