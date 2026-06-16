@@ -3,7 +3,7 @@
 Claude Code の実行アーキテクチャは3層で構成される。
 このガイドラインは、スキルやエージェントを新規作成・改修する際の判断基準を定義する。
 
-> **最終検証: 2026-06-16**（公式標準と突合）。外部標準の進化で陳腐化するため定期的に再検証する（§7 末尾参照）。frontmatter・`context:fork`・カスタムサブエージェントの最新状態は §7 を見ること。
+> **最終検証: 2026-06-17**（公式標準と突合）。外部標準の進化で陳腐化するため定期的に再検証する（§7 末尾参照）。frontmatter・`context:fork`・カスタムサブエージェントの最新状態は §7 を見ること。
 
 ---
 
@@ -137,7 +137,7 @@ Commands（ユーザー入力）
 
 ### エージェント定義の書き方（参考・将来用）
 
-> **注意（2026-06-16 更新）**: カスタムサブエージェント定義は公式に安定し、下記フォーマットは概ね現行（フィールド詳細は §7 の表を参照）。ただしスキルからの**自動バインド**（`agent:` フィールド）の挙動は公式に明文化されておらず確度が低いため、サブエージェントの指定は `/agents` や Agent ツールの明示呼びを優先する。
+> **注意（2026-06-17 更新）**: カスタムサブエージェント定義は公式に安定し、下記フォーマットは概ね現行（フィールド詳細は §7 の表を参照）。スキルからのサブエージェント指定は **`context: fork` + `agent:` フィールド**で行う（公式文書化済み。値は `Explore`/`Plan`/`general-purpose`/カスタム agent 名、省略時 `general-purpose`）。`context: fork` を伴わない `agent:` 単独は無効。
 
 ```markdown
 # .claude/agents/reviewer/AGENT.md
@@ -209,19 +209,20 @@ preloaded されたスキルに従い、変更を分析して判定を返して�
 
 ## 7. 既知の制約と将来の移行パス
 
-### 機能の状態（2026-06-16・公式標準と突合 / claude-code-guide 検証）
+### 機能の状態（2026-06-17・公式標準と突合 / claude-code-guide 検証）
 
 | 機能 | 状態 | メモ |
 |---|---|---|
 | `context: fork` | ✅ **公式・安定**（旧 #18394 の不安定は解消） | スキルを独立コンテキストの隔離サブエージェントとして実行。**ただし当環境（WSL）での成功率は採用前に都度確認**（ccs 規律） |
 | カスタムサブエージェント `.claude/agents/` | ✅ **公式・推奨**（安定） | `/agents` で管理。frontmatter: `name`/`description`/`tools`/`model`/`permissionMode`/`skills` |
 | `allowed-tools` | ⚠️ 権限付与は機能、**強制（制限）は信頼しない** | enforcement bug 既往（#18837 等）・2026-06 に一部修正。セキュリティ境界には使わない |
-| `agent:`（スキル→サブエージェント自動バインド） | ⚠️ 公式に明文化なし・確度低 | `/agents` / Agent ツール明示呼びを優先（#17283） |
-| その他の現行 frontmatter | ✅ 公式 | `effort`（推論深度）/ `paths`（パススコープ）/ `hooks`（ライフサイクル）/ `disable-model-invocation` / `model` 等 |
+| `disallowed-tools` | ✅ 公式 | active 中のスキルから特定 tool を除外（自律スキル/無人ループで `AskUserQuestion` を禁止する等）。次のユーザーメッセージで解除。ccs の禁止リスト思想と相性良 |
+| `agent:`（`context: fork` 時の subagent 種別） | ✅ **公式**（`context: fork` 併用時のみ有意） | 値: `Explore`/`Plan`/`general-purpose`/カスタム agent 名。省略時 `general-purpose`。`Explore`/`Plan` は CLAUDE.md + git status を読まず context を小さく保つ |
+| その他の現行 frontmatter | ✅ 公式 | `effort`（推論深度）/ `paths`（パススコープ）/ `hooks`（ライフサイクル）/ `disable-model-invocation` / `model` / `when_to_use`（**綴りはアンダースコア**）/ `argument-hint` / `arguments` / `user-invocable` / `shell`（`!` コマンド用）等 |
 
 > **SKILL.md 行数**: 公式は「≤500行・超過分は references/ へ」。ccs は内部規律で**≤200行**を維持（context-management.md）。
 >
-> **確度注記**: アーキテクチャ系（context:fork 安定・custom agents 推奨・references/ 標準）は公式 docs 由来で高確度。frontmatter 細目の一部は三次情報を含み中確度。**本表は 2026-06-16 時点。陳腐化前提で定期再検証する**（→ `/news-upstream` に「公式変更で内部 doc/skill が矛盾しないか」のチェックを統合予定）。
+> **確度注記**: 本表は **2026-06-17 時点**で公式 docs（skills.md / sub-agents.md）と claude-code-guide により裏取り済み（`agent:`・`context: fork` 挙動・frontmatter 細目を含め高確度）。外部標準の進化で陳腐化するため定期再検証する（→ `/news-upstream` に「公式変更で内部 doc/skill が矛盾しないか」のチェックを統合予定）。
 
 ### 移行計画
 
