@@ -36,7 +36,7 @@
     <rect width="680" height="70" rx="12" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
     <rect width="6" height="70" rx="3" fill="url(#skills)"/>
     <text x="32" y="28" fill="#60a5fa" font-size="22">🧰</text>
-    <text x="62" y="30" fill="#93c5fd" font-size="14" font-weight="700">Layer 2: 15 Skills</text>
+    <text x="62" y="30" fill="#93c5fd" font-size="14" font-weight="700">Layer 2: 17 Skills</text>
     <text x="62" y="52" fill="#94a3b8" font-size="12"><tspan fill="#60a5fa">/review</tspan> (6 perspectives)  ·  <tspan fill="#60a5fa">/auto-implement</tspan> (Issues → PRs overnight)  ·  <tspan fill="#60a5fa">/setup</tspan>  ·  <tspan fill="#60a5fa">/close-chat</tspan></text>
     <text x="600" y="44" fill="#475569" font-size="11" text-anchor="end">ready to use, day one</text>
   </g>
