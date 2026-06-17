@@ -1,0 +1,50 @@
+// Sample Prisma schema for the system-map example (generic blog/CMS).
+// Used to exercise extract-indexes.nextjs.js (PK / FK / UNIQUE / INDEX extraction).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String?
+  role      String    @default("author")
+  posts     Post[]
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+
+  @@index([role])
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  title     String
+  slug      String    @unique
+  body      String
+  published Boolean   @default(false)
+  authorId  Int
+  author    User      @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+
+  @@index([authorId])
+  @@index([published])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([postId, authorId])
+  @@index([postId])
+}

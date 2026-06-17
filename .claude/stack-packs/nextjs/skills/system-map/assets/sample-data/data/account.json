@@ -1,0 +1,15 @@
+{
+  "id": "account",
+  "name": "アカウント",
+  "purpose": "サインイン・サインアウトとロール管理。認証は auth ライブラリ（ライブラリ非依存に扱う）。",
+  "screens": [
+    {"id": "sign_in", "title": "サインイン", "route": "/sign-in", "module": "auth", "kind": "login", "permission": "public", "userTypes": ["guest"], "actions": [{"label": "サインイン", "api": "POST signIn"}]},
+    {"id": "admin_users", "title": "ユーザー管理", "route": "/admin/users", "module": "manage", "kind": "list", "permission": "admin", "userTypes": ["admin"], "actions": [{"label": "ロール変更", "api": "POST setUserRole"}]}
+  ],
+  "apis": [
+    {"method": "POST", "path": "signIn", "operationId": "signIn", "kind": "server-action", "summary": "サインイン", "permission": "public", "dbTablesRead": ["User"], "dbTablesWrite": [], "calledByScreens": ["sign_in"]},
+    {"method": "POST", "path": "setUserRole", "operationId": "setUserRole", "kind": "server-action", "summary": "ユーザーのロール変更（admin のみ）", "permission": "admin", "dbTablesRead": ["User"], "dbTablesWrite": ["User"], "calledByScreens": ["admin_users"], "gotchas": ["requireRole('admin') を Server Action 冒頭で必須。middleware の matcher だけに依存しない。"]}
+  ],
+  "gotchas": ["admin 機能は middleware の /admin matcher と DAL requireRole の二層で守る。片方だけにしない。"],
+  "uncertainties": []
+}

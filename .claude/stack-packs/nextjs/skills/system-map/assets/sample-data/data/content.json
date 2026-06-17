@@ -1,0 +1,21 @@
+{
+  "id": "content",
+  "name": "コンテンツ",
+  "purpose": "記事の閲覧・作成・編集とコメント。公開は誰でも、編集は著者本人のみ。",
+  "screens": [
+    {"id": "post_list", "title": "記事一覧", "route": "/posts", "module": "public", "kind": "list", "permission": "public", "userTypes": ["guest", "author", "admin"], "actions": [{"label": "記事を開く", "api": "GET /api/posts"}]},
+    {"id": "post_detail", "title": "記事詳細", "route": "/posts/[slug]", "module": "public", "kind": "detail", "permission": "public", "userTypes": ["guest", "author", "admin"], "actions": [{"label": "コメント投稿", "api": "POST createComment"}]},
+    {"id": "post_editor", "title": "記事エディタ", "route": "/dashboard/posts/[id]", "module": "my-page", "kind": "form", "permission": "authenticated", "userTypes": ["author", "admin"], "actions": [{"label": "保存", "api": "POST savePost"}, {"label": "削除", "api": "POST deletePost"}]}
+  ],
+  "apis": [
+    {"method": "GET", "path": "/api/posts", "operationId": "listPosts", "kind": "route-handler", "summary": "公開記事の一覧（外部/RSS 兼用）", "permission": "public", "dbTablesRead": ["Post"], "dbTablesWrite": [], "calledByScreens": ["post_list"]},
+    {"method": "POST", "path": "savePost", "operationId": "savePost", "kind": "server-action", "summary": "記事の作成・更新（著者本人のみ）", "permission": "authenticated", "dbTablesRead": ["Post"], "dbTablesWrite": ["Post"], "calledByScreens": ["post_editor"], "gotchas": ["所有検証は DAL の assertPostOwner で行う。route handler 側に出さない。"]},
+    {"method": "POST", "path": "deletePost", "operationId": "deletePost", "kind": "server-action", "summary": "記事の削除（著者本人 or admin）", "permission": "authenticated", "dbTablesRead": ["Post"], "dbTablesWrite": ["Post"], "calledByScreens": ["post_editor"]},
+    {"method": "POST", "path": "createComment", "operationId": "createComment", "kind": "server-action", "summary": "コメント投稿", "permission": "authenticated", "dbTablesRead": ["Post"], "dbTablesWrite": ["Comment"], "calledByScreens": ["post_detail"]}
+  ],
+  "gotchas": [
+    "savePost / deletePost は Server Action。直 URL での mutation は不可だが、所有検証を Server Action 本体に書き忘れると IDOR になる（DAL で assertPostOwner 必須）。",
+    "GET /api/posts は public な route handler。下書き(published=false)を漏らさないよう DAL 側で published フィルタを固定する。"
+  ],
+  "uncertainties": ["コメントのスパム対策（rate limit）が未実装。"]
+}

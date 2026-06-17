@@ -25,6 +25,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Added
 - **Next.js stack pack（opt-in 参照 pack）新設**（`.claude/stack-packs/nextjs/`）: `ARCHITECTURE.md`（規定アーキ＝golden path・Tier-1 STRUCTURAL/Tier-2 HYGIENE・①公式/②主流/③ccs独自・MUST/SHOULD・grep 検証付き）+ `README.md`（pack 思想・出自・roadmap）。現行公式（Next 16.2.9 docs・2026）で裏取り。`system-map` 可視化スキルの決定的動作を支える規定アーキ。stack pack 方式（アーキ規定→決定性→強制）は stack 非依存で Next.js は第一インスタンス
+- **`system-map` 可視化スキルの Next.js 土台を pack 配下に同梱**（`.claude/stack-packs/nextjs/skills/system-map/`）: コードベースを「画面↔API↔DB↔権限↔遷移」の単一 HTML 地図に可視化。スタック非依存の骨格（template/merge/build/verify）+ Next.js 化（SKILL/schema/methodology・`api.kind: route-handler|server-action`★S4）+ 硬層 adapter `extract-indexes.nextjs.js`（Prisma schema パーサ）+ generic サンプル（blog/CMS）。`verify.js` で自己検証（35/35 ルート描画 PASS）。固有名詞 scrub 済。残 adapter（ルート/mutation/認可 走査）は段階導入
 - `/tune` スキル新設: PJ健全性テコ入れ（テスト実行/CI高速化・テスト棚卸し〔削除せず統合/補強/格上げ〕・コード共通化）を read-only 監査 → 人手ゲートで是正。`weekly-inventory` の兄弟（パターンD）。安全ガードレール（テスト削除提案ゼロ / E2E除外 / 夜間ループ対象外 / mutation を削除根拠にしない）を references に明文化
 - `.claude/rules/oss-doc-authoring.md`: OSS ドキュメント作法ルールを配布物に追加（単一リポ化 ADR-0006 に伴い開発リポから移行）
 

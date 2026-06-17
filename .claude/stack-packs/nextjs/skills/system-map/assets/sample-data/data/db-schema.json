@@ -1,0 +1,45 @@
+{
+  "tables": [
+    {
+      "name": "User", "domain": "account", "purpose": "アプリ利用者（著者・管理者）",
+      "definedIn": "prisma/schema.prisma",
+      "columns": [
+        {"name": "id", "type": "Int", "pk": true, "notNull": true},
+        {"name": "email", "type": "String", "notNull": true},
+        {"name": "name", "type": "String"},
+        {"name": "role", "type": "String", "notNull": true},
+        {"name": "createdAt", "type": "DateTime", "notNull": true}
+      ]
+    },
+    {
+      "name": "Post", "domain": "content", "purpose": "投稿記事",
+      "definedIn": "prisma/schema.prisma",
+      "columns": [
+        {"name": "id", "type": "Int", "pk": true, "notNull": true},
+        {"name": "title", "type": "String", "notNull": true},
+        {"name": "slug", "type": "String", "notNull": true},
+        {"name": "body", "type": "String", "notNull": true},
+        {"name": "published", "type": "Boolean", "notNull": true},
+        {"name": "authorId", "type": "Int", "notNull": true, "fk": "User"},
+        {"name": "createdAt", "type": "DateTime", "notNull": true}
+      ]
+    },
+    {
+      "name": "Comment", "domain": "content", "purpose": "記事へのコメント",
+      "definedIn": "prisma/schema.prisma",
+      "columns": [
+        {"name": "id", "type": "Int", "pk": true, "notNull": true},
+        {"name": "body", "type": "String", "notNull": true},
+        {"name": "postId", "type": "Int", "notNull": true, "fk": "Post"},
+        {"name": "authorId", "type": "Int", "notNull": true, "fk": "User"},
+        {"name": "createdAt", "type": "DateTime", "notNull": true}
+      ]
+    }
+  ],
+  "relations": [
+    {"from": "Post", "to": "User"},
+    {"from": "Comment", "to": "Post"},
+    {"from": "Comment", "to": "User"}
+  ],
+  "notes": ["列・型・PK・FK は schema.prisma から抽出。索引の詳細は extract-indexes.nextjs.js が db-indexes.json に出す。"]
+}
