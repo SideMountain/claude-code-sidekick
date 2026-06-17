@@ -1,0 +1,15 @@
+{
+  "screens": [
+    {"id": "post_list", "title": "記事一覧", "kind": "list", "path": "/posts", "module": "public", "domain": "content"},
+    {"id": "post_detail", "title": "記事詳細", "kind": "detail", "path": "/posts/[slug]", "module": "public", "domain": "content"},
+    {"id": "sign_in", "title": "サインイン", "kind": "login", "path": "/sign-in", "module": "auth", "domain": "account"},
+    {"id": "post_editor", "title": "記事エディタ", "kind": "form", "path": "/dashboard/posts/[id]", "module": "my-page", "domain": "content"},
+    {"id": "post_saved", "title": "保存完了", "kind": "complete", "path": "/dashboard/posts", "module": "my-page", "domain": "content"}
+  ],
+  "edges": [
+    {"from": "post_list", "to": "post_detail", "trigger": "記事クリック"},
+    {"from": "post_detail", "to": "sign_in", "trigger": "コメント投稿", "condition": "未ログイン時"},
+    {"from": "sign_in", "to": "post_editor", "trigger": "サインイン後"},
+    {"from": "post_editor", "to": "post_saved", "trigger": "保存"}
+  ]
+}

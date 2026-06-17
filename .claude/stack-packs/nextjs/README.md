@@ -18,8 +18,8 @@ ccs の **opt-in な参照 stack pack**。Next.js（App Router）+ Prisma + 認�
 
 | 構成物 | 役割 | 状態 |
 |---|---|---|
-| **`ARCHITECTURE.md`** | golden path（規定アーキ・Tier-1/2・①②③・MUST/SHOULD・検証付き） | ✅ 本 PR |
-| `skills/system-map/` | コードベースを単一 HTML で可視化（screen↔API↔DB↔権限↔遷移） | ⏳ Next.js 版へ rebuild + 固有名詞 scrub の上、本 pack 配下へ（別作業。現状は Spring/Vue 版＝固有名詞を含むため未取込） |
+| **`ARCHITECTURE.md`** | golden path（規定アーキ・Tier-1/2・①②③・MUST/SHOULD・検証付き） | ✅ |
+| **`skills/system-map/`** | コードベースを単一 HTML で可視化（画面↔API↔DB↔権限↔遷移） | ✅ Next.js 版の土台を同梱。固有名詞 scrub 済 + Prisma index adapter + generic サンプル + 自己検証（`verify.js` 35/35 PASS）。残 adapter（ルート/mutation/認可 走査）は段階導入（`assets/adapters/README.md`） |
 | `fitness-functions/` | `ARCHITECTURE.md` の各 MUST を CI で検知（`__tests__/architecture/*.test.ts` テンプレ） | ⏳ 後続 phase（認知→強制→検知 の検知層） |
 | `scaffold/` | 新規 PJ を規約へ scaffold | ⏳ 後続 phase |
 | `/setup` 連携 | UI opt-in と同様に pack を opt-in 配置 | ⏳ 後続 phase |

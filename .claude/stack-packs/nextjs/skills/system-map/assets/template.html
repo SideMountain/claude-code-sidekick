@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>システムマップ — 画面 / API / DB / 権限</title>
+<style>
+:root{
+  --bg:#0f1420; --panel:#161d2e; --panel2:#1d2638; --line:#2a3550;
+  --line2:#36425f; --txt:#e6ebf5; --mut:#93a0bd; --mut2:#67748f;
+  --accent:#4f8cff; --accent2:#7c5cff; --green:#37c98a; --amber:#f5b942; --red:#ff5d6c;
+  --pink:#ff7ac6; --cyan:#33c6dd;
+  --public:#37c98a; --mypage:#4f8cff; --manage:#7c5cff; --auth:#9aa6c2; --shared:#33c6dd;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--txt);font:13.5px/1.55 "Segoe UI",Meiryo,system-ui,sans-serif}
+a{color:var(--accent);text-decoration:none;cursor:pointer}
+a:hover{text-decoration:underline}
+code,.mono{font-family:"Cascadia Code",Consolas,"Courier New",monospace;font-size:12.5px}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 18px;background:linear-gradient(90deg,#141b2b,#1a2236);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+.navtoggle{cursor:pointer;font-size:18px;line-height:1;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt)}
+.navtoggle:hover{border-color:var(--accent)}
+.topbar h1{font-size:16px;margin:0;white-space:nowrap;font-weight:650;letter-spacing:.3px}
+/* collapsed sidebar */
+body.navmin .sidebar{width:54px;padding:10px 6px}
+body.navmin .navlink{justify-content:center;padding:8px 0}
+body.navmin .navlink .nlbl,body.navmin .navlink .ct,body.navmin .navsec .lbl,body.navmin .dlist{display:none}
+body.navmin .navlink .ic{margin:0;font-size:17px}
+.topbar h1 .sub{color:var(--mut);font-weight:400;font-size:12px;margin-left:8px}
+.search{flex:1;max-width:520px;position:relative}
+.search input{width:100%;padding:8px 12px 8px 32px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-size:13px}
+.search input:focus{outline:none;border-color:var(--accent)}
+.search::before{content:"🔍";position:absolute;left:9px;top:7px;opacity:.6;font-size:12px}
+.stats{display:flex;gap:14px;font-size:11.5px;color:var(--mut);white-space:nowrap}
+.stats b{color:var(--txt);font-size:14px}
+.stats .st{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.layout{display:flex;min-height:calc(100% - 53px)}
+.sidebar{width:212px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);padding:10px 8px;position:sticky;top:53px;height:calc(100vh - 53px);overflow:auto}
+.navsec{margin-bottom:6px}
+.navsec .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut2);padding:8px 10px 4px}
+.navlink{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;color:var(--txt);cursor:pointer;font-size:13px}
+.navlink:hover{background:var(--panel2);text-decoration:none}
+.navlink.active{background:var(--accent);color:#fff}
+.navlink .ic{width:16px;text-align:center;opacity:.85}
+.navlink .ct{margin-left:auto;font-size:11px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:0 7px}
+.navlink.active .ct{color:#fff;background:rgba(255,255,255,.2)}
+.dlist a{display:flex;gap:6px;padding:4px 10px 4px 26px;font-size:12px;color:var(--mut);border-radius:6px}
+.dlist a:hover{background:var(--panel2);color:var(--txt);text-decoration:none}
+.dlist a.active{color:var(--txt);background:var(--panel2)}
+main{flex:1;min-width:0;padding:20px 26px 80px}
+.crumbs{font-size:12px;color:var(--mut);margin-bottom:12px}
+.crumbs a{color:var(--mut)} .crumbs b{color:var(--txt)}
+h2.view{font-size:20px;margin:0 0 4px;font-weight:650}
+.lead{color:var(--mut);margin:0 0 18px;max-width:900px}
+.grid{display:grid;gap:14px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 15px}
+.card.click{cursor:pointer;transition:.12s}
+.card.click:hover{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px)}
+.card h3{margin:0 0 6px;font-size:14.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card .desc{color:var(--mut);font-size:12.5px;margin:6px 0 0}
+.card .meta{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+.badge.sm{font-size:10px;padding:0 6px}
+.badge.green{color:#bff5dc;border-color:#1f6e4d;background:#143526}
+.badge.blue{color:#cfe0ff;border-color:#2b4d8a;background:#16233f}
+.badge.purple{color:#ddd0ff;border-color:#4a3a8a;background:#221b3d}
+.badge.gray{color:#d4dbea;border-color:#3a445f;background:#222a3c}
+.badge.cyan{color:#c4f1f8;border-color:#1f6675;background:#103038}
+.badge.amber{color:#ffe6ad;border-color:#7a5a16;background:#3a2c0e}
+.badge.red{color:#ffd0d5;border-color:#8a2b34;background:#3d161b}
+.badge.pink{color:#ffd6ef;border-color:#8a3a6e;background:#3d1830}
+.mod-public{--c:var(--public)} .mod-my-page{--c:var(--mypage)} .mod-manage{--c:var(--manage)} .mod-auth{--c:var(--auth)}
+.modtag{font-size:10.5px;padding:1px 7px;border-radius:5px;border:1px solid var(--c);color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--c,var(--mut))}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tbl th{text-align:left;color:var(--mut);font-weight:600;padding:7px 9px;border-bottom:1px solid var(--line);position:sticky;top:53px;background:var(--bg);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+table.tbl td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+table.tbl tr.click{cursor:pointer}
+table.tbl tr.click:hover td{background:var(--panel2)}
+.path{font-family:Consolas,monospace;font-size:12px}
+.method{font-weight:700;font-size:10.5px;padding:1px 6px;border-radius:5px;background:#16233f;color:#9cc0ff;border:1px solid #2b4d8a}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.toolbar input,.toolbar select{padding:6px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--txt);font-size:12.5px}
+.toolbar input{min-width:240px}
+.chipfilter{display:flex;gap:6px;flex-wrap:wrap}
+.chipf{cursor:pointer;font-size:11.5px;padding:2px 10px;border-radius:16px;border:1px solid var(--line);color:var(--mut);background:var(--panel)}
+.chipf.on{color:#fff;border-color:var(--accent);background:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px 18px;margin-bottom:16px}
+.panel h3{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px}
+.panel h3 .hint{font-weight:400;color:var(--mut);font-size:12px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 14px;font-size:13px}
+.kv dt{color:var(--mut)} .kv dd{margin:0}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto;padding:6px 2px}
+.flane{min-width:175px;flex:1;display:flex;flex-direction:column;gap:8px;padding:0 12px;border-right:1px dashed var(--line);position:relative}
+.flane:last-child{border-right:none}
+.flane .lh{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut2);margin-bottom:2px;font-weight:600}
+.fnode{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;cursor:pointer}
+.fnode:hover{border-color:var(--accent)}
+.fnode.center{border-color:var(--accent);background:#16233f;box-shadow:0 0 0 1px var(--accent)}
+.fnode.psel{border-color:#fff;background:#1c2740;box-shadow:0 0 0 2px var(--accent)}
+.impflow{flex:1;min-width:0;overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 4px;max-height:74vh}
+.impflow .flow{padding-top:0}
+.fnode .t{font-weight:600;font-size:12px}
+.fnode .s{color:var(--mut);font-size:11px}
+.list-tight{list-style:none;padding:0;margin:0}
+.list-tight li{padding:6px 0;border-bottom:1px solid var(--line)}
+.list-tight li:last-child{border:none}
+.act{border-left:3px solid var(--accent);padding:8px 12px;margin:8px 0;background:var(--panel2);border-radius:0 8px 8px 0}
+.act .lbl{font-weight:650;font-size:13px}
+.act .eff{color:var(--mut);font-size:12px;margin:2px 0}
+.val{font-size:11.5px;color:#ffe6ad;background:#2c220c;border:1px solid #5a4516;border-radius:5px;padding:1px 7px;display:inline-block;margin:2px 4px 0 0}
+.tag-ext{font-size:11px;color:#c4f1f8;background:#103038;border:1px solid #1f6675;border-radius:5px;padding:1px 7px}
+.warn{color:#ffd0d5;background:#2c1418;border:1px solid #5a232b;border-radius:8px;padding:6px 10px;font-size:12.5px;margin:4px 0}
+.note{color:var(--mut);font-size:12px;margin:3px 0}
+.uc{color:#ffe6ad;font-size:12px;border-left:3px solid var(--amber);padding:3px 10px;margin:4px 0;background:#231c0c}
+.cols2{columns:2;column-gap:24px}
+.arch{display:flex;gap:0;align-items:stretch;margin:8px 0;flex-wrap:wrap}
+.archcol{flex:1;min-width:160px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-right:10px;background:var(--panel)}
+.archcol:last-child{margin-right:0}
+.archcol h4{margin:0 0 8px;font-size:12.5px;color:var(--accent)}
+.archcol .row{font-size:12px;padding:4px 8px;background:var(--panel2);border-radius:6px;margin-bottom:5px}
+.pill{font-size:11px;padding:1px 8px;border-radius:14px;border:1px solid var(--line);color:var(--mut);background:var(--panel)}
+.sec-flag{color:var(--red);font-weight:600}
+.muted{color:var(--mut)}
+.right{margin-left:auto}
+.searchres .grp{margin-bottom:14px}
+.searchres .grp h4{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin:0 0 6px}
+.count-pill{font-size:11px;color:var(--mut);margin-left:6px}
+.empty{color:var(--mut);padding:30px;text-align:center}
+hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mut);margin:6px 0 16px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+/* responsive / 表示崩れ対策 */
+.topbar{flex-wrap:wrap;row-gap:8px}
+table.tbl.fixed{table-layout:fixed}
+table.tbl td,table.tbl th{word-break:break-word;overflow-wrap:anywhere}
+.kv dd{min-width:0;overflow-wrap:anywhere}
+.mono,.path{overflow-wrap:anywhere}
+.gpanel{max-width:100%}
+.card .desc,.act .eff{overflow-wrap:anywhere}
+@media(max-width:1080px){ .gpanel{width:100%} .impflow,.graphbox{max-height:62vh} }
+/* ER diagram */
+.tnode{position:absolute;width:250px;border:1px solid var(--line2);border-radius:9px;background:var(--panel2);z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;border-top:4px solid var(--c,var(--cyan));overflow:hidden}
+.tnode:hover{border-color:var(--accent)}
+.tnode.sel{box-shadow:0 0 0 2px var(--accent)}
+.tnode.ghost{opacity:.6;border-style:dashed}
+.tnode .th{font-family:Consolas,monospace;font-size:11.5px;font-weight:700;padding:5px 8px;background:#1a2336;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tnode .tl{font-size:10.5px;color:var(--mut);padding:2px 8px;border-bottom:1px solid #222c42;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tnode .th .pill{float:right;font-weight:400}
+.tnode .tr2{font-size:10.5px;padding:2px 8px;display:flex;gap:6px;align-items:center;border-bottom:1px solid #222c42}
+.tnode .tr2:last-child{border-bottom:none}
+.tnode .tr2 .kc{width:13px;text-align:center}
+.tnode .tr2 .nm{font-family:Consolas,monospace;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tnode .tr2 .ty{margin-left:auto;color:var(--mut);font-size:10px}
+.idxrow{font-size:11.5px;padding:3px 0;border-bottom:1px solid var(--line)}
+.idxrow:last-child{border:none}
+.idxrow .k{display:inline-block;min-width:64px;color:var(--mut)}
+/* screen-flow graph */
+.flowwrap{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.graphbox{flex:1;min-width:0;overflow:auto;border:1px solid var(--line);border-radius:10px;background:
+  radial-gradient(circle at 1px 1px,#202a40 1px,transparent 0) 0 0/22px 22px,var(--panel);height:76vh;position:relative}
+#gsizer{position:relative}
+.graphcanvas{position:absolute;top:0;left:0;transform-origin:0 0}
+.zbtn{cursor:pointer;font-size:13px;font-weight:600;padding:3px 10px;border-radius:7px;border:1px solid var(--line);color:var(--txt);background:var(--panel2);user-select:none}
+.zbtn:hover{border-color:var(--accent)}
+.zlevel{font-size:12px;color:var(--mut);min-width:42px;text-align:center;display:inline-block}
+.gnode{position:absolute;width:186px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:7px 9px;cursor:pointer;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.3);border-left:4px solid var(--c,var(--mut))}
+.gnode:hover{border-color:var(--accent)}
+.gnode.sel{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.gnode.ghost{opacity:.5;border-style:dashed;background:transparent}
+.gnode .gt{font-weight:600;font-size:12px;line-height:1.3;display:block;max-height:32px;overflow:hidden}
+.gnode .gk{font-size:10px;color:var(--mut);margin-top:2px;display:flex;justify-content:space-between;gap:4px}
+.gnode .gkind{color:var(--c,var(--mut));font-weight:600}
+.gsvg{position:absolute;top:0;left:0;pointer-events:none;z-index:1;overflow:visible}
+.gedge{fill:none;stroke:#46527a;stroke-width:1.5}
+.gedge.hl{stroke:var(--accent);stroke-width:2.4}
+.gedge.back{stroke-dasharray:5 4;stroke:#7a5a9a}
+.gedge.back.hl{stroke:var(--accent)}
+.glabel{font-size:10.5px;fill:#cfe0ff;opacity:0;paint-order:stroke;stroke:#0f1420;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.glabel.on{opacity:1}
+.gpanel{width:352px;flex-shrink:0}
+.mock{border:1px solid var(--line2);border-radius:9px;background:#0c1119;overflow:hidden}
+.mock .bar{background:var(--panel2);padding:6px 10px;font-size:12px;font-weight:600;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px}
+.mock .body{padding:10px 11px;display:flex;flex-direction:column;gap:7px;max-height:300px;overflow:auto}
+.mw-field{display:flex;flex-direction:column;gap:2px}
+.mw-field .l{font-size:10.5px;color:var(--mut)}
+.mw-field .i{height:22px;border:1px solid var(--line2);border-radius:5px;background:#121a28}
+.mw-btn{align-self:flex-start;font-size:11.5px;padding:3px 14px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600}
+.mw-btn.sub{background:var(--panel2);color:var(--txt);border:1px solid var(--line2)}
+.mw-table{border:1px solid var(--line2);border-radius:6px;overflow:hidden}
+.mw-table .h{background:var(--panel2);font-size:10.5px;color:var(--mut);padding:4px 7px;border-bottom:1px solid var(--line)}
+.mw-table .r{height:16px;border-bottom:1px solid var(--line);background:repeating-linear-gradient(90deg,#121a28 0 60px,#0e1521 60px 120px)}
+.mw-tabs{display:flex;gap:5px;flex-wrap:wrap}
+.mw-tab{font-size:10.5px;padding:2px 9px;border-radius:5px 5px 0 0;background:var(--panel2);border:1px solid var(--line);border-bottom:none;color:var(--mut)}
+.mw-tab:first-child{color:var(--txt);border-color:var(--accent)}
+.mw-text{font-size:11px;color:var(--mut)}
+.mw-file{font-size:11px;color:var(--cyan);border:1px dashed var(--line2);border-radius:5px;padding:4px 8px}
+.trans{display:flex;flex-direction:column;gap:5px}
+.tedge{font-size:11.5px;padding:5px 8px;border-radius:7px;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
+.tedge:hover{border-color:var(--accent)}
+.tedge .tg{color:var(--amber);font-size:10.5px}
+.tedge .cd{color:var(--mut);font-size:10.5px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#2a3550;border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button id="navtoggle" class="navtoggle" title="サイドメニューの最小化/展開">≡</button>
+  <h1>システムマップ<span class="sub">画面 ↔ API ↔ DB ↔ 権限 マップ</span></h1>
+  <div class="search"><input id="q" type="text" placeholder="画面・API・DBモデル・権限を横断検索…  (例: /api/users, User, dashboard)" autocomplete="off"></div>
+  <div class="stats" id="topstats"></div>
+</div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main id="main"></main>
+</div>
+
+<script id="appdata" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById('appdata').textContent);
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = (s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const slug = (s)=>String(s||'').replace(/[^a-zA-Z0-9._/\-]/g,'_');
+
+/* ---------- normalize & index ---------- */
+const normPath = (p)=> String(p||'').replace(/^(GET|POST|PUT|DELETE|PATCH)\s+/i,'').replace(/^\/+/,'').trim();
+
+// table name canonicalization against schema
+const schemaTables = DATA.tables;
+const schemaByLower = {};
+schemaTables.forEach(t=>{ schemaByLower[t.name.toLowerCase()] = t.name; });
+const tableAlias = {}; // 任意: DBモデル名の別名→正規名マップ（例 {'users':'User'}）。既定は別名なし
+function canonTable(raw){
+  if(!raw) return null;
+  let s = String(raw).split('(')[0].split('（')[0].trim();
+  s = s.split(/[\s,/]/)[0].trim();           // drop trailing notes / second name
+  if(!s) return null;
+  const l = s.toLowerCase();
+  if(schemaByLower[l]) return schemaByLower[l];
+  if(tableAlias[l] && schemaByLower[tableAlias[l]]) return schemaByLower[tableAlias[l]];
+  if(schemaByLower['t_'+l]) return schemaByLower['t_'+l];
+  if(schemaByLower['m_'+l]) return schemaByLower['m_'+l];
+  // ends-with match (handle prefix diff)
+  const hit = schemaTables.find(t=>{ const tl=t.name.toLowerCase(); return tl===l||tl.endsWith('_'+l)||tl.endsWith('.'+l); });
+  if(hit) return hit.name;
+  return s; // unmatched -> keep cleaned token
+}
+function tableNote(raw){
+  const m = String(raw||'').match(/[（(]([^）)]*)[）)]/);
+  return m?m[1]:'';
+}
+const tableExists = (name)=> !!schemaByLower[String(name||'').toLowerCase()];
+
+// domains + apis index
+const domains = DATA.domains;
+const domainById = {}; domains.forEach(d=>domainById[d.id]=d);
+
+// unified API list keyed by path (merge duplicates across domains)
+const apiByPath = {};
+const allApis = [];
+domains.forEach(d=>{
+  (d.apis||[]).forEach(a=>{
+    const key = normPath(a.path);
+    a._key=key; a._domain=d.id;
+    a._wt=(a.dbTablesWrite||[]).map(canonTable);
+    a._rt=(a.dbTablesRead||[]).map(canonTable);
+    a._wtRaw=a.dbTablesWrite||[]; a._rtRaw=a.dbTablesRead||[];
+    if(apiByPath[key]){
+      const e=apiByPath[key];
+      if(!e._domains.includes(d.id)) e._domains.push(d.id);
+      // enrich empties
+      ['operationId','summary','permission','service'].forEach(f=>{ if(!e[f]&&a[f]) e[f]=a[f]; });
+      e._wt=[...new Set([...e._wt,...a._wt])]; e._rt=[...new Set([...e._rt,...a._rt])];
+      e.external=[...new Set([...(e.external||[]),...(a.external||[])])];
+      e.gotchas=[...new Set([...(e.gotchas||[]),...(a.gotchas||[])])];
+      e._calledBy=[...new Set([...(e._calledBy||[]),...(a.calledByScreens||[])])];
+    } else {
+      a._domains=[d.id]; a._calledBy=a.calledByScreens||[];
+      apiByPath[key]=a; allApis.push(a);
+    }
+  });
+});
+allApis.sort((a,b)=>a._key.localeCompare(b._key));
+
+// screens
+const allScreens=[];
+const screenByGid={};
+domains.forEach(d=>{
+  (d.screens||[]).forEach(s=>{
+    s._domain=d.id; s._gid=d.id+'::'+(s.id||slug(s.title));
+    s._apis=[...new Set((s.actions||[]).map(a=>normPath(a.api)).filter(Boolean))];
+    allScreens.push(s); screenByGid[s._gid]=s;
+  });
+});
+// resolve calledByScreens (local id) -> screen gid
+function resolveScreenRef(domainId, ref){
+  if(screenByGid[domainId+'::'+ref]) return domainId+'::'+ref;
+  const hit = allScreens.find(s=>s.id===ref || s.title===ref);
+  return hit?hit._gid:null;
+}
+// screens that call a given api path
+const screensByApi={};
+allScreens.forEach(s=>{ s._apis.forEach(p=>{ (screensByApi[p]=screensByApi[p]||new Set()).add(s._gid); }); });
+allApis.forEach(a=>{ (a._calledBy||[]).forEach(ref=>{ const g=resolveScreenRef(a._domain,ref); if(g)(screensByApi[a._key]=screensByApi[a._key]||new Set()).add(g); }); });
+
+// table -> apis (read/write)
+const apisByTable={};
+allApis.forEach(a=>{
+  a._wt.forEach(t=>{ if(t){const x=apisByTable[t]=apisByTable[t]||{w:new Set(),r:new Set()};x.w.add(a._key);} });
+  a._rt.forEach(t=>{ if(t){const x=apisByTable[t]=apisByTable[t]||{w:new Set(),r:new Set()};x.r.add(a._key);} });
+});
+function screensForTable(t){
+  const set=new Set();
+  const x=apisByTable[t]; if(!x) return set;
+  [...x.w,...x.r].forEach(p=>{ (screensByApi[p]||new Set()).forEach(g=>set.add(g)); });
+  return set;
+}
+
+// endpointAuth: path -> group
+const authByPath={};
+(DATA.endpointAuth||[]).forEach(g=>{ (g.paths||[]).forEach(p=>{ authByPath[normPath(p).replace(/\/\*+$/,'')]= g; }); });
+function authForApi(a){
+  // exact then prefix
+  let k=a._key; if(authByPath[k]) return authByPath[k];
+  const parts=k.split('/');
+  for(let i=parts.length;i>0;i--){ const pre=parts.slice(0,i).join('/'); if(authByPath[pre]) return authByPath[pre]; }
+  return null;
+}
+
+const modColor={'public':'public','my-page':'mypage','manage':'manage','auth':'auth'};
+const modLabel={'public':'公開/未ログイン','my-page':'マイページ(利用者)','manage':'管理(Admin)','auth':'認証'};
+function modBadge(m){ return `<span class="modtag mod-${esc(m)}">${esc(modLabel[m]||m||'-')}</span>`; }
+
+function authBadge(a){
+  if(a.permitAll) return '<span class="badge red">未認証可 (PERMIT_ALL)</span>';
+  const g=authForApi(a);
+  if(g) return `<span class="badge purple">${esc(g.authGroup||'認可グループ')}</span>`;
+  if(a.permission && !/authenticated|未登録|なし/i.test(a.permission)) return `<span class="badge purple">${esc(a.permission)}</span>`;
+  return '<span class="badge amber">認可未分類 (authenticated)</span>';
+}
+
+// Next.js: mutation 面の種別バッジ（Server Action = 内部 mutation / Route Handler = 外部向け）
+function kindBadge(a){ if(!a||!a.kind) return ''; const lbl={'server-action':'Server Action','route-handler':'Route Handler','api-route':'API Route'}[a.kind]||a.kind; const cls=a.kind==='server-action'?'green':'blue'; return ` <span class="badge sm ${esc(cls)}">${esc(lbl)}</span>`; }
+
+/* ---------- counts ---------- */
+const counts={domains:domains.length,screens:allScreens.length,apis:allApis.length,tables:schemaTables.length,roles:(DATA.roles||[]).length,gotchas:domains.reduce((n,d)=>n+(d.gotchas||[]).length,0),flow:(DATA.flowScreens||[]).filter(s=>!s._external).length};
+
+/* ---------- screen-flow index ---------- */
+const flowScreens=DATA.flowScreens||[]; const flowEdges=DATA.flowEdges||[];
+const fsById={}; flowScreens.forEach(s=>fsById[s.id]=s);
+const fOut={}, fIn={};
+flowEdges.forEach(e=>{ (fOut[e.from]=fOut[e.from]||[]).push(e); (fIn[e.to]=fIn[e.to]||[]).push(e); });
+const flowModLabel={'auth':'認証','public':'公開','my-page':'利用者(マイページ)','manage':'管理(Admin)'};
+// presets: module + (module,domain)
+const flowPresets=[];
+const modset=[...new Set(flowScreens.filter(s=>s.module).map(s=>s.module))];
+const modOrder=['auth','public','my-page','manage'];
+modset.sort((a,b)=>modOrder.indexOf(a)-modOrder.indexOf(b));
+modset.forEach(m=>{
+  flowPresets.push({key:m+'::*',label:(flowModLabel[m]||m)+' — 全画面',mod:m,dom:'*'});
+  const doms=[...new Set(flowScreens.filter(s=>s.module===m&&s.domain).map(s=>s.domain))];
+  doms.sort();
+  doms.forEach(d=>flowPresets.push({key:m+'::'+d,label:'　'+(flowModLabel[m]||m)+' / '+((domainById[d]||{}).name||d),mod:m,dom:d}));
+});
+
+/* ---------- router ---------- */
+function go(h){ location.hash=h; }
+window.addEventListener('hashchange',route);
+function parseHash(){ const h=decodeURIComponent(location.hash.replace(/^#\/?/,'')); return h.split('/'); }
+
+function route(){
+  const p=parseHash();
+  const main=$('#main');
+  window.scrollTo(0,0);
+  let view=p[0]||'overview';
+  setActiveNav(view);
+  if(view==='overview') return renderOverview(main);
+  if(view==='domains') return renderDomains(main);
+  if(view==='domain') return renderDomain(main,p.slice(1).join('/'));
+  if(view==='screens') return renderScreens(main);
+  if(view==='screen') return renderScreen(main,p.slice(1).join('/'));
+  if(view==='apis') return renderApis(main);
+  if(view==='api') return renderApi(main,p.slice(1).join('/'));
+  if(view==='tables') return renderTables(main);
+  if(view==='table') return renderTable(main,p.slice(1).join('/'));
+  if(view==='er') return renderEr(main,p[1],p[2]);
+  if(view==='roles') return renderRoles(main);
+  if(view==='flow') return renderFlow(main,p[1],p[2]);
+  if(view==='impact') return renderImpact(main,p[1],p.slice(2).join('/'));
+  if(view==='search') return renderSearch(main,p.slice(1).join('/'));
+  renderOverview(main);
+}
+
+/* ---------- sidebar ---------- */
+function setActiveNav(view){ document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active',n.dataset.v===view)); }
+function buildSidebar(){
+  const nav=$('#sidebar');
+  const links=[
+    ['overview','🏠','全体像 Overview',''],
+    ['domains','🗂','ドメイン',counts.domains],
+    ['screens','🖥','画面',counts.screens],
+    ['apis','🔌','API',counts.apis],
+    ['tables','🗄','DBテーブル',counts.tables],
+    ['er','🧬','ER図',''],
+    ['roles','🔐','権限・ロール',counts.roles],
+    ['flow','🗺','画面遷移図',counts.flow],
+    ['impact','🎯','影響調査 / フロー',''],
+  ];
+  let h='<div class="navsec">';
+  links.forEach(([v,ic,lb,ct])=>{ h+=`<div class="navlink" data-v="${v}" title="${esc(lb)}" onclick="go('#/${v}')"><span class="ic">${ic}</span><span class="nlbl">${lb}</span>${ct!==''?`<span class="ct">${ct}</span>`:''}</div>`; });
+  h+='</div>';
+  h+='<div class="navsec"><div class="lbl">ドメイン一覧</div><div class="dlist">';
+  domains.forEach(d=>{ h+=`<a onclick="go('#/domain/${esc(d.id)}')">${esc(d.name)}</a>`; });
+  h+='</div></div>';
+  nav.innerHTML=h;
+}
+
+/* ---------- top stats ---------- */
+$('#topstats').innerHTML=[['ドメイン',counts.domains],['画面',counts.screens],['API',counts.apis],['DBテーブル',counts.tables],['ロール',counts.roles],['既知の罠',counts.gotchas]]
+  .map(([l,v])=>`<div class="st"><b>${v}</b>${l}</div>`).join('');
+
+/* ====================================================== VIEWS ====================================================== */
+
+function crumbs(arr){ return '<div class="crumbs">'+arr.map((x,i)=> i<arr.length-1 ? (x[1]?`<a onclick="go('${x[1]}')">${esc(x[0])}</a>`:esc(x[0]))+' › ' : `<b>${esc(x[0])}</b>`).join('')+'</div>'; }
+
+/* ---- Overview ---- */
+function renderOverview(main){
+  let h=crumbs([['全体像']]);
+  h+=`<h2 class="view">システム全体像</h2>`;
+  h+=`<p class="lead">このアプリの<b>画面 ↔ API ↔ DB ↔ 権限</b>を1枚に集約した地図。下のカードやサイドバーから掘り下げ、右上の検索で横断的に辿れます。Next.js（App Router）+ Prisma 構成を前提に、ルート・Route Handler / Server Action・Prisma モデル・認可を静的解析で抽出しています。</p>`;
+
+  // roles (data-driven)
+  const roles=(DATA.roles||[]);
+  if(roles.length){
+    h+=`<div class="panel"><h3>👥 ロールと権限 <span class="hint">— 誰が何にアクセスできるか</span></h3>`;
+    h+=`<div class="grid cards">`;
+    roles.forEach(r=>{
+      h+=`<div class="card"><h3>${esc(r.name||r.code||'role')}</h3><div class="desc">${esc(r.scope||r.purpose||r.code||'')}</div></div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  // architecture — generic Next.js golden path（ARCHITECTURE.md 準拠）
+  h+=`<div class="panel"><h3>🏗 アーキテクチャ & データの流れ <span class="hint">— Next.js golden path</span></h3>`;
+  h+=`<div class="arch">
+    <div class="archcol"><h4>Frontend (App Router)</h4>
+      <div class="row">app/**/page.tsx — Server Component 既定</div>
+      <div class="row">"use client" — 対話的 leaf のみ</div>
+      <div class="row muted">middleware.ts は粗いゲート（唯一の境界にしない）</div></div>
+    <div class="archcol"><h4>Mutation / API</h4>
+      <div class="row">actions.ts — Server Action（内部 mutation）</div>
+      <div class="row">app/api/**/route.ts — 外部向け Route Handler</div>
+      <div class="row muted">入力は zod / Standard Schema で検証</div></div>
+    <div class="archcol"><h4>Data Access (DAL)</h4>
+      <div class="row">lib/dal/** — Prisma を集約</div>
+      <div class="row">所有/テナント検証（直URL・IDOR 対策）</div>
+      <div class="row muted">${counts.tables} モデル</div></div>
+    <div class="archcol"><h4>外部サービス</h4>
+      <div class="row muted">検出された外部連携をここに表示</div></div>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="--c:var(--public)"></span>公開</span>
+    <span><span class="dot" style="--c:var(--mypage)"></span>利用者(マイページ)</span>
+    <span><span class="dot" style="--c:var(--manage)"></span>管理(Admin)</span>
+    <span><span class="dot" style="--c:var(--auth)"></span>認証</span>
+  </div></div>`;
+
+  // domains overview cards (data-driven)
+  h+=`<div class="panel"><h3>🗂 ドメイン (${domains.length})</h3><div class="grid cards">`;
+  domains.forEach(d=>{
+    h+=`<div class="card click" onclick="go('#/domain/${esc(d.id)}')"><h3>${esc(d.name)}</h3>`+
+      `<div class="desc">${esc((d.purpose||'').slice(0,110))}</div>`+
+      `<div class="meta"><span class="badge blue">画面 ${(d.screens||[]).length}</span><span class="badge">API ${(d.apis||[]).length}</span>`+
+      ((d.gotchas||[]).length?`<span class="badge amber">罠 ${(d.gotchas||[]).length}</span>`:'')+`</div></div>`;
+  });
+  h+=`</div></div>`;
+
+  // cross-cutting traps — 各ドメインの gotchas を集約（データ駆動）
+  const traps=[];
+  domains.forEach(d=>(d.gotchas||[]).forEach(g=>traps.push([d.name,g])));
+  if(traps.length){
+    h+=`<div class="panel"><h3>⚠ システム横断の注意パターン <span class="hint">— 影響調査で踏む共通の罠</span></h3>`;
+    traps.slice(0,40).forEach(([t,d])=>{ h+=`<div class="act" style="border-color:var(--amber)"><div class="lbl">${esc(t)}</div><div class="eff">${esc(d)}</div></div>`; });
+    h+=`</div>`;
+  }
+  main.innerHTML=h;
+}
+
+/* ---- Domains ---- */
+function renderDomains(main){
+  let h=crumbs([['ドメイン']]);
+  h+=`<h2 class="view">ドメイン一覧</h2><p class="lead">業務領域ごとのまとまり。カードをクリックで画面・API・DBテーブル・既知の罠まで掘り下げ。</p>`;
+  h+=`<div class="grid cards">`;
+  domains.forEach(d=>{
+    const tabs=new Set(); (d.apis||[]).forEach(a=>{[...a._wt,...a._rt].forEach(t=>t&&tabs.add(t));});
+    h+=`<div class="card click" onclick="go('#/domain/${esc(d.id)}')"><h3>${esc(d.name)}</h3>`+
+      `<div class="desc">${esc(d.purpose||'')}</div>`+
+      `<div class="meta"><span class="badge blue">画面 ${(d.screens||[]).length}</span><span class="badge">API ${(d.apis||[]).length}</span><span class="badge cyan">表 ${tabs.size}</span>`+
+      ((d.gotchas||[]).length?`<span class="badge amber">罠 ${(d.gotchas||[]).length}</span>`:'')+
+      ((d.uncertainties||[]).length?`<span class="badge">不確実 ${(d.uncertainties||[]).length}</span>`:'')+`</div></div>`;
+  });
+  h+=`</div>`;
+  main.innerHTML=h;
+}
+
+function renderDomain(main,id){
+  const d=domainById[id]; if(!d){main.innerHTML='<div class="empty">ドメインが見つかりません</div>';return;}
+  let h=crumbs([['ドメイン','#/domains'],[d.name]]);
+  h+=`<h2 class="view">${esc(d.name)}</h2><p class="lead">${esc(d.purpose||'')}</p>`;
+  h+=`<div class="meta" style="margin-bottom:16px">`+ (d.userTypes||[]).map(u=>`<span class="badge gray">👤 ${esc(u)}</span>`).join('') +`</div>`;
+
+  // screens
+  h+=`<div class="panel"><h3>🖥 画面 (${(d.screens||[]).length})</h3>`;
+  if((d.screens||[]).length){ h+=`<table class="tbl"><thead><tr><th>画面</th><th>区分</th><th>ルート</th><th>権限</th><th>操作数</th></tr></thead><tbody>`;
+    d.screens.forEach(s=>{ h+=`<tr class="click" onclick="go('#/screen/${esc(s._gid)}')"><td><b>${esc(s.title)}</b></td><td>${modBadge(s.module)}</td><td class="path">${esc(s.route||'-')}</td><td>${esc(s.permission||'-')}</td><td>${(s.actions||[]).length}</td></tr>`; });
+    h+=`</tbody></table>`; } else h+=`<div class="note">この区分に専用画面はありません(API/部品として他画面から利用)。</div>`;
+  h+=`</div>`;
+
+  // apis
+  h+=`<div class="panel"><h3>🔌 API (${(d.apis||[]).length})</h3><table class="tbl"><thead><tr><th>パス</th><th>概要</th><th>認可</th><th>R/W テーブル</th></tr></thead><tbody>`;
+  (d.apis||[]).forEach(a=>{
+    const tb=[...a._wt.map(t=>`<span class="badge pink sm" title="write">✎${esc(t)}</span>`),...a._rt.map(t=>`<span class="badge cyan sm" title="read">${esc(t)}</span>`)].join(' ');
+    h+=`<tr class="click" onclick="go('#/api/${esc(a._key)}')"><td><span class="method">${esc(a.method||'POST')}</span> <span class="path">${esc(a.path)}</span></td><td>${esc(a.summary||a.operationId||'')}</td><td>${authBadge(a)}</td><td>${tb||'<span class="muted">-</span>'}</td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+
+  // gotchas + uncertainties
+  if((d.gotchas||[]).length){ h+=`<div class="panel"><h3>⚠ 既知の罠 / 不整合</h3>`; d.gotchas.forEach(g=>h+=`<div class="warn">${esc(g)}</div>`); h+=`</div>`; }
+  if((d.uncertainties||[]).length){ h+=`<div class="panel"><h3>❓ 不確実 (要確認)</h3>`; d.uncertainties.forEach(u=>h+=`<div class="uc">${esc(u)}</div>`); h+=`</div>`; }
+  main.innerHTML=h;
+}
+
+/* ---- Screens ---- */
+let screenFilter={q:'',mod:''};
+function renderScreens(main){
+  let h=crumbs([['画面']]);
+  h+=`<h2 class="view">画面一覧 <span class="count-pill">${allScreens.length} 件</span></h2>`;
+  h+=`<p class="lead">各画面で「何を押すと → どのAPIが呼ばれ → 何が起き → どんなバリデーションがあるか」を画面詳細で確認できます。</p>`;
+  h+=`<div class="toolbar"><input id="sq" placeholder="画面名・ルートで絞り込み" value="${esc(screenFilter.q)}">`+
+    `<div class="chipfilter" id="smod">`+['','public','my-page','manage','auth'].map(m=>`<span class="chipf ${screenFilter.mod===m?'on':''}" data-m="${m}">${m===''?'すべて':modLabel[m]}</span>`).join('')+`</div></div>`;
+  h+=`<div id="stbl"></div>`;
+  main.innerHTML=h;
+  $('#sq').oninput=e=>{screenFilter.q=e.target.value;drawScreens();};
+  $('#smod').onclick=e=>{const c=e.target.closest('.chipf');if(!c)return;screenFilter.mod=c.dataset.m;document.querySelectorAll('#smod .chipf').forEach(x=>x.classList.toggle('on',x.dataset.m===screenFilter.mod));drawScreens();};
+  drawScreens();
+}
+function drawScreens(){
+  const q=screenFilter.q.toLowerCase();
+  let rows=allScreens.filter(s=>(!screenFilter.mod||s.module===screenFilter.mod)&&(!q||(s.title||'').toLowerCase().includes(q)||(s.route||'').toLowerCase().includes(q)||(s.id||'').toLowerCase().includes(q)));
+  rows.sort((a,b)=>(a.module||'').localeCompare(b.module||'')||(a.title||'').localeCompare(b.title||''));
+  let h=`<table class="tbl"><thead><tr><th>画面</th><th>区分</th><th>ルート</th><th>利用者</th><th>権限</th><th>呼ぶAPI</th></tr></thead><tbody>`;
+  rows.forEach(s=>{ h+=`<tr class="click" onclick="go('#/screen/${esc(s._gid)}')"><td><b>${esc(s.title)}</b><div class="muted" style="font-size:11px">${esc((domainById[s._domain]||{}).name||'')}</div></td><td>${modBadge(s.module)}</td><td class="path">${esc(s.route||'-')}</td><td>${(s.userTypes||[]).map(esc).join(', ')||'-'}</td><td>${esc(s.permission||'-')}</td><td>${s._apis.length}</td></tr>`; });
+  h+=`</tbody></table>`;
+  if(!rows.length)h='<div class="empty">該当なし</div>';
+  $('#stbl').innerHTML=h;
+}
+
+function renderScreen(main,gid){
+  const s=screenByGid[gid]; if(!s){main.innerHTML='<div class="empty">画面が見つかりません</div>';return;}
+  const d=domainById[s._domain];
+  let h=crumbs([['画面','#/screens'],[d?d.name:'',d?'#/domain/'+d.id:''],[s.title]]);
+  h+=`<h2 class="view">${esc(s.title)} ${modBadge(s.module)}</h2>`;
+  h+=`<div class="panel"><dl class="kv"><dt>役割</dt><dd>${esc(s.summary||'-')}</dd><dt>ルート</dt><dd class="path">${esc(s.route||'-')}</dd><dt>コンポーネント</dt><dd class="path muted">${esc(s.componentPath||'-')}</dd><dt>利用者</dt><dd>${(s.userTypes||[]).map(u=>`<span class="badge gray">👤 ${esc(u)}</span>`).join(' ')||'-'}</dd><dt>権限</dt><dd>${esc(s.permission||'-')}</dd><dt>ドメイン</dt><dd><a onclick="go('#/domain/${esc(s._domain)}')">${esc(d?d.name:s._domain)}</a></dd></dl></div>`;
+
+  h+=`<div class="panel"><h3>🖱 操作とフロー <span class="hint">— 何を押すと何が起きるか</span></h3>`;
+  if((s.actions||[]).length){ s.actions.forEach(a=>{
+    const ak=normPath(a.api); const api=apiByPath[ak];
+    h+=`<div class="act"><div class="lbl">${esc(a.label||'(操作)')} <span class="pill">${esc(a.trigger||'')}</span></div>`+
+      (a.effect?`<div class="eff">→ ${esc(a.effect)}</div>`:'')+
+      (a.api?`<div style="margin:4px 0"><span class="method">${esc((a.api.match(/^(GET|POST|PUT|DELETE|PATCH)/i)||['POST'])[0])}</span> `+(api?`<a class="path" onclick="go('#/api/${esc(ak)}')">${esc(ak)}</a>`:`<span class="path muted">${esc(ak)} <span class="badge sm">外部/未リンク</span></span>`)+`</div>`:'')+
+      ((a.validations||[]).length?`<div>${a.validations.map(v=>`<span class="val">✓ ${esc(v)}</span>`).join('')}</div>`:'')+
+      `</div>`;
+  }); } else h+=`<div class="note">操作定義なし(表示専用/部品)。</div>`;
+  h+=`</div>`;
+
+  // tables touched via this screen
+  const tabs=new Set(); s._apis.forEach(p=>{const a=apiByPath[p];if(a)[...a._wt,...a._rt].forEach(t=>t&&tabs.add(t));});
+  if(tabs.size){ h+=`<div class="panel"><h3>🗄 この画面が(API経由で)触れるDBテーブル</h3><div class="meta">`+[...tabs].map(t=>chipTable(t)).join(' ')+`</div></div>`; }
+  h+=`<div style="margin-top:6px"><a onclick="go('#/impact/screen/${esc(gid)}')">🎯 この画面の影響フローを見る →</a></div>`;
+  main.innerHTML=h;
+}
+
+/* ---- APIs ---- */
+let apiFilter={q:'',dom:'',auth:''};
+function renderApis(main){
+  let h=crumbs([['API']]);
+  h+=`<h2 class="view">API一覧 <span class="count-pill">${allApis.length} 件</span></h2>`;
+  h+=`<p class="lead">API詳細では「呼び出す画面 / サービス実装 / 読み書きするDBテーブル / 外部連携」を表示。<b>このAPIを触ると何に影響するか</b>の起点に。</p>`;
+  h+=`<div class="toolbar"><input id="aq" placeholder="パス・operationId・概要で絞り込み" value="${esc(apiFilter.q)}">`+
+     `<select id="adom"><option value="">全ドメイン</option>${domains.map(d=>`<option value="${esc(d.id)}" ${apiFilter.dom===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`+
+     `<select id="aauth"><option value="">全認可</option><option value="permitall">未認証可(PERMIT_ALL)</option><option value="unclassified">認可未分類</option><option value="classified">ロール限定</option></select></div>`;
+  h+=`<div id="atbl"></div>`;
+  main.innerHTML=h;
+  $('#aq').oninput=e=>{apiFilter.q=e.target.value;drawApis();};
+  $('#adom').onchange=e=>{apiFilter.dom=e.target.value;drawApis();};
+  $('#aauth').onchange=e=>{apiFilter.auth=e.target.value;drawApis();};
+  drawApis();
+}
+function apiAuthClass(a){ if(a.permitAll)return'permitall'; const g=authForApi(a); if(g||(a.permission&&!/authenticated|未登録|なし/i.test(a.permission)))return'classified'; return'unclassified'; }
+function drawApis(){
+  const q=apiFilter.q.toLowerCase();
+  let rows=allApis.filter(a=>(!apiFilter.dom||a._domains.includes(apiFilter.dom))&&(!apiFilter.auth||apiAuthClass(a)===apiFilter.auth)&&(!q||a._key.toLowerCase().includes(q)||(a.operationId||'').toLowerCase().includes(q)||(a.summary||'').toLowerCase().includes(q)));
+  let h=`<table class="tbl"><thead><tr><th>パス</th><th>概要</th><th>ドメイン</th><th>認可</th><th>サービス</th><th>外部</th><th>画面</th></tr></thead><tbody>`;
+  rows.forEach(a=>{
+    const sc=(screensByApi[a._key]||new Set()).size;
+    h+=`<tr class="click" onclick="go('#/api/${esc(a._key)}')"><td><span class="method">${esc(a.method||'POST')}</span> <span class="path">${esc(a._key)}</span>${kindBadge(a)}</td><td>${esc(a.summary||a.operationId||'')}</td><td>${a._domains.map(id=>`<span class="badge sm">${esc((domainById[id]||{}).name||id)}</span>`).join('')}</td><td>${authBadge(a)}</td><td class="muted" style="font-size:11px">${esc(a.service||'-')}</td><td>${(a.external||[]).map(x=>`<span class="tag-ext">${esc(x)}</span>`).join(' ')}</td><td>${sc||'<span class="muted">0</span>'}</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  if(!rows.length)h='<div class="empty">該当なし</div>';
+  $('#atbl').innerHTML=h+`<div class="note" style="margin-top:8px">${rows.length} 件表示</div>`;
+}
+
+function renderApi(main,key){
+  const a=apiByPath[key]; if(!a){main.innerHTML='<div class="empty">APIが見つかりません: '+esc(key)+'</div>';return;}
+  const d=domainById[a._domain];
+  let h=crumbs([['API','#/apis'],[a._key]]);
+  h+=`<h2 class="view"><span class="method">${esc(a.method||'POST')}</span> <span class="path">${esc(a._key)}</span>${kindBadge(a)}</h2>`;
+  h+=`<p class="lead">${esc(a.summary||a.operationId||'')}</p>`;
+  h+=`<div class="panel"><dl class="kv">`+
+    `<dt>operationId</dt><dd class="mono">${esc(a.operationId||'-')}</dd>`+
+    `<dt>認可</dt><dd>${authBadge(a)} ${a.permission?`<span class="muted">${esc(a.permission)}</span>`:''}</dd>`+
+    `<dt>ドメイン</dt><dd>${a._domains.map(id=>`<a onclick="go('#/domain/${esc(id)}')">${esc((domainById[id]||{}).name||id)}</a>`).join(' / ')}</dd>`+
+    `<dt>サービス実装</dt><dd class="mono">${esc(a.service||'-')}</dd>`+
+    `<dt>外部連携</dt><dd>${(a.external||[]).map(x=>`<span class="tag-ext">${esc(x)}</span>`).join(' ')||'-'}</dd>`+
+    (a.notes?`<dt>補足</dt><dd>${esc(a.notes)}</dd>`:'')+
+    `</dl></div>`;
+
+  // impact: tables
+  h+=`<div class="panel"><h3>🗄 読み書きするDBテーブル <span class="hint">— 影響先(データ)</span></h3>`;
+  h+=`<div class="kv" style="grid-template-columns:90px 1fr">`;
+  h+=`<dt><span class="badge pink sm">✎ 書込</span></dt><dd>${a._wt.length?a._wt.map((t,i)=>chipTable(t,a._wtRaw[i])).join(' '):'<span class="muted">なし</span>'}</dd>`;
+  h+=`<dt><span class="badge cyan sm">読取</span></dt><dd>${a._rt.length?a._rt.map((t,i)=>chipTable(t,a._rtRaw[i])).join(' '):'<span class="muted">なし</span>'}</dd>`;
+  h+=`</div></div>`;
+
+  // called by screens
+  const scr=[...(screensByApi[a._key]||new Set())].map(g=>screenByGid[g]).filter(Boolean);
+  h+=`<div class="panel"><h3>🖥 このAPIを呼ぶ画面 (${scr.length}) <span class="hint">— 影響先(UI)</span></h3>`;
+  if(scr.length){ h+=`<ul class="list-tight">`; scr.forEach(s=>h+=`<li>${modBadge(s.module)} <a onclick="go('#/screen/${esc(s._gid)}')">${esc(s.title)}</a> <span class="muted path">${esc(s.route||'')}</span></li>`); h+=`</ul>`; }
+  else h+=`<div class="note">SPAからの直接呼び出しを検出できず(部品/間接/未使用の可能性)。</div>`;
+  h+=`</div>`;
+
+  if((a.gotchas||[]).length){ h+=`<div class="panel"><h3>⚠ 注意</h3>`; a.gotchas.forEach(g=>h+=`<div class="warn">${esc(g)}</div>`); h+=`</div>`; }
+  h+=`<div><a onclick="go('#/impact/api/${esc(a._key)}')">🎯 このAPIの影響フローを見る →</a></div>`;
+  main.innerHTML=h;
+}
+
+function chipTable(t,raw){
+  const note=raw?tableNote(raw):'';
+  const ex=tableExists(t);
+  const cls=ex?'cyan':'gray';
+  return `<span class="badge ${cls} sm" style="cursor:${ex?'pointer':'default'}" ${ex?`onclick="go('#/table/${esc(t)}')"`:''} title="${esc(note||(ex?'':'スキーマ未登録名'))}">${ex?'🗄':'·'} ${esc(t)}${note?` <span class="muted">(${esc(note)})</span>`:''}</span>`;
+}
+
+/* ---- Tables ---- */
+function renderTables(main){
+  let h=crumbs([['DBテーブル']]);
+  h+=`<h2 class="view">DBテーブル <span class="count-pill">${schemaTables.length} 件</span></h2>`;
+  h+=`<p class="lead">テーブル詳細では<b>どのAPIが読み書きし、どの画面に影響するか</b>を逆引きできます(影響調査)。</p>`;
+  // group by domain
+  const byDom={}; schemaTables.forEach(t=>{(byDom[t.domain]=byDom[t.domain]||[]).push(t);});
+  const cg=`<colgroup><col style="width:34%"><col><col style="width:64px"><col style="width:86px"><col style="width:86px"><col style="width:120px"></colgroup>`;
+  Object.keys(byDom).sort().forEach(dom=>{
+    h+=`<div class="panel"><h3>${esc((domainById[dom]||{}).name||dom)} <span class="hint">${byDom[dom].length} 表</span></h3><table class="tbl fixed">${cg}<thead><tr><th>テーブル</th><th>用途</th><th>列数</th><th>書込API</th><th>読取API</th><th>索引(PK/UQ/IX)</th></tr></thead><tbody>`;
+    byDom[dom].forEach(t=>{ const x=apisByTable[t.name]||{w:new Set(),r:new Set()}; const ix=t.idx||{};
+      const ixc=`${(ix.pk&&ix.pk.length)?'PK':'-'} / ${(ix.unique||[]).length} / ${(ix.index||[]).length}`;
+      h+=`<tr class="click" onclick="go('#/table/${esc(t.name)}')"><td class="mono">${esc(t.name)}</td><td>${esc(t.purpose||'')}</td><td>${(t.columns||[]).length}</td><td>${x.w.size||'<span class=muted>0</span>'}</td><td>${x.r.size||'<span class=muted>0</span>'}</td><td class="muted">${ixc}</td></tr>`; });
+    h+=`</tbody></table></div>`;
+  });
+  main.innerHTML=h;
+}
+
+function renderTable(main,name){
+  const t=schemaTables.find(x=>x.name===name)||schemaTables.find(x=>x.name.toLowerCase()===String(name).toLowerCase());
+  if(!t){main.innerHTML='<div class="empty">テーブルが見つかりません: '+esc(name)+'</div>';return;}
+  let h=crumbs([['DBテーブル','#/tables'],[t.name]]);
+  h+=`<h2 class="view mono">${esc(t.name)}</h2><p class="lead">${esc(t.purpose||'')}</p>`;
+  h+=`<div class="panel"><dl class="kv"><dt>ドメイン</dt><dd><a onclick="go('#/domain/${esc(t.domain)}')">${esc((domainById[t.domain]||{}).name||t.domain)}</a></dd><dt>定義</dt><dd class="mono muted">${esc(t.definedIn||'-')}${(t.alteredBy||[]).length?' / 変更: '+esc((t.alteredBy||[]).join(', ')):''}</dd></dl></div>`;
+
+  if((t.columns||[]).length){ h+=`<div class="panel"><h3>列定義 (${t.columns.length})</h3><table class="tbl"><thead><tr><th>列</th><th>型</th><th>制約</th><th>説明</th></tr></thead><tbody>`;
+    t.columns.forEach(c=>{ const cons=[c.pk?'<span class="badge sm amber">PK</span>':'',c.notNull?'<span class="badge sm">NOT NULL</span>':'',c.fk?`<span class="badge sm cyan">FK→${esc(c.fk)}</span>`:''].join(' ');
+      h+=`<tr><td class="mono">${esc(c.name)}</td><td class="mono muted">${esc(c.type||'')}</td><td>${cons}</td><td>${esc(c.comment||'')}</td></tr>`; });
+    h+=`</tbody></table></div>`; }
+
+  // indexes / constraints / relations
+  const ix=t.idx||{};
+  const refBy=schemaTables.filter(o=>(o.idx&&o.idx.fks||[]).some(f=>f.refTable.toLowerCase()===t.name.toLowerCase()))
+    .map(o=>({t:o.name,f:(o.idx.fks.find(f=>f.refTable.toLowerCase()===t.name.toLowerCase()))}));
+  h+=`<div class="panel"><h3>🔑 索引・制約・リレーション <span class="hint">(migration SQL から抽出)</span></h3>`;
+  h+=`<div class="idxrow"><span class="k">PK</span> ${(ix.pk&&ix.pk.length)?`<span class="mono">${ix.pk.map(esc).join(', ')}</span>`:'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">UNIQUE</span> ${(ix.unique||[]).length?ix.unique.map(u=>`<span class="badge sm amber mono">${u.map(esc).join(', ')}</span>`).join(' '):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">INDEX</span> ${(ix.index||[]).length?ix.index.map(u=>`<span class="badge sm mono">${u.map(esc).join(', ')}</span>`).join(' '):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">FK (参照)</span> ${(ix.fks||[]).length?ix.fks.map(f=>`<span class="mono">${f.cols.join(',')}</span> → ${chipTable(f.refTable)}<span class="muted mono">(${esc(f.refCols.join(','))})</span>`).join('　'):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">被参照</span> ${refBy.length?refBy.map(r=>`${chipTable(r.t)}<span class="muted mono">.${esc(r.f.cols.join(','))}</span>`).join('　'):'<span class="muted">-</span>'}</div>`;
+  h+=`<div style="margin-top:8px"><a onclick="go('#/er/${esc(t.domain)}')">🧬 このドメインのER図で見る →</a></div>`;
+  h+=`</div>`;
+
+  // reverse impact
+  const x=apisByTable[t.name]||{w:new Set(),r:new Set()};
+  h+=`<div class="panel"><h3>🎯 影響調査 — このテーブルを変更すると影響するAPI</h3>`;
+  h+=`<div class="kv" style="grid-template-columns:90px 1fr">`;
+  h+=`<dt><span class="badge pink sm">✎ 書込</span></dt><dd>${[...x.w].map(p=>apiLink(p)).join(' ')||'<span class="muted">なし</span>'}</dd>`;
+  h+=`<dt><span class="badge cyan sm">読取</span></dt><dd>${[...x.r].map(p=>apiLink(p)).join(' ')||'<span class="muted">なし</span>'}</dd>`;
+  h+=`</div></div>`;
+  const scr=[...screensForTable(t.name)].map(g=>screenByGid[g]).filter(Boolean);
+  h+=`<div class="panel"><h3>🖥 (API経由で)影響する画面 (${scr.length})</h3>`;
+  if(scr.length){h+=`<ul class="list-tight">`;scr.forEach(s=>h+=`<li>${modBadge(s.module)} <a onclick="go('#/screen/${esc(s._gid)}')">${esc(s.title)}</a></li>`);h+=`</ul>`;}else h+=`<div class="note">該当なし</div>`;
+  h+=`</div>`;
+  // relations
+  const rels=(DATA.relations||[]).filter(r=>String(r.from).toLowerCase().includes(t.name.toLowerCase())||String(r.to).toLowerCase().includes(t.name.toLowerCase()));
+  if(rels.length){h+=`<div class="panel"><h3>🔗 関連(参照関係)</h3><ul class="list-tight">`;rels.forEach(r=>h+=`<li class="mono">${esc(r.from)} → ${esc(r.to)}</li>`);h+=`</ul></div>`;}
+  main.innerHTML=h;
+}
+function apiLink(p){ const a=apiByPath[p]; return `<span class="badge sm" style="cursor:pointer" onclick="go('#/api/${esc(p)}')">${esc((a&&a.method)||'POST')} ${esc(p)}</span>`; }
+
+/* ---- ER図 ---- */
+let erState={dom:null,sel:null}; let erZoom=1;
+function applyErZoom(){ const c=$('#ercanvas'),s=$('#ersizer'),l=$('#erzlvl'); if(!c||!s)return;
+  c.style.transform='scale('+erZoom+')'; s.style.width=(lastEr.W*erZoom)+'px'; s.style.height=(lastEr.H*erZoom)+'px';
+  if(l)l.textContent=Math.round(erZoom*100)+'%'; }
+function setErZoom(z){ erZoom=Math.min(2,Math.max(0.3,Math.round(z*10)/10)); applyErZoom(); }
+function fitErZoom(){ const box=$('#erbox'); const bw=box&&box.clientWidth; if(!box||!lastEr.W||!bw||!isFinite(bw)){applyErZoom();return;} const z=(bw-28)/lastEr.W; erZoom=isFinite(z)?Math.min(1,Math.max(0.35,Math.round(z*20)/20)):1; applyErZoom(); }
+function erDomains(){ return [...new Set(schemaTables.map(t=>t.domain))].sort(); }
+function erChip(name){ const ex=schemaTables.some(t=>t.name.toLowerCase()===String(name).toLowerCase()); return ex?`<span class="badge cyan sm" style="cursor:pointer" onclick="erPreview('${String(name).replace(/'/g,"\\'")}')">${esc(name)}</span>`:`<span class="badge gray sm">${esc(name)}</span>`; }
+function renderEr(main,dom,sel){
+  const doms=erDomains();
+  dom=dom?decodeURIComponent(dom):(erState.dom||doms[0]);
+  erState.dom=dom; erState.sel=sel?decodeURIComponent(sel):null;
+  let h=crumbs([['ER図']]);
+  h+=`<h2 class="view">🧬 ER図 <span class="count-pill">${schemaTables.length} テーブル</span></h2>`;
+  h+=`<p class="lead">モデルのリレーション(<b>実線=FK / 点線=論理参照</b>)と PK・UNIQUE・INDEX を表示(Prisma schema から抽出)。<b>モデルをクリックで右に詳細(列・索引・参照)プレビュー</b>。点線枠＝他ドメインの参照先。</p>`;
+  h+=`<div class="toolbar"><label class="muted" style="font-size:12px">ドメイン:</label><select id="erdom" style="min-width:280px">`+
+     `<option value="*" ${dom==='*'?'selected':''}>★ 全テーブル (全ドメイン ${schemaTables.length})</option>`+
+     doms.map(d=>`<option value="${esc(d)}" ${d===dom?'selected':''}>${esc((domainById[d]||{}).name||d)} (${schemaTables.filter(t=>t.domain===d).length})</option>`).join('')+`</select>`+
+     `<span class="zbtn" id="erzout">−</span><span class="zlevel" id="erzlvl">100%</span><span class="zbtn" id="erzin">＋</span><span class="zbtn" id="erzfit">全体表示</span>`+
+     `<span class="right legend" style="margin:0"><span>🔑 PK</span><span>🔗 FK</span><span>実線=FK</span><span>点線=論理</span></span></div>`;
+  h+=`<div class="flowwrap"><div class="graphbox" id="erbox"><div id="ersizer"><div class="graphcanvas" id="ercanvas"></div></div></div><div class="gpanel" id="erpanel"></div></div>`;
+  main.innerHTML=h;
+  $('#erdom').onchange=e=>{ erState.sel=null; go('#/er/'+encodeURIComponent(e.target.value)); };
+  $('#erzin').onclick=()=>setErZoom(erZoom+0.1);
+  $('#erzout').onclick=()=>setErZoom(erZoom-0.1);
+  $('#erzfit').onclick=()=>fitErZoom();
+  $('#erbox').addEventListener('wheel',e=>{ if(e.ctrlKey){ e.preventDefault(); setErZoom(erZoom+(e.deltaY<0?0.1:-0.1)); } },{passive:false});
+  drawEr(dom);
+  fitErZoom();
+  erPreview(erState.sel||((erSubgraph(dom).nodes[0]||{}).name));
+}
+function erSubgraph(dom){
+  const all=dom==='*';
+  const inset=all?schemaTables.slice():schemaTables.filter(t=>t.domain===dom);
+  const insetNames=new Set(inset.map(t=>t.name));
+  const byLower={}; schemaTables.forEach(t=>byLower[t.name.toLowerCase()]=t.name);
+  const norm=(n)=>byLower[String(n).toLowerCase()]||n;
+  const raw=[];
+  inset.forEach(t=>{ ((t.idx&&t.idx.fks)||[]).forEach(f=>raw.push({from:t.name,to:f.refTable,col:f.cols.join(','),kind:'fk'})); });
+  (DATA.relations||[]).forEach(r=>{ const ft=String(r.from).split('.')[0], tt=String(r.to).split('.')[0];
+    if(all||insetNames.has(norm(ft))||insetNames.has(norm(tt))) raw.push({from:ft,to:tt,col:String(r.from).split('.')[1]||'',kind:'logical'}); });
+  const ghosts=new Set(); const seen=new Set(); const edges=[];
+  raw.forEach(e=>{ const f=norm(e.from),tt=norm(e.to); if(f===tt)return; const k=f+'|'+tt+'|'+e.kind; if(seen.has(k))return; seen.add(k);
+    edges.push({from:f,to:tt,col:e.col,kind:e.kind}); if(!insetNames.has(f))ghosts.add(f); if(!insetNames.has(tt))ghosts.add(tt); });
+  // drop logical that duplicates an fk pair
+  const fkPairs=new Set(edges.filter(e=>e.kind==='fk').map(e=>e.from+'|'+e.to));
+  const edges2=edges.filter(e=>!(e.kind==='logical'&&fkPairs.has(e.from+'|'+e.to)));
+  const names=new Set([...insetNames,...ghosts]);
+  const nodes=[...names].map(n=>{ const t=schemaTables.find(x=>x.name===n); return t?{...t,_ghost:!insetNames.has(n)}:{name:n,columns:[],_ghost:true}; });
+  return {nodes,edges:edges2};
+}
+let lastEr={W:0,H:0};
+function erKeyRows(n){ const ix=n.idx||{}; const out=[]; const seen=new Set();
+  (ix.pk||[]).forEach(c=>{ if(!seen.has(c)){seen.add(c);out.push({c,k:'pk'});} });
+  (ix.fks||[]).flatMap(f=>f.cols).forEach(c=>{ if(!seen.has(c)){seen.add(c);out.push({c,k:'fk'});} });
+  return out.slice(0,5);
+}
+function erNodeDim(n){ const rows=erKeyRows(n); const more=Math.max(0,(n.columns||[]).length-rows.length); const shown=rows.length+(more>0?1:0);
+  const head=26+(n.purpose?17:0); return {rows,more,h:head+shown*18+2}; }
+function drawEr(dom){
+  const {nodes,edges}=erSubgraph(dom);
+  const canvas=$('#ercanvas'); if(!nodes.length){canvas.innerHTML='<div class="empty">テーブルなし</div>';lastEr={W:0,H:0};return;}
+  const idx={}; nodes.forEach(n=>idx[n.name]=n);
+  const layer={}; nodes.forEach(n=>layer[n.name]=0);
+  for(let it=0;it<nodes.length+2;it++){ let ch=false;
+    edges.forEach(e=>{ if(idx[e.from]&&idx[e.to]&&e.from!==e.to){ if(layer[e.from]<=layer[e.to]){ layer[e.from]=layer[e.to]+1; ch=true; } } });
+    if(!ch)break; }
+  // 各レイヤを最大ROWS行のサブ列に詰める(縦長を防ぐ) + 広めの間隔
+  const nodeW=250,padX=28,padY=28,vgap=34,subGap=54,layerGap=82,ROWS=7;
+  const byLayer={}; nodes.forEach(n=>{(byLayer[layer[n.name]]=byLayer[layer[n.name]]||[]).push(n);});
+  const pos={}; let maxBottom=padY, xCursor=padX;
+  Object.keys(byLayer).map(Number).sort((a,b)=>a-b).forEach(L=>{
+    const arr=byLayer[L].slice().sort((a,b)=>a.name.localeCompare(b.name));
+    const chunks=[]; for(let i=0;i<arr.length;i+=ROWS) chunks.push(arr.slice(i,i+ROWS));
+    chunks.forEach((chunk,ci)=>{ const x=xCursor+ci*(nodeW+subGap); let y=padY;
+      chunk.forEach(n=>{ const d=erNodeDim(n); pos[n.name]={x,y,h:d.h,rows:d.rows,more:d.more}; y+=d.h+vgap; maxBottom=Math.max(maxBottom,y); });
+    });
+    xCursor += Math.max(1,chunks.length)*(nodeW+subGap) + layerGap;
+  });
+  const W=xCursor+padX, H=Math.max(maxBottom,padY+100);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px'; lastEr={W,H};
+  let svg=`<svg class="gsvg" width="${W}" height="${H}"><defs><marker id="erarr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6b7aa3"/></marker></defs>`;
+  edges.forEach(e=>{ const a=pos[e.from],b=pos[e.to]; if(!a||!b)return;
+    let x1,y1,x2,y2;
+    if(b.x<a.x){ x1=a.x; y1=a.y+a.h/2; x2=b.x+nodeW; y2=b.y+b.h/2; }
+    else if(b.x>a.x){ x1=a.x+nodeW; y1=a.y+a.h/2; x2=b.x; y2=b.y+b.h/2; }
+    else { x1=a.x+nodeW/2; y1=a.y; x2=b.x+nodeW/2; y2=b.y; }
+    const mx=(x1+x2)/2;
+    const d=(b.x===a.x)?`M${x1},${y1} C${x1-40},${y1-26} ${x2-40},${y2-26} ${x2},${y2}`:`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    svg+=`<path class="gedge ${e.kind==='logical'?'back':''}" d="${d}" marker-end="url(#erarr)"><title>${esc(e.from)} → ${esc(e.to)}${e.col?' ('+esc(e.col)+')':''}</title></path>`;
+    if(e.col){ svg+=`<text class="glabel" x="${mx}" y="${(y1+y2)/2-3}" text-anchor="middle">${esc(e.col)}</text>`; }
+  });
+  svg+=`</svg>`;
+  let nh='';
+  nodes.forEach(n=>{ const p=pos[n.name]; const c=n._ghost?'#67748f':'#33c6dd';
+    let rows=p.rows.map(r=>`<div class="tr2"><span class="kc">${r.k==='pk'?'🔑':'🔗'}</span><span class="nm">${esc(r.c)}</span><span class="ty">${r.k}</span></div>`).join('');
+    if(p.more>0) rows+=`<div class="tr2"><span class="kc"></span><span class="nm muted">+${p.more} 列…</span></div>`;
+    nh+=`<div class="tnode ${n._ghost?'ghost':''} ${n.name===erState.sel?'sel':''}" data-n="${esc(n.name)}" style="left:${p.x}px;top:${p.y}px;height:${p.h}px;--c:${c}" onclick="erPreview('${String(n.name).replace(/'/g,"\\'")}')"><div class="th">${esc(n.name)}<span class="pill">${(n.columns||[]).length}列</span></div>${n.purpose?`<div class="tl" title="${esc(n.purpose)}">${esc(n.purpose)}</div>`:''}${rows}</div>`;
+  });
+  canvas.innerHTML=svg+nh;
+}
+function erPreview(name){ if(!name) return;
+  erState.sel=name;
+  document.querySelectorAll('#ercanvas .tnode').forEach(x=>x.classList.toggle('sel',x.dataset.n===name));
+  const panel=$('#erpanel'); if(!panel) return;
+  const t=schemaTables.find(x=>x.name===name);
+  if(!t){ panel.innerHTML=`<div class="panel" style="margin:0"><div class="note">${esc(name)} はスキーマ未登録(参照先名のみ)。</div></div>`; return; }
+  const ix=t.idx||{}; const x=apisByTable[t.name]||{w:new Set(),r:new Set()};
+  const refBy=schemaTables.filter(o=>((o.idx&&o.idx.fks)||[]).some(f=>f.refTable.toLowerCase()===t.name.toLowerCase())).map(o=>o.name);
+  let h=`<div class="panel" style="margin:0">`;
+  h+=`<h3 class="mono" style="margin-bottom:4px">🗄 ${esc(t.name)}</h3><div class="note">${esc(t.purpose||'')}</div>`;
+  h+=`<div style="margin-top:8px" class="muted">列 (${(t.columns||[]).length})</div><div class="mock"><div class="body" style="max-height:230px;gap:0">`;
+  (t.columns||[]).forEach(c=>{ const tag=c.pk?'🔑':(c.fk?'🔗':''); h+=`<div class="tr2" style="border-bottom:1px solid #222c42;padding:2px 0"><span class="kc">${tag}</span><span class="nm">${esc(c.name)}</span><span class="ty">${esc(c.type||'')}${c.notNull?' ·NN':''}</span></div>`; });
+  if(!(t.columns||[]).length) h+=`<div class="mw-text">列定義未取得</div>`;
+  h+=`</div></div>`;
+  h+=`<div class="idxrow" style="margin-top:8px"><span class="k">PK</span> ${(ix.pk||[]).length?`<span class="mono">${ix.pk.map(esc).join(', ')}</span>`:'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">UNIQUE</span> ${(ix.unique||[]).length?ix.unique.map(u=>`<span class="badge sm amber mono">${u.map(esc).join(',')}</span>`).join(' '):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">INDEX</span> ${(ix.index||[]).length?ix.index.map(u=>`<span class="badge sm mono">${u.map(esc).join(',')}</span>`).join(' '):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">FK</span> ${(ix.fks||[]).length?ix.fks.map(f=>`<span class="mono">${esc(f.cols.join(','))}</span> → ${erChip(f.refTable)}`).join('　'):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="idxrow"><span class="k">被参照</span> ${refBy.length?refBy.map(r=>erChip(r)).join('　'):'<span class="muted">-</span>'}</div>`;
+  h+=`<div class="muted" style="margin-top:8px">読み書きAPI: 書込 ${x.w.size} / 読取 ${x.r.size}</div>`;
+  h+=`<div style="margin-top:8px"><a onclick="go('#/table/${esc(t.name)}')">テーブル詳細を開く →</a> ・ <a onclick="go('#/impact/table/${esc(t.name)}')">影響調査 →</a></div></div>`;
+  panel.innerHTML=h;
+}
+
+/* ---- Roles & Permissions ---- */
+function renderRoles(main){
+  let h=crumbs([['権限・ロール']]);
+  h+=`<h2 class="view">権限・認可モデル</h2>`;
+  h+=`<p class="lead">middleware の粗いゲートと DAL / Server Action のオブジェクトレベル認可（所有・テナント検証）の二層。下表は実コードから抽出したロール・認可グループ・公開エンドポイント。</p>`;
+
+  h+=`<div class="panel"><h3>👤 ロール (${(DATA.roles||[]).length})</h3><table class="tbl"><thead><tr><th>コード</th><th>名称</th><th>区分</th><th>説明</th></tr></thead><tbody>`;
+  (DATA.roles||[]).forEach(r=>h+=`<tr><td class="mono">${esc(r.code)}</td><td>${esc(r.name)}</td><td><span class="badge sm">${esc(r.scope||'')}</span></td><td class="muted">${esc(r.description||'')}</td></tr>`);
+  h+=`</tbody></table></div>`;
+
+  h+=`<div class="panel"><h3>🔐 認可グループ <span class="hint">— middleware matcher / route handler auth</span></h3><table class="tbl"><thead><tr><th>グループ</th><th>対象パス</th></tr></thead><tbody>`;
+  (DATA.endpointAuth||[]).forEach(g=>{ const sec=g.permitAll; h+=`<tr><td>${sec?'<span class="badge red">PERMIT_ALL</span> ':''}<b>${esc(g.authGroup||'')}</b>${g.source?`<div class="muted mono" style="font-size:10.5px">${esc(g.source)}</div>`:''}</td><td>${(g.paths||[]).map(p=>`<span class="badge sm mono">${esc(p)}</span>`).join(' ')}</td></tr>`; });
+  h+=`</tbody></table></div>`;
+
+  if((DATA.spaGuards||[]).length){ h+=`<div class="panel"><h3>🛡 ルート/ミドルウェアガード</h3><table class="tbl"><thead><tr><th>区分</th><th>ルート</th><th>必要権限</th><th>利用者</th></tr></thead><tbody>`;
+    DATA.spaGuards.forEach(g=>h+=`<tr><td>${esc(g.module||'')}</td><td class="path">${esc(g.routePath||'')}</td><td>${esc(g.requiredPermission||'-')}</td><td>${(g.userTypes||[]).map(esc).join(', ')}</td></tr>`);
+    h+=`</tbody></table></div>`; }
+
+  if((DATA.permUncertainties||[]).length){ h+=`<div class="panel"><h3>❓ 認可の不明点 / 漏れ疑い</h3>`; DATA.permUncertainties.forEach(u=>h+=`<div class="uc">${esc(u)}</div>`); h+=`</div>`; }
+  if((DATA.permNotes||[]).length){ h+=`<div class="panel"><h3>📝 補足</h3>`; DATA.permNotes.forEach(u=>h+=`<div class="note">• ${esc(u)}</div>`); h+=`</div>`; }
+  main.innerHTML=h;
+}
+
+/* ---- Impact / Flow ---- */
+function renderImpact(main,type,id){
+  let h=crumbs([['影響調査 / フロー']]);
+  h+=`<h2 class="view">🎯 影響調査 / フロー</h2>`;
+  h+=`<p class="lead">起点を選ぶと、画面 → 操作 → API → サービス → DBテーブル / 外部 の連鎖を両方向で表示します。<b>中央のノードをクリックすると右側に詳細プレビュー</b>が出ます(画面遷移せず全体を見ながら掘れます)。「このAPIを直すとどの画面が壊れるか」「このテーブルを変えると何に影響するか」を確認できます。</p>`;
+  h+=`<div class="toolbar"><select id="itype"><option value="screen" ${type==='screen'?'selected':''}>画面 起点</option><option value="api" ${type==='api'?'selected':''}>API 起点</option><option value="table" ${type==='table'?'selected':''}>DBテーブル 起点</option></select><select id="ipick" style="min-width:360px"></select></div>`;
+  h+=`<div class="flowwrap"><div class="impflow" id="iflow"></div><div class="gpanel" id="ipanel"></div></div>`;
+  main.innerHTML=h;
+  const fillPick=(tp,sel)=>{
+    let opts='';
+    if(tp==='screen')opts=allScreens.slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'')).map(s=>`<option value="${esc(s._gid)}" ${sel===s._gid?'selected':''}>${esc(s.title)} — ${esc((domainById[s._domain]||{}).name||'')}</option>`).join('');
+    if(tp==='api')opts=allApis.map(a=>`<option value="${esc(a._key)}" ${sel===a._key?'selected':''}>${esc(a._key)}</option>`).join('');
+    if(tp==='table')opts=schemaTables.map(t=>`<option value="${esc(t.name)}" ${sel===t.name?'selected':''}>${esc(t.name)} — ${esc((domainById[t.domain]||{}).name||'')}</option>`).join('');
+    $('#ipick').innerHTML=opts;
+  };
+  fillPick(type||'screen',id);
+  if(!id){ id=$('#ipick').value; }
+  $('#itype').onchange=e=>{ fillPick(e.target.value); go(`#/impact/${e.target.value}/${encodeURIComponent($('#ipick').value)}`); };
+  $('#ipick').onchange=e=>{ go(`#/impact/${$('#itype').value}/${encodeURIComponent(e.target.value)}`); };
+  drawFlow(type||'screen',id);
+  previewImpact(type||'screen',id);  // 起点を既定でプレビュー
+}
+function fnode(cls,t,s,kind,id){ const oc=(kind&&id!=null&&id!=='')?`previewImpact('${kind}','${String(id).replace(/'/g,"\\'")}')`:''; return `<div class="fnode ${cls}" data-k="${esc(kind||'')}" data-i="${esc(id||'')}" ${oc?`onclick="${oc}"`:''}><div class="t">${t}</div>${s?`<div class="s">${s}</div>`:''}</div>`; }
+function drawFlow(type,id){
+  const box=$('#iflow'); if(!id){box.innerHTML='';return;}
+  let screensSet=new Set(), apisSet=new Set(), tablesSet=new Set(), extSet=new Set(), centerLane='';
+  if(type==='api'){ const a=apiByPath[id]; if(!a){box.innerHTML='<div class="empty">未選択</div>';return;}
+    apisSet.add(a._key); centerLane='api';
+    (screensByApi[a._key]||new Set()).forEach(g=>screensSet.add(g));
+    [...a._wt,...a._rt].forEach(t=>t&&tablesSet.add(t)); (a.external||[]).forEach(e=>extSet.add(e));
+  } else if(type==='table'){ const t=id; tablesSet.add(t); centerLane='table';
+    const x=apisByTable[t]||{w:new Set(),r:new Set()}; [...x.w,...x.r].forEach(p=>apisSet.add(p));
+    screensForTable(t).forEach(g=>screensSet.add(g));
+    apisSet.forEach(p=>{const a=apiByPath[p];if(a)(a.external||[]).forEach(e=>extSet.add(e));});
+  } else { const s=screenByGid[id]; if(!s){box.innerHTML='<div class="empty">未選択</div>';return;}
+    screensSet.add(s._gid); centerLane='screen';
+    s._apis.forEach(p=>{apisSet.add(p);const a=apiByPath[p];if(a){[...a._wt,...a._rt].forEach(t=>t&&tablesSet.add(t));(a.external||[]).forEach(e=>extSet.add(e));}});
+  }
+  const scr=[...screensSet].map(g=>screenByGid[g]).filter(Boolean);
+  const aps=[...apisSet].map(p=>apiByPath[p]).filter(Boolean);
+  const svc=[...new Set(aps.map(a=>a.service).filter(Boolean))];
+  let h=`<div class="flow">`;
+  // lane 1 screens
+  h+=`<div class="flane"><div class="lh">🖥 画面 (${scr.length})</div>`+ (scr.length?scr.map(s=>fnode(centerLane==='screen'&&s._gid===id?'center':'',esc(s.title),modLabel[s.module]||'','screen',s._gid)).join(''):'<div class="note">-</div>') +`</div>`;
+  // lane 2 apis
+  h+=`<div class="flane"><div class="lh">🔌 API (${aps.length})</div>`+ (aps.length?aps.map(a=>fnode(centerLane==='api'&&a._key===id?'center':'',esc(a._key),esc(a.summary||''),'api',a._key)).join(''):'<div class="note">-</div>') +`</div>`;
+  // lane 3 service
+  h+=`<div class="flane"><div class="lh">⚙ サービス (${svc.length})</div>`+ (svc.length?svc.map(s=>fnode('',esc(s),'','service',s)).join(''):'<div class="note">-</div>') +`</div>`;
+  // lane 4 tables
+  const tabs=[...tablesSet];
+  h+=`<div class="flane"><div class="lh">🗄 DBテーブル (${tabs.length})</div>`+ (tabs.length?tabs.map(t=>fnode(centerLane==='table'&&t===id?'center':'',esc(t),tableExists(t)?'':'未登録名',tableExists(t)?'table':'',tableExists(t)?t:'')).join(''):'<div class="note">-</div>') +`</div>`;
+  // lane 5 external
+  const ext=[...extSet];
+  h+=`<div class="flane"><div class="lh">☁ 外部連携 (${ext.length})</div>`+ (ext.length?ext.map(e=>fnode('',esc(e),'','ext',e)).join(''):'<div class="note">-</div>') +`</div>`;
+  h+=`</div>`;
+  box.innerHTML=h;
+}
+/* impact 右ペインのプレビュー(画面遷移せず詳細表示) */
+function ipChip(kind,id,label,cls){ return `<span class="badge ${cls||''} sm" style="cursor:pointer" onclick="previewImpact('${kind}','${String(id).replace(/'/g,"\\'")}')">${esc(label||id)}</span>`; }
+function previewImpact(kind,id){
+  if(id==null||id==='') return;
+  document.querySelectorAll('#iflow .fnode').forEach(n=>n.classList.toggle('psel', n.dataset.k===kind && n.dataset.i===String(id)));
+  const panel=$('#ipanel'); if(!panel) return;
+  let h='';
+  if(kind==='api') h=ipApi(apiByPath[id]);
+  else if(kind==='table') h=ipTable(schemaTables.find(t=>t.name===id));
+  else if(kind==='screen') h=ipScreen(screenByGid[id]);
+  else if(kind==='service') h=ipService(id);
+  else if(kind==='ext') h=ipExt(id);
+  panel.innerHTML=h||`<div class="panel" style="margin:0"><div class="note">プレビュー対象がありません(${esc(id)})。</div></div>`;
+}
+function ipApi(a){ if(!a) return '';
+  const scr=[...(screensByApi[a._key]||new Set())].map(g=>screenByGid[g]).filter(Boolean);
+  return `<div class="panel" style="margin:0">`+
+    `<h3 style="margin-bottom:6px"><span class="method">${esc(a.method||'POST')}</span> <span class="path">${esc(a._key)}</span></h3>`+
+    `<div class="note">${esc(a.summary||a.operationId||'')}</div>`+
+    `<dl class="kv" style="grid-template-columns:64px 1fr;font-size:12px;margin-top:8px"><dt>認可</dt><dd>${authBadge(a)}</dd><dt>サービス</dt><dd class="mono" style="font-size:10.5px">${esc(a.service||'-')}</dd>`+
+    ((a.external||[]).length?`<dt>外部</dt><dd>${a.external.map(x=>`<span class="tag-ext">${esc(x)}</span>`).join(' ')}</dd>`:'')+`</dl>`+
+    `<div style="margin-top:9px"><span class="badge pink sm">✎ 書込</span> ${a._wt.length?a._wt.map(t=>ipChip('table',t,t,tableExists(t)?'cyan':'gray')).join(' '):'<span class="muted">なし</span>'}</div>`+
+    `<div style="margin-top:4px"><span class="badge cyan sm">読取</span> ${a._rt.length?a._rt.map(t=>ipChip('table',t,t,tableExists(t)?'cyan':'gray')).join(' '):'<span class="muted">なし</span>'}</div>`+
+    `<div style="margin-top:9px" class="muted">呼ぶ画面 (${scr.length})</div><div>${scr.length?scr.map(s=>ipChip('screen',s._gid,s.title,'blue')).join(' '):'<span class="muted">-</span>'}</div>`+
+    ((a.gotchas||[]).length?`<div style="margin-top:8px">${a.gotchas.map(g=>`<div class="warn">${esc(g)}</div>`).join('')}</div>`:'')+
+    `<div style="margin-top:10px"><a onclick="go('#/api/${esc(a._key)}')">詳細ページを開く →</a></div></div>`;
+}
+function ipTable(t){ if(!t) return '';
+  const x=apisByTable[t.name]||{w:new Set(),r:new Set()};
+  const scr=[...screensForTable(t.name)].map(g=>screenByGid[g]).filter(Boolean);
+  return `<div class="panel" style="margin:0">`+
+    `<h3 class="mono" style="margin-bottom:6px">🗄 ${esc(t.name)}</h3><div class="note">${esc(t.purpose||'')}</div>`+
+    `<div class="muted" style="margin-top:6px;font-size:12px">列 ${(t.columns||[]).length} ・ ドメイン <a onclick="go('#/domain/${esc(t.domain)}')">${esc((domainById[t.domain]||{}).name||t.domain)}</a></div>`+
+    `<div style="margin-top:9px"><span class="badge pink sm">✎ 書込API</span> ${[...x.w].length?[...x.w].map(p=>ipChip('api',p,p,'green')).join(' '):'<span class="muted">なし</span>'}</div>`+
+    `<div style="margin-top:4px"><span class="badge cyan sm">読取API</span> ${[...x.r].length?[...x.r].map(p=>ipChip('api',p,p,'green')).join(' '):'<span class="muted">なし</span>'}</div>`+
+    `<div style="margin-top:9px" class="muted">影響する画面 (${scr.length})</div><div>${scr.length?scr.map(s=>ipChip('screen',s._gid,s.title,'blue')).join(' '):'<span class="muted">-</span>'}</div>`+
+    `<div style="margin-top:10px"><a onclick="go('#/table/${esc(t.name)}')">詳細ページを開く →</a></div></div>`;
+}
+function ipScreen(s){ if(!s) return '';
+  const tabs=new Set(); s._apis.forEach(p=>{const a=apiByPath[p];if(a)[...a._wt,...a._rt].forEach(t=>t&&tabs.add(t));});
+  return `<div class="panel" style="margin:0">`+
+    `<h3 style="margin-bottom:6px">🖥 ${esc(s.title)} ${modBadge(s.module)}</h3>`+
+    (s.summary?`<div class="note">${esc(s.summary)}</div>`:'')+
+    (s.route?`<div class="path muted" style="font-size:11px;margin-top:4px">${esc(s.route)}</div>`:'')+
+    `<div style="margin-top:8px" class="muted">操作 (${(s.actions||[]).length})</div>`+
+    ((s.actions||[]).map(ac=>{const ak=normPath(ac.api);const api=apiByPath[ak];return `<div class="act" style="margin:5px 0;padding:6px 9px"><div class="lbl" style="font-size:12px">${esc(ac.label||'(操作)')}</div>${ac.effect?`<div class="eff" style="font-size:11px">→ ${esc(ac.effect)}</div>`:''}${ac.api?`<div style="margin-top:3px">${api?ipChip('api',ak,ak,'green'):`<span class="path muted">${esc(ak)}</span>`}</div>`:''}</div>`;}).join('')||'<div class="muted">-</div>')+
+    `<div style="margin-top:8px" class="muted">触れるテーブル</div><div>${[...tabs].length?[...tabs].map(t=>tableExists(t)?ipChip('table',t,t,'cyan'):`<span class="badge gray sm">${esc(t)}</span>`).join(' '):'<span class="muted">-</span>'}</div>`+
+    `<div style="margin-top:10px"><a onclick="go('#/screen/${esc(s._gid)}')">詳細ページを開く →</a></div></div>`;
+}
+function ipService(name){ const aps=allApis.filter(a=>a.service===name);
+  return `<div class="panel" style="margin:0"><h3 style="margin-bottom:6px">⚙ サービス実装</h3><div class="mono" style="font-size:11px">${esc(name)}</div><div style="margin-top:8px" class="muted">このサービスが担うAPI (${aps.length})</div><div>${aps.length?aps.map(a=>ipChip('api',a._key,a._key,'green')).join(' '):'<span class="muted">-</span>'}</div></div>`;
+}
+function ipExt(name){ const aps=allApis.filter(a=>(a.external||[]).includes(name));
+  return `<div class="panel" style="margin:0"><h3 style="margin-bottom:6px">☁ 外部連携: ${esc(name)}</h3><div class="muted" style="margin-top:4px">連携するAPI (${aps.length})</div><div style="margin-top:6px">${aps.length?aps.map(a=>ipChip('api',a._key,a._key,'green')).join(' '):'<span class="muted">-</span>'}</div></div>`;
+}
+
+/* ---- Screen Flow (画面遷移図) ---- */
+const flowKindColor={list:'#4f8cff',form:'#37c98a',preCheck:'#37c98a',confirm:'#f5b942',complete:'#7c5cff',detail:'#33c6dd',menu:'#9aa6c2',top:'#9aa6c2',login:'#ff7ac6',otp:'#ff7ac6',review:'#ff5d6c',dialog:'#67748f',map:'#33c6dd',upload:'#37c98a',withdraw:'#ff5d6c',tab:'#4f8cff',external:'#67748f'};
+const flowKindLabel={list:'一覧',form:'入力',preCheck:'事前確認',confirm:'確認',complete:'完了',detail:'詳細',menu:'メニュー',top:'トップ',login:'ログイン',otp:'OTP',review:'審査',dialog:'ダイアログ',map:'地図',upload:'アップロード',withdraw:'取下',tab:'タブ',external:'外部/他系統'};
+function isAutoTrigger(t){ t=String(t==null?'':t); return t===''||t==='(自動)'||t==='自動'||/自動/.test(t); }
+function edgeCausePlain(e){ return isAutoTrigger(e.trigger)?('自動リダイレクト'+(e.condition?'：'+e.condition:'（画面ガード）')):(String(e.trigger||'')+(e.condition?' / '+e.condition:'')); }
+function edgeCauseHtml(e){ if(isAutoTrigger(e.trigger)) return `<div class="tg">⚙ 自動リダイレクト</div><div class="cd">きっかけ: ${esc(e.condition||'画面表示時のガード(ユーザ操作なし)')}</div>`;
+  return `<div class="tg">🖱 ${esc(e.trigger)}</div>`+(e.condition?`<div class="cd">条件: ${esc(e.condition)}</div>`:''); }
+function edgeShortLabel(e){ return isAutoTrigger(e.trigger)?'⚙自動':String(e.trigger||'').replace(/[「」]/g,'').slice(0,16); }
+let flowState={preset:null,sel:null}; let flowZoom=1;
+function applyZoom(){ const c=$('#gcanvas'),s=$('#gsizer'),l=$('#zlvl'); if(!c||!s)return;
+  c.style.transform='scale('+flowZoom+')';
+  s.style.width=(lastGraph.W*flowZoom)+'px'; s.style.height=(lastGraph.H*flowZoom)+'px';
+  if(l)l.textContent=Math.round(flowZoom*100)+'%'; }
+function setZoom(z){ flowZoom=Math.min(2,Math.max(0.3,Math.round(z*10)/10)); applyZoom(); }
+function fitZoom(){ const box=$('#gbox'); const bw=box&&box.clientWidth; if(!box||!lastGraph.W||!bw||!isFinite(bw)){applyZoom();return;} const z=(bw-28)/lastGraph.W; flowZoom=isFinite(z)?Math.min(1,Math.max(0.4,Math.round(z*20)/20)):1; applyZoom(); }
+function renderFlow(main,presetKey,sel){
+  presetKey=presetKey?decodeURIComponent(presetKey):(flowState.preset||flowPresets[0].key);
+  flowState.preset=presetKey; flowState.sel=sel?decodeURIComponent(sel):null;
+  let h=crumbs([['画面遷移図']]);
+  h+=`<h2 class="view">🗺 画面遷移図 <span class="count-pill">${counts.flow} 画面 / ${flowEdges.length} 遷移</span></h2>`;
+  h+=`<p class="lead">「どんな画面があり、何を押すとどの画面へ遷移し、各画面に何が表示されるか」を実コード(router.push / ルート名)から再構成。ノードをクリックすると右に<b>画面mock</b>と前後の遷移(契機・条件)が出ます。<b>辺の契機ラベルは選択中ノードの分だけ</b>表示(他はホバーで確認)。<b>矢印</b>=実線で相手の左から入る→前進 / 点線で下を回り右から入る→戻り。<b>⚙自動</b>=ユーザ操作でなく、画面表示時のガード(onMounted/ルートガード)で条件未達のときコードが自動リダイレクトする遷移(API呼び出しではない)。</p>`;
+  h+=`<div class="toolbar"><label class="muted" style="font-size:12px">フロー:</label><select id="fpre" style="min-width:330px">`+
+     flowPresets.map(p=>`<option value="${esc(p.key)}" ${p.key===presetKey?'selected':''}>${esc(p.label)}</option>`).join('')+`</select>`+
+     `<span class="zbtn" id="zout">−</span><span class="zlevel" id="zlvl">100%</span><span class="zbtn" id="zin">＋</span><span class="zbtn" id="zfit">全体表示</span><span class="zbtn" id="zreset">100%</span>`+
+     `<span class="muted" style="font-size:11px">Ctrl+ホイールでも拡大縮小</span>`+
+     `<span class="right legend" style="margin:0">`+['login','list','form','confirm','complete','detail','review','menu'].map(k=>`<span><span class="dot" style="--c:${flowKindColor[k]}"></span>${flowKindLabel[k]}</span>`).join('')+`</span></div>`;
+  h+=`<div class="flowwrap"><div class="graphbox" id="gbox"><div id="gsizer"><div class="graphcanvas" id="gcanvas"></div></div></div><div class="gpanel" id="gpanel"></div></div>`;
+  main.innerHTML=h;
+  $('#fpre').onchange=e=>{ flowState.sel=null; go('#/flow/'+encodeURIComponent(e.target.value)); };
+  $('#zin').onclick=()=>setZoom(flowZoom+0.1);
+  $('#zout').onclick=()=>setZoom(flowZoom-0.1);
+  $('#zreset').onclick=()=>setZoom(1);
+  $('#zfit').onclick=()=>fitZoom();
+  $('#gbox').addEventListener('wheel',e=>{ if(e.ctrlKey){ e.preventDefault(); setZoom(flowZoom+(e.deltaY<0?0.1:-0.1)); } },{passive:false});
+  drawGraph(presetKey);
+  fitZoom();
+  if(flowState.sel) drawFlowPanel(flowState.sel); else drawFlowPanel(null);
+}
+function flowSubgraph(presetKey){
+  const [mod,dom]=presetKey.split('::');
+  const inset=new Set();
+  flowScreens.forEach(s=>{ if(s.module===mod && (dom==='*'||s.domain===dom)) inset.add(s.id); });
+  // include one-hop ghosts
+  const ghosts=new Set();
+  flowEdges.forEach(e=>{ if(inset.has(e.from)&&!inset.has(e.to))ghosts.add(e.to); if(inset.has(e.to)&&!inset.has(e.from))ghosts.add(e.from); });
+  const nodeIds=new Set([...inset,...ghosts]);
+  const nodes=[...nodeIds].map(id=>fsById[id]).filter(Boolean).map(s=>({...s,_ghost:!inset.has(s.id)}));
+  const edges=flowEdges.filter(e=>nodeIds.has(e.from)&&nodeIds.has(e.to));
+  return {nodes,edges,inset};
+}
+let lastGraph={W:0,H:0};
+function drawGraph(presetKey){
+  const {nodes,edges}=flowSubgraph(presetKey);
+  const canvas=$('#gcanvas'); if(!nodes.length){canvas.innerHTML='<div class="empty">この区分に画面がありません</div>';lastGraph={W:0,H:0};return;}
+  const idx={}; nodes.forEach(n=>idx[n.id]=n);
+  // adjacency (forward) + indegree
+  const out={}, indeg={}; nodes.forEach(n=>{out[n.id]=[];indeg[n.id]=0;});
+  edges.forEach(e=>{ if(idx[e.from]&&idx[e.to]&&e.from!==e.to){ out[e.from].push(e.to); indeg[e.to]++; } });
+  // layering = BFS distance from entries (入口からの最短手数) → コンパクトで左詰め
+  const layer={}; const q=[];
+  nodes.forEach(n=>{ if(n.entry || indeg[n.id]===0){ layer[n.id]=0; q.push(n.id); } });
+  if(!q.length){ const f=nodes[0].id; layer[f]=0; q.push(f); }
+  while(q.length){ const u=q.shift(); out[u].forEach(v=>{ if(layer[v]==null){ layer[v]=layer[u]+1; q.push(v); } }); }
+  // 未到達ノードは流入元の最大+1（無ければ0）
+  nodes.forEach(n=>{ if(layer[n.id]==null){ const ins=edges.filter(e=>e.to===n.id&&layer[e.from]!=null).map(e=>layer[e.from]); layer[n.id]= ins.length?Math.max(...ins)+1:0; } });
+  const byLayer={}; nodes.forEach(n=>{ (byLayer[layer[n.id]]=byLayer[layer[n.id]]||[]).push(n); });
+  const colW=336,nodeW=190,nodeH=56,rowGap=54,padX=28,padY=28;
+  const pos={}; let maxRows=0;
+  Object.keys(byLayer).map(Number).sort((a,b)=>a-b).forEach(L=>{
+    byLayer[L].sort((a,b)=>(a.entry?-1:0)-(b.entry?-1:0)||(a.title||'').localeCompare(b.title||''));
+    byLayer[L].forEach((n,i)=>{ pos[n.id]={x:padX+L*colW,y:padY+i*(nodeH+rowGap),L,row:i}; });
+    maxRows=Math.max(maxRows,byLayer[L].length);
+  });
+  const maxL=Math.max(...Object.keys(byLayer).map(Number));
+  const W=padX*2+(maxL+1)*colW-(colW-nodeW), H=padY*2+maxRows*(nodeH+rowGap);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  lastGraph={W,H};
+  // svg edges
+  let svg=`<svg class="gsvg" width="${W}" height="${H}"><defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8593bd"/></marker></defs>`;
+  // 前進辺(左→右): 相手の「左」から入る / 戻り辺: 下のあき領域を通り相手の「右」から入る → 入る向きを統一
+  edges.forEach((e,i)=>{
+    const title=`<title>${esc(edgeCausePlain(e))}</title>`;
+    const lbl=(lx,ly)=>`<text class="glabel" data-from="${esc(e.from)}" data-to="${esc(e.to)}" x="${lx}" y="${ly}" text-anchor="middle">${esc(edgeShortLabel(e))}${title}</text>`;
+    if(e.from===e.to){ const p=pos[e.from]; if(!p)return; const x=p.x+nodeW,y=p.y+nodeH/2;
+      svg+=`<path class="gedge back" d="M${x-12},${y+14} C${x+36},${y+30} ${x+36},${y-16} ${x-12},${y}" marker-end="url(#arr)" data-from="${esc(e.from)}" data-to="${esc(e.to)}">${title}</path>`+lbl(x+34,y+2); return; }
+    const a=pos[e.from],b=pos[e.to]; if(!a||!b)return;
+    const back=b.L<=a.L; let x1,y1,x2,y2,d,lx,ly;
+    if(!back){ x1=a.x+nodeW; y1=a.y+nodeH/2; x2=b.x; y2=b.y+nodeH/2; const mx=(x1+x2)/2; d=`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`; lx=mx; ly=(y1+y2)/2-6; }
+    else { x1=a.x; y1=a.y+nodeH/2; x2=b.x+nodeW; y2=b.y+nodeH/2; const cy=Math.max(a.y,b.y)+nodeH+28+(i%4)*14; d=`M${x1},${y1} C${x1-36},${cy} ${x2+36},${cy} ${x2},${y2}`; lx=(x1+x2)/2; ly=cy+4; }
+    svg+=`<path class="gedge ${back?'back':''}" d="${d}" marker-end="url(#arr)" data-from="${esc(e.from)}" data-to="${esc(e.to)}">${title}</path>`+lbl(lx,ly);
+  });
+  svg+=`</svg>`;
+  // nodes
+  let nh='';
+  nodes.forEach(n=>{ const p=pos[n.id]; const c=flowKindColor[n.kind]||'#9aa6c2';
+    nh+=`<div class="gnode ${n._ghost?'ghost':''} ${n.id===flowState.sel?'sel':''}" data-id="${esc(n.id)}" style="left:${p.x}px;top:${p.y}px;--c:${c}" onclick="selectFlowNode('${esc(n.id)}')">`+
+      `<span class="gt">${esc(n.title||n.id)}</span><span class="gk"><span class="gkind">${esc(flowKindLabel[n.kind]||n.kind||'')}</span><span>${n._ghost?'他系統→':esc(n.path||'')}</span></span></div>`;
+  });
+  canvas.innerHTML=svg+nh;
+}
+function selectFlowNode(id){ flowState.sel=id;
+  document.querySelectorAll('#gcanvas .gnode').forEach(n=>n.classList.toggle('sel',n.dataset.id===id));
+  document.querySelectorAll('#gcanvas .gedge').forEach(p=>p.classList.toggle('hl',p.dataset.from===id||p.dataset.to===id));
+  document.querySelectorAll('#gcanvas .glabel').forEach(t=>t.classList.toggle('on',t.dataset.from===id||t.dataset.to===id));
+  drawFlowPanel(id);
+}
+function mockHtml(s){
+  if(!s||!(s.elements||[]).length){ return `<div class="mock"><div class="bar">🖼 ${esc(s?s.title:'')}</div><div class="body"><div class="mw-text">${esc((s&&(s.displays||[]).join(' / '))||'表示要素の詳細は未抽出')}</div></div></div>`; }
+  let b='';
+  (s.elements||[]).forEach(el=>{ const t=el.type, lb=esc(el.label||''), nt=el.note?` <span class="muted">(${esc(el.note)})</span>`:'';
+    if(t==='button') b+=`<div class="mw-btn ${/戻|キャンセル|クリア|一時/.test(el.label||'')?'sub':''}">${lb}</div>`;
+    else if(t==='table'||t==='search') b+=`<div class="mw-table"><div class="h">${t==='search'?'🔍 ':'▦ '}${lb}${nt}</div><div class="r"></div><div class="r"></div><div class="r"></div></div>`;
+    else if(t==='tab') b+=`<div class="mw-tab" style="display:inline-block;margin-right:4px">${lb}</div>`;
+    else if(t==='file') b+=`<div class="mw-file">📎 ${lb}${nt}</div>`;
+    else if(t==='text'||t==='status') b+=`<div class="mw-text">• ${lb}${nt}</div>`;
+    else b+=`<div class="mw-field"><span class="l">${lb}${nt}</span><span class="i"></span></div>`;
+  });
+  return `<div class="mock"><div class="bar">🖼 ${esc(s.title)}</div><div class="body">${b}</div></div>`;
+}
+function drawFlowPanel(id){
+  const panel=$('#gpanel'); const s=id?fsById[id]:null;
+  if(!s){ panel.innerHTML=`<div class="panel" style="margin:0"><div class="note">← グラフの画面をクリックすると、ここに画面mockと遷移が表示されます。</div></div>`; return; }
+  let h=`<div class="panel" style="margin:0 0 12px">`;
+  h+=`<h3 style="margin-bottom:8px">${esc(s.title||s.id)} <span class="hint">${esc(flowKindLabel[s.kind]||s.kind||'')}</span></h3>`;
+  h+=`<dl class="kv" style="grid-template-columns:64px 1fr;font-size:12px">`+
+    (s.module?`<dt>区分</dt><dd>${modBadge(s.module)}</dd>`:'')+
+    (s.path?`<dt>ルート</dt><dd class="path">${esc(s.path)}</dd>`:'')+
+    (s.domain?`<dt>ドメイン</dt><dd><a onclick="go('#/domain/${esc(s.domain)}')">${esc((domainById[s.domain]||{}).name||s.domain)}</a></dd>`:'')+
+    (s.component?`<dt>部品</dt><dd class="mono muted" style="font-size:10.5px">${esc(s.component)}</dd>`:'')+
+    `</dl></div>`;
+  h+=mockHtml(s);
+  const outs=(fOut[id]||[]), ins=(fIn[id]||[]);
+  h+=`<div class="panel" style="margin:12px 0 0"><h3 style="font-size:13px">➡ ここから遷移 (${outs.length})</h3><div class="trans">`+
+    (outs.length?outs.map(e=>{ const t=fsById[e.to]; return `<div class="tedge" onclick="selectFlowNode('${esc(e.to)}')"><b>→ ${esc(t?t.title:e.to)}</b>`+edgeCauseHtml(e)+`</div>`; }).join(''):'<div class="note">遷移なし(終端)</div>')+
+    `</div></div>`;
+  h+=`<div class="panel" style="margin:12px 0 0"><h3 style="font-size:13px">⬅ ここへ遷移 (${ins.length})</h3><div class="trans">`+
+    (ins.length?ins.map(e=>{ const t=fsById[e.from]; return `<div class="tedge" onclick="selectFlowNode('${esc(e.from)}')"><b>← ${esc(t?t.title:e.from)}</b>`+edgeCauseHtml(e)+`</div>`; }).join(''):'<div class="note">流入なし(入口)</div>')+
+    `</div></div>`;
+  panel.innerHTML=h;
+}
+
+/* ---- Search ---- */
+function renderSearch(main,q){
+  q=(q||'').trim(); const ql=q.toLowerCase();
+  let h=crumbs([['検索']])+`<h2 class="view">検索: 「${esc(q)}」</h2>`;
+  if(!q){main.innerHTML=h+'<div class="empty">キーワードを入力してください</div>';return;}
+  const sc=allScreens.filter(s=>[s.title,s.route,s.id,s.summary].some(x=>(x||'').toLowerCase().includes(ql)));
+  const ap=allApis.filter(a=>[a._key,a.operationId,a.summary,a.service].some(x=>(x||'').toLowerCase().includes(ql)));
+  const tb=schemaTables.filter(t=>[t.name,t.purpose].some(x=>(x||'').toLowerCase().includes(ql))||(t.columns||[]).some(c=>(c.name||'').toLowerCase().includes(ql)));
+  const dm=domains.filter(d=>[d.name,d.id,d.purpose].some(x=>(x||'').toLowerCase().includes(ql)));
+  const rl=(DATA.roles||[]).filter(r=>[r.name,r.code,r.description].some(x=>(x||'').toLowerCase().includes(ql)));
+  h+=`<div class="searchres">`;
+  const grp=(title,items,render)=>{ if(!items.length)return''; return `<div class="grp"><h4>${title} <span class="count-pill">${items.length}</span></h4>${items.slice(0,40).map(render).join('')}</div>`; };
+  h+=grp('ドメイン',dm,d=>`<div class="act" style="border-color:var(--accent2)"><a onclick="go('#/domain/${esc(d.id)}')"><b>${esc(d.name)}</b></a><div class="eff">${esc(d.purpose||'')}</div></div>`);
+  h+=grp('画面',sc,s=>`<div class="act"><a onclick="go('#/screen/${esc(s._gid)}')"><b>${esc(s.title)}</b></a> ${modBadge(s.module)} <span class="path muted">${esc(s.route||'')}</span></div>`);
+  h+=grp('API',ap,a=>`<div class="act" style="border-color:var(--green)"><span class="method">${esc(a.method||'POST')}</span> <a class="path" onclick="go('#/api/${esc(a._key)}')">${esc(a._key)}</a> <span class="muted">${esc(a.summary||'')}</span></div>`);
+  h+=grp('DBテーブル',tb,t=>`<div class="act" style="border-color:var(--cyan)"><a class="mono" onclick="go('#/table/${esc(t.name)}')">${esc(t.name)}</a> <span class="muted">${esc(t.purpose||'')}</span></div>`);
+  h+=grp('ロール',rl,r=>`<div class="act" style="border-color:var(--auth)"><b>${esc(r.name)}</b> <span class="muted">(${esc(r.code)}) ${esc(r.description||'')}</span></div>`);
+  if(!sc.length&&!ap.length&&!tb.length&&!dm.length&&!rl.length)h+='<div class="empty">該当なし</div>';
+  h+=`</div>`;
+  main.innerHTML=h;
+}
+
+/* ---------- search box ---------- */
+$('#q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ go('#/search/'+encodeURIComponent(e.target.value)); } });
+$('#q').addEventListener('input',e=>{ /* live optional */ });
+
+/* ---------- boot ---------- */
+$('#navtoggle').onclick=()=>document.body.classList.toggle('navmin');
+buildSidebar();
+if(!location.hash) location.hash='#/overview';
+route();
+</script>
+</body>
+</html>

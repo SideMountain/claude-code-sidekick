@@ -1,0 +1,4 @@
+# 生成成果物（再生成可能・コミットしない）
+assets/sample-data/combined.json
+assets/sample-data/system-map.html
+assets/sample-data/data/db-indexes.json

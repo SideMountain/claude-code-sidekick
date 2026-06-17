@@ -1,0 +1,18 @@
+{
+  "roles": [
+    {"code": "guest", "name": "未ログイン", "scope": "public", "description": "公開記事の閲覧のみ"},
+    {"code": "author", "name": "著者", "scope": "my-page", "description": "自分の記事の作成・編集・削除"},
+    {"code": "admin", "name": "管理者", "scope": "manage", "description": "全記事・全ユーザーの管理"}
+  ],
+  "endpointAuth": [
+    {"authGroup": "public", "paths": ["/", "/posts", "/api/posts"], "permitAll": true, "source": "middleware.ts matcher 除外"},
+    {"authGroup": "authenticated", "paths": ["/dashboard", "/dashboard/posts/[id]"], "permitAll": false, "source": "middleware.ts"},
+    {"authGroup": "admin", "paths": ["/admin", "/admin/users"], "permitAll": false, "source": "DAL requireRole('admin')"}
+  ],
+  "spaGuards": [
+    {"module": "my-page", "routePath": "/dashboard", "requiredPermission": "authenticated", "userTypes": ["author", "admin"]},
+    {"module": "manage", "routePath": "/admin", "requiredPermission": "admin", "userTypes": ["admin"]}
+  ],
+  "notes": ["middleware は粗いゲート。最終的な所有・ロール検証は DAL / Server Action で行う（middleware を唯一の境界にしない）。"],
+  "uncertainties": ["コメント投稿の rate limit を middleware に入れるか Server Action に入れるか未決。"]
+}
