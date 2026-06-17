@@ -37,12 +37,15 @@ system-map は「入力 JSON 群（`data/*.json`）→ `merge.js` → `combined.
     "method": "POST",
     "path": "savePost",                // route handler は "/api/…"、Server Action は関数名
     "operationId": "savePost",
-    "kind": "server-action",           // [Next] route-handler | server-action | api-route ★S4
+    "kind": "server-action",           // [Next] route-handler | server-action | webhook | cron ★S4
+    "trigger": "page",                 // [Next] page | scheduler | provider-callback | internal（mutation の発火元）
     "summary": "…",
     "permission": "authenticated",
     "dbTablesRead": ["Post"],          // Prisma モデル名
     "dbTablesWrite": ["Post"],
     "calledByScreens": ["post_editor"],
+    "validation": "body-schema",       // [Next] body-schema | file | auth-gate | signature | none
+    "idempotency": "n/a",              // [Next] webhook/cron 用: event-id-dedup | provably-idempotent | unguarded | n/a
     "gotchas": ["…"]                   // 任意
   }],
   "gotchas": ["…"],                    // ドメイン横断の罠（overview に集約表示される）
@@ -50,7 +53,12 @@ system-map は「入力 JSON 群（`data/*.json`）→ `merge.js` → `combined.
 }
 ```
 
-`kind`（API）は Next.js の **mutation 面**を表す中心項目（`ARCHITECTURE.md` S4）。`server-action` = 内部 mutation（`actions.ts`）、`route-handler` = 外部向け（`app/api/**/route.ts`）。HTML 上でバッジ表示される。
+`kind`（API）は Next.js の **mutation 面**を表す中心項目（`ARCHITECTURE.md` S4）。
+
+- `server-action` = 内部 mutation（module-level `actions.ts`・inline closure 禁止）/ `route-handler` = 外部向け（`app/api/**/route.ts`）/ `webhook` = provider-callback / `cron` = scheduler。HTML 上でバッジ表示される。
+- **`trigger`**: mutation の発火元。`page`（screen から到達）以外に `scheduler`(cron) / `provider-callback`(webhook) / `internal` がある。**②③ は page から辿れないが blast-radius が大きい**ため必ず列挙する（S4）。
+- **`validation`**: `none` を即「検証なし」と断じない。`auth-gate`（cron secret 等）・`signature`（webhook 署名）・`file`（multipart）は body-schema 以外の正当な入力境界（dogfood の「47% 無検証」はこれらの誤算入を含む）。
+- **`idempotency`**: `webhook`/`cron` は at-least-once 前提。`unguarded`（event-id dedup も冪等保証も無し）を flag する（`ARCHITECTURE.md` H2）。
 
 ## `permissions.json`
 
@@ -77,7 +85,8 @@ system-map は「入力 JSON 群（`data/*.json`）→ `merge.js` → `combined.
 {
   "tables": [{
     "name": "Post",                    // [Next] Prisma モデル名
-    "domain": "content",
+    "domain": "content",               // 主ドメイン（最も所有に近い）
+    "accessedFrom": ["content", "admin", "api/feed"],  // [Next] このモデルを触る namespace 群（1 model : N namespace）
     "purpose": "投稿記事",
     "definedIn": "prisma/schema.prisma",
     "columns": [
@@ -89,6 +98,8 @@ system-map は「入力 JSON 群（`data/*.json`）→ `merge.js` → `combined.
   "notes": ["…"]
 }
 ```
+
+> [Next] **1 model : 1 route の写像を前提にしない**。実コードでは同一モデルが複数 namespace（feature / api group）から触られる（dogfood で 1 モデルが 5+ namespace から触られる例を検出）。`accessedFrom` でそれを表現し、`domain` は「最も所有に近い主ドメイン」とする。
 
 ## `db-indexes.json`（硬層が生成）
 

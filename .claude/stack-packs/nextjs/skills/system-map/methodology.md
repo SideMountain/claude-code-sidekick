@@ -16,6 +16,13 @@
 
 > **規約が効くほど硬くなる**: `ARCHITECTURE.md` の golden path に従う PJ ほど、上表の「硬寄り」が「硬」に寄る。決定性の最終的な範囲は `ARCHITECTURE.md` の決定性スコープ表を参照。SOFT 残差（対話的 leaf の fetch・動的クエリの model 到達・行レベル業務認可・帯域外 auth）は軟層が埋める。
 
+### 硬層 adapter の原則（dogfood で確立）
+
+- **コメントを一次ソースにしない**: 抽出の一次ソースは**式・export・import グラフ・設定ファイル**。コメントは実装と矛盾しうる（dogfood で `middleware.ts` のコメントが matcher 式と矛盾＝「api を除外」と書くが実際は除外せず、の実例）。地図はコードの実体を写す。
+- **enumerator の正準カウントを凍結**: route 数は数え方で揺れる（ファイル数 / method export 数 / page+API 合算）。adapter は **route enumerator を単一定義に固定**し（推奨: route.ts × 各 method export = 1 entry / page.tsx = 1 screen）、全出力がそれを参照する。母集合が未確定のまま HARD/SOFT を語らない。
+- **mutation は trigger 別に列挙**: page 到達分だけでなく cron（`vercel.json` crons 等）・webhook も列挙対象（`ARCHITECTURE.md` S4。page から辿れない高 blast-radius 入口を取りこぼさない）。
+- **`none` を即「欠落」と断じない**: validation `none` でも `auth-gate`/`signature`/`file` は正当な入力境界。検証 taxonomy で分類してから比率を出す。
+
 ## ファンアウト戦略（軟層）
 
 ドメインを跨いだ巨大プロンプトにしない。**ドメイン 1 つ = サブエージェント 1 つ**で並行生成し、各エージェントは `<domain>.json` だけを返す（Return Contract）。

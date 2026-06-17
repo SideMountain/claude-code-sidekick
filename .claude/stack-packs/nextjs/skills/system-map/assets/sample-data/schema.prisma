@@ -16,6 +16,7 @@ model User {
   role      String    @default("author")
   posts     Post[]
   comments  Comment[]
+  payments  Payment[]
   createdAt DateTime  @default(now())
 
   @@index([role])
@@ -47,4 +48,16 @@ model Comment {
 
   @@unique([postId, authorId])
   @@index([postId])
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  externalId String  @unique
+  amount    Int
+  status    String   @default("pending")
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([status])
 }

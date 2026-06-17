@@ -1,7 +1,7 @@
 {
   "tables": [
     {
-      "name": "User", "domain": "account", "purpose": "アプリ利用者（著者・管理者）",
+      "name": "User", "domain": "account", "accessedFrom": ["account", "content", "billing"], "purpose": "アプリ利用者（著者・管理者）",
       "definedIn": "prisma/schema.prisma",
       "columns": [
         {"name": "id", "type": "Int", "pk": true, "notNull": true},
@@ -34,12 +34,25 @@
         {"name": "authorId", "type": "Int", "notNull": true, "fk": "User"},
         {"name": "createdAt", "type": "DateTime", "notNull": true}
       ]
+    },
+    {
+      "name": "Payment", "domain": "billing", "accessedFrom": ["billing"], "purpose": "支払い（プロバイダ連携・定期照合）",
+      "definedIn": "prisma/schema.prisma",
+      "columns": [
+        {"name": "id", "type": "Int", "pk": true, "notNull": true},
+        {"name": "externalId", "type": "String", "notNull": true},
+        {"name": "amount", "type": "Int", "notNull": true},
+        {"name": "status", "type": "String", "notNull": true},
+        {"name": "userId", "type": "Int", "notNull": true, "fk": "User"},
+        {"name": "createdAt", "type": "DateTime", "notNull": true}
+      ]
     }
   ],
   "relations": [
     {"from": "Post", "to": "User"},
     {"from": "Comment", "to": "Post"},
-    {"from": "Comment", "to": "User"}
+    {"from": "Comment", "to": "User"},
+    {"from": "Payment", "to": "User"}
   ],
   "notes": ["列・型・PK・FK は schema.prisma から抽出。索引の詳細は extract-indexes.nextjs.js が db-indexes.json に出す。"]
 }

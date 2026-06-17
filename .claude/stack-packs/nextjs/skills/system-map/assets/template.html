@@ -344,8 +344,8 @@ function authBadge(a){
   return '<span class="badge amber">認可未分類 (authenticated)</span>';
 }
 
-// Next.js: mutation 面の種別バッジ（Server Action = 内部 mutation / Route Handler = 外部向け）
-function kindBadge(a){ if(!a||!a.kind) return ''; const lbl={'server-action':'Server Action','route-handler':'Route Handler','api-route':'API Route'}[a.kind]||a.kind; const cls=a.kind==='server-action'?'green':'blue'; return ` <span class="badge sm ${esc(cls)}">${esc(lbl)}</span>`; }
+// Next.js: mutation 面の種別バッジ（Server Action=内部 / Route Handler=外部 / Webhook=callback / Cron=scheduler）
+function kindBadge(a){ if(!a||!a.kind) return ''; const lbl={'server-action':'Server Action','route-handler':'Route Handler','api-route':'API Route','webhook':'Webhook','cron':'Cron'}[a.kind]||a.kind; const cls={'server-action':'green','route-handler':'blue','api-route':'blue','webhook':'pink','cron':'purple'}[a.kind]||'gray'; const idem=(a.idempotency==='unguarded')?` <span class="badge sm red">replay 注意</span>`:''; return ` <span class="badge sm ${esc(cls)}">${esc(lbl)}</span>${idem}`; }
 
 /* ---------- counts ---------- */
 const counts={domains:domains.length,screens:allScreens.length,apis:allApis.length,tables:schemaTables.length,roles:(DATA.roles||[]).length,gotchas:domains.reduce((n,d)=>n+(d.gotchas||[]).length,0),flow:(DATA.flowScreens||[]).filter(s=>!s._external).length};
