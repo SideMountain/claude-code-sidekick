@@ -209,16 +209,28 @@ cp -r .claude/templates/github/.  .github/
 ```bash
 if [ -f package.json ] && grep -q '"next"' package.json 2>/dev/null; then
   echo "Next.js を検知しました（stack pack opt-in を確認します）"
+elif [ ! -f package.json ]; then
+  echo "package.json がまだありません（テンプレ生成直後）。Next.js PJ かを直接確認します"
 fi
 ```
 
-検知時、こう確認する:
+> **chicken-and-egg に注意**: テンプレから生成した直後のリポは `package.json` が無く、`next` 検知が
+> 滑る。その場合は**自動検知に頼らず「Next.js + Prisma のプロジェクトですか？」と直接ユーザーに聞く**
+> （Yes なら下記の opt-in に進む）。後から `create-next-app` した後でも、CLAUDE.md を手動で
+> `STACK_PACK: nextjs` にすれば有効化できる。
+
+検知時（または直接確認で Yes 時）、こう確認する:
 「**Next.js stack pack** を有効にしますか？ 規定アーキ（golden path）+ `system-map` 可視化を提供します。下流PJを一貫した構造に保ち、コードベースを画面↔API↔DB↔権限↔遷移の単一HTML地図に決定的に可視化できます。」
 
 **Yes の場合:**
-- CLAUDE.md Project Configuration の `STACK_PACK: none` を `STACK_PACK: nextjs` に変更
-- 案内する: 「実装・レビューの規約は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）。可視化は `system-map` スキル。出自・roadmap は `.claude/stack-packs/nextjs/README.md`、設計判断は ADR-0021。」
+- CLAUDE.md Project Configuration の `STACK_PACK: none` を `STACK_PACK: nextjs` に変更。
 - Prisma 利用なら `ORM_TYPE: prisma` も併せて提案（golden path は Prisma 前提）。
+- 案内する（**認知 → 強制 → 検知の一式・v0.10.0**）:
+  - **認知**: 実装・レビューの規約は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）。
+  - **強制（生成）**: 規約準拠のアプリ骨格を `node .claude/stack-packs/nextjs/scaffold/scaffold.js <targetDir>` で展開（`posts` 縦スライスが手本。**pack は Next アプリ本体を作らないので先に `create-next-app` 等で土台を用意**）。詳細 `.claude/stack-packs/nextjs/scaffold/README.md`。
+  - **検知**: `package.json` に `"test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js ."` を追加して CI に挿す（error=HARD で落とす / warn=SOFT）。S1 循環依存は対象外ゆえ `madge --circular` を別ステップで補う。詳細 `.claude/stack-packs/nextjs/fitness-functions/README.md`。
+  - **可視化**: `system-map` スキル。出自・roadmap は `.claude/stack-packs/nextjs/README.md`、設計判断は ADR-0021。
+  - 立ち上げの通し手順は README の「Building a Next.js + Prisma project」節を案内する。
 
 **No の場合:** `STACK_PACK: none` のまま（後から CLAUDE.md を手動で `nextjs` にすれば有効化できる）。
 

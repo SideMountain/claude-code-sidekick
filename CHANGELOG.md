@@ -23,6 +23,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Changed
+- **新規 Next.js+Prisma PJ のオンボーディングを README で完結させた（EN/JA 両方）**: v0.10.0 で出荷した stack-pack アプリ層（`STACK_PACK` フラグ・scaffold・fitness `test:arch`・`ARCHITECTURE.md`）が README/`/setup` に未記載だった doc gap を解消。README に `STACK_PACK` 設定行 + 「Building a Next.js + Prisma project」通し手順節を追加（README.md / README.ja.md）。`/setup` Step 3d を拡張（scaffold コマンド・`test:arch` の package.json 配線案内・**生成直後で package.json 不在の chicken-and-egg を直接確認にフォールバック**）。`docs/design.md`/`.ja` の stack pack 節に scaffold + fitness を明記。
+
 ## [0.10.0] - 2026-06-18
 
 ### Added

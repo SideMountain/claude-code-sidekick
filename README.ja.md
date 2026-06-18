@@ -166,6 +166,43 @@ Claude Code 起動後、`/setup` を叩くと対話形式で進みます（所�
 
 Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 → `/review` で自己レビュー → PR 作成（あなたがマージ）。この一連が最初の体験になります。
 
+### Next.js + Prisma プロジェクトを立ち上げる（opt-in stack pack）
+
+アプリが **Next.js（App Router）+ Prisma** なら、**stack pack** に opt-in すると、規定アーキ
+（golden path・一貫した構造）で開発を始め、規約準拠のアプリ骨格を生成し、逸脱を CI で止められます。
+非 Next.js の PJ はここを丸ごとスキップ — `STACK_PACK: none` のままで無コストです。
+
+1. **有効化する。** `/setup` は `package.json` に `next` を検知すると案内します。**生成直後のリポは
+   まだ `package.json` が無く自動検知が滑る**ので、その場合は `CLAUDE.md` で手動設定:
+   `STACK_PACK: nextjs`（と `ORM_TYPE: prisma`）。
+2. **契約を読む。** [`.claude/stack-packs/nextjs/ARCHITECTURE.md`](.claude/stack-packs/nextjs/ARCHITECTURE.md)
+   が golden path（Tier-1 STRUCTURAL / Tier-2 HYGIENE・`grep` 検証付き）。
+3. **Next.js アプリ本体を作る。** pack は**アプリを作らない** — 先に `npx create-next-app` 等で
+   `next` / `react` / `zod` / `prisma` と `package.json` を用意する。
+4. **golden path 骨格を scaffold:**
+   ```bash
+   node .claude/stack-packs/nextjs/scaffold/scaffold.js .   # 非空なら --force
+   ```
+   規約準拠の `posts` 縦スライス（Prisma singleton・auth helper・Zod schema・DAL・Server Action・
+   route handler・webhook + cron）をコピー。出力は定義上 fitness-green。
+5. **install + DB。** `<pm> install` → `.env` に `DATABASE_URL` 設定 → `prisma/schema.prisma` を書いて
+   `npx prisma migrate dev`。
+6. **開発。** 新 feature ごとに `posts` スライスを**複製**する（各層の規約はファイル先頭コメントと
+   `.claude/stack-packs/nextjs/scaffold/README.md`）。
+7. **アーキを CI で gate する。** `package.json` に script を足して実行:
+   ```jsonc
+   "scripts": { "test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js ." }
+   ```
+   ```bash
+   npm run test:arch   # error = HARD（CI を落とす）／ warn = SOFT（助言）
+   ```
+   （S1 の循環依存検出は zero-dep fitness の対象外 — `madge --circular` を別 CI ステップで補う。）
+8. **可視化。** 同梱の `system-map` スキルで 画面↔API↔DB↔権限↔遷移 を描く。
+
+詳細: [stack pack README](.claude/stack-packs/nextjs/README.md) ·
+[scaffold](.claude/stack-packs/nextjs/scaffold/README.md) ·
+[fitness-functions](.claude/stack-packs/nextjs/fitness-functions/README.md)。
+
 ---
 
 <details>
@@ -324,6 +361,7 @@ your-project/
 | `STG_ENABLED` | ステージング環境の有無 | `false` |
 | `ORM_TYPE` | `prisma` / `drizzle` / `none` | `none` |
 | `LANGUAGE` | `typescript` / `python` | `typescript` |
+| `STACK_PACK` | opt-in な Next.js golden path: `none` / `nextjs`。scaffold + アーキ fitness + `system-map` を有効化（[stack pack](.claude/stack-packs/nextjs/README.md)） | `none` |
 | `NOTION_ENABLED` | 外部タスク DB 連携 | `false` |
 | `TEST_COMMAND` | テストコマンド | `""` |
 | `BUILD_COMMAND` | ビルドコマンド | `""` |
