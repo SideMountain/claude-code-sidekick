@@ -22,7 +22,7 @@ ccs の **opt-in な参照 stack pack**。Next.js（App Router）+ Prisma + 認�
 | **`skills/system-map/`** | コードベースを単一 HTML で可視化（画面↔API↔DB↔権限↔遷移） | ✅ Next.js 版の土台を同梱。固有名詞 scrub 済 + Prisma index adapter + generic サンプル + 自己検証（`verify.js` 35/35 PASS）。残 adapter（ルート/mutation/認可 走査）は段階導入（`assets/adapters/README.md`） |
 | `fitness-functions/` | `ARCHITECTURE.md` の各 MUST を CI で検知（`__tests__/architecture/*.test.ts` テンプレ） | ⏳ 後続 phase（認知→強制→検知 の検知層） |
 | `scaffold/` | 新規 PJ を規約へ scaffold | ⏳ 後続 phase |
-| `/setup` 連携 | UI opt-in と同様に pack を opt-in 配置 | ⏳ 後続 phase |
+| `/setup` 連携 | `STACK_PACK` フラグで opt-in（Next.js 検知時に案内・非 Next PJ は無コスト・`/adopt-sidekick-update` も opt-in aware 配布） | ✅ |
 
 > **段階導入の規律**: 一度に全部作らない（北極星「組み立て不要」/ 70%で動く）。`ARCHITECTURE.md`（契約）→ system-map（決定的に描く）→ fitness 関数（守らせる）→ scaffold（最初から規約に乗せる）の順。
 

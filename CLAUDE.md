@@ -18,6 +18,8 @@ PROTECTED_BRANCHES:           # 保護ブランチ名（直接コミット・pus
   # - release/stg            # STG_ENABLED=true の場合に追加
 ORM_TYPE: none                # prisma | drizzle | none
 LANGUAGE: typescript          # typescript | python | gas
+STACK_PACK: none              # none | nextjs : opt-in stack pack（規定アーキ golden path + system-map 可視化）
+                              # nextjs: .claude/stack-packs/nextjs/ARCHITECTURE.md の規約に従う（ADR-0021）。none なら無視（無コスト）
 TEST_COMMAND: ""              # 例: "npx vitest run", "pytest", ""
 TYPECHECK_COMMAND: ""         # 例: "npx tsc --noEmit", "", ""
 BUILD_COMMAND: ""             # 例: "npm run build", "", ""
@@ -31,6 +33,12 @@ PRD_DB_PATTERN: ""            # PRD DB識別パターン（例: "ep-weathered-mo
 SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（例: "0.4.1"）
                               # 空 or 未設定なら sidekick 本体として扱う（バージョンチェック対象外）
 ```
+
+### Stack Pack（opt-in・ADR-0021）
+
+`STACK_PACK: nextjs` の場合、この PJ は **Next.js stack pack の規定アーキ（golden path）に従う**。実装・レビュー時は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）を実装規約として読み、`system-map` スキルでコードベースを可視化できる。`none`（既定）の場合はこのレイヤー全体を無視してよい（**非 Next PJ は無コスト**）。
+
+stack pack は ccs core の上に載る **opt-in な上物**であって core ではない（core = hooks / brain / 北極星 / skills は stack 非依存）。有効化は `/setup` で対話的に行う。
 
 ---
 

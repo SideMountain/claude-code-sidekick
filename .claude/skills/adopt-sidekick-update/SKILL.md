@@ -89,6 +89,14 @@ SKILLS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | g
 BRAIN=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'brain/' | sort -u)
 PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' '.gitignore' 'docs/migrations/' | sort -u)
 
+# stack pack は opt-in（ADR-0021）。PJ の STACK_PACK が none 以外のときだけ同期する（非 Next PJ に clutter を配らない）。
+PACK=$(grep -E "^STACK_PACK:" CLAUDE.md 2>/dev/null | sed -E 's/^STACK_PACK:[[:space:]]*([a-z]+).*/\1/')
+if [ -n "$PACK" ] && [ "$PACK" != "none" ]; then
+  STACKPACK=$(git diff --name-only --diff-filter=AM "$RANGE" -- ".claude/stack-packs/$PACK/" | sort -u)
+else
+  STACKPACK=""   # STACK_PACK=none → stack pack は同期しない（opt-in 未設定）
+fi
+
 # ADR (docs/decisions/) は下流 PJ への配布対象外（ADR-0014）。
 # sidekick 側 ADR の更新有無は参考表示のみ。
 ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*.md' | sort -u)
@@ -140,6 +148,12 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
   ※ Step 6.4 で CLAUDE.md への @import 案内も実施
   > _
 
+[stack pack] 2件（STACK_PACK=nextjs のため同期）
+  - 更新: stack-packs/nextjs/ARCHITECTURE.md, skills/system-map
+  → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  ※ STACK_PACK=none の PJ ではこのカテゴリは出ない（opt-in・非 Next PJ は無コスト）
+  > _
+
 [PJ migration] 3件 ⚠️ PJ 固有内容を含むため**デフォルト個別判断**
   - CLAUDE.md (Project Configuration 値が PJ 固有 → 6.4 で partial merge)
   - README.md / README.ja.md (PJ 独自 → 通常スキップ)
@@ -180,11 +194,13 @@ PJ-protected files（CLAUDE.md / README* / .gitignore）が個別判断に来た
 # blind overwrite から PJ-protected files を除外
 PROTECTED='^(CLAUDE\.md|README\.md|README\.ja\.md|\.gitignore)$'
 
+# APPLIED_FILES は承認された各カテゴリ（$RULES / $SKILLS / $BRAIN / $STACKPACK / …）の合算
 for f in $APPLIED_FILES; do
   if echo "$f" | grep -qE "$PROTECTED"; then
     PROTECTED_PENDING+=("$f")  # Step 6.4 で扱う
     continue
   fi
+  mkdir -p "$(dirname "$f")"      # 新規ネストパス（stack pack の deep tree 等）に対応
   git show "${LATEST}:$f" > "$f"  # タグ参照（drift 回避）
 done
 
