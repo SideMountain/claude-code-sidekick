@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-18
+
 ### Added
 - **Next.js stack pack に fitness-functions（検知層）+ scaffold（強制層）を新設**（`.claude/stack-packs/nextjs/`）。「認知（ARCHITECTURE.md）→ 強制（scaffold）→ 検知（fitness）」が揃い、下流 Next.js PJ は **opt-in 一発で golden path に乗り・地図が描け・違反が CI で止まる**。
   - **`fitness-functions/`**: `ARCHITECTURE.md` の各 MUST を grep-checkable assertion として実装（依存ゼロ plain Node・S1-S7/H1/H3/H4）。`run-fitness.js`（主・WSL 安全な単一プロセス・`error` で exit 1）+ 下流向け vitest ラッパーテンプレ（`templates/architecture.test.ts`）。`severity` を **error=HARD / warn=SOFT 残差**に分け、決定性スコープの正直な約束をコードでも守る。escape hatch（`// barrel-ok` / `// authz-ok`）。
