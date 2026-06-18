@@ -220,8 +220,18 @@ const H1 = {
       for (const hit of matchLines(s.code, /new\s+PrismaClient\b/)) {
         if (!isSingleton) f.push({ severity: 'error', file: s.rel, line: hit.line, message: `new PrismaClient が singleton（lib/prisma.ts）の外（追加インスタンス禁止）` });
       }
+      // 接続文字列ログ（dogfood で精緻化）:
+      //   error = bare 値ログ（`process.env.DATABASE_URL` を否定 ! 無しで console に出す＝provable な値漏洩）
+      //   warn  = それ以外で DATABASE_URL に言及する console（ラベル / 存在チェック `!!` / `.length` / `.substring` 等）
+      //           ラベル・存在チェックを error にしていた誤検知を是正。preview/substring は値の部分漏洩でないか要確認。
+      const errLines = new Set();
+      for (const hit of matchLines(s.code, /console\.\w+\([^)]*(?<!!)process\.env\.DATABASE_URL/)) {
+        errLines.add(hit.line);
+        f.push({ severity: 'error', file: s.rel, line: hit.line, message: `接続文字列の値（process.env.DATABASE_URL）を console 出力している` });
+      }
       for (const hit of matchLines(s.code, /console\.\w+\([^)]*DATABASE_URL/)) {
-        f.push({ severity: 'error', file: s.rel, line: hit.line, message: `接続文字列（DATABASE_URL）を console 出力している` });
+        if (errLines.has(hit.line)) continue;
+        f.push({ severity: 'warn', file: s.rel, line: hit.line, message: `console が DATABASE_URL に言及（値の漏洩でないか確認・preview/substring は部分漏洩に注意）` });
       }
     }
     return f;

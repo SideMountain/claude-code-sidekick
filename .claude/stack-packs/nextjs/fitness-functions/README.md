@@ -36,7 +36,7 @@ node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js .
 | **S5** | T1 | 生セッション読み取りが auth helper 外 / role を文字列リテラル比較 | error |
 | **S6** | T1 | DAL 単一エンティティ read/write（find/update/delete by id）が tenant/owner スコープを欠く | **warn**（存在=HARD・網羅=SOFT） |
 | **S7** | T1 | `app/api/**/route.ts` 内に `z.object` literal | error |
-| **H1** | T2 | `new PrismaClient` が `lib/prisma.ts` 外 / `DATABASE_URL` を console 出力 | error |
+| **H1** | T2 | `new PrismaClient` が `lib/prisma.ts` 外（error）/ `process.env.DATABASE_URL` の**値**を console 出力（error）/ DATABASE_URL への言及 console＝ラベル・存在チェック等（warn・値漏洩でないか確認） | error / warn |
 | **H3** | T2 | page の常時 `force-dynamic` / data 取得 segment に error 境界なし / layout の `usePathname` 分岐 | warn |
 | **H4** | T2 | `.backup`/`.tmp` が tree に残る / prisma 利用 lib に `server-only` なし | error（.backup） / warn |
 
