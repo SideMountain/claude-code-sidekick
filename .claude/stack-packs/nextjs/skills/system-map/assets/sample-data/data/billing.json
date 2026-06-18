@@ -1,0 +1,12 @@
+{
+  "id": "billing",
+  "name": "課金",
+  "purpose": "支払いプロバイダ連携と定期照合。page から辿れない mutation（webhook / cron）を例示。",
+  "screens": [],
+  "apis": [
+    {"method": "POST", "path": "/api/webhooks/payment", "operationId": "paymentWebhook", "kind": "webhook", "trigger": "provider-callback", "summary": "決済プロバイダの callback（署名検証・event-id 冪等）", "permission": "public", "dbTablesRead": ["Payment"], "dbTablesWrite": ["Payment"], "calledByScreens": [], "validation": "signature", "idempotency": "event-id-dedup", "gotchas": ["署名検証あり。event-id を永続化して replay を短絡する。"]},
+    {"method": "POST", "path": "/api/cron/reconcile", "operationId": "reconcilePayments", "kind": "cron", "trigger": "scheduler", "summary": "未照合の支払いを定期照合", "permission": "admin", "dbTablesRead": ["Payment"], "dbTablesWrite": ["Payment"], "calledByScreens": [], "validation": "auth-gate", "idempotency": "unguarded", "gotchas": ["cron secret で gate。多重起動時の二重処理に注意（idempotency 未保証）。"]}
+  ],
+  "gotchas": ["page から辿れない mutation（webhook / cron）。blast-radius が大きいので必ず列挙する（S4）。"],
+  "uncertainties": []
+}

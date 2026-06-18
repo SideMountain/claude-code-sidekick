@@ -42,6 +42,25 @@
 - fitness 関数テンプレ・scaffold・`/setup` 連携は後続 phase（段階導入）。
 - ccs core は無変更。本 ADR は配布リポの canonical home に留まり、下流 fork には配布しない（ADR-0014）。
 
+## 補遺（2026-06-18・dogfood 検証による精緻化）
+
+実 Next.js+Prisma 業務 PJ への dogfood（7次元測定）+ 敵対検証（4レンズ・2本目 PJ で n=2 確認）を実施。golden path を**実コードに当てて**検証し、以下を確定した（ADR-0021 の意図の明確化であって supersede ではない）。
+
+### スタンス（確定）
+
+- **OSS（golden path）はベストプラクティスを正とする。既存 PJ に合わせて緩めない。** 既存の非準拠 PJ は **golden path への refactor 対象**であって、規約を曲げる理由にしない（grandfather 機構・migration roadmap は不採用）。
+- **減算（過剰だった規約の精緻化）と加算（新たに縛る規約）を分離する。** 実測で「過剰」が裏取れた減算は今行う。実測根拠の無い加算（例 `withAuth` wrapper / `companyId` brand type / fetch URL 静的化の HARD 化）は **SHOULD 止め**とし、HARD 格上げは下流 1 本で遡及コストを dogfood してから。
+
+### 精度訂正（手段と本質の取り違えを正す）
+
+- **S4 の本質は「列挙可能な単一 mutation 機構」**であり、Server Action / route handler はその手段。手段（Server Action か）を MUST に焼くのでなく、**列挙可能性**を MUST にする。Server Action は内部 mutation のベストプラクティスとして維持しつつ、**inline closure を禁止**（grep 列挙が原理的に不能になり本質を壊す）。`n=2`（2本目 PJ は Server Action 多用）でも「列挙可能な単一機構」は耐える。
+- **決定性スコープの正直化**: 認可は「gate + 要求 role」と「object-level 認可の**存在**」は HARD、「object-level 認可の**全分岐網羅**」と「行レベル業務認可」は SOFT。`@/*` alias は DX で決定性中立（決定性に効くのは barrel ゼロ + 単方向）。
+- **mutation は trigger 別に列挙**（page到達 / scheduler=cron / provider-callback=webhook / internal）。page 非到達の高 blast-radius 入口を取りこぼさない。webhook は idempotency（event-id dedup or 証明可能な冪等）を要件化。
+
+### メタ教訓（記録）
+
+dogfood の分析エージェントは **pack を未インストールの業務 PJ を測定したため、その PJ 独自の規約を golden path と取り違えた**箇所があった。実 `ARCHITECTURE.md` と照合すると指摘の多く（S4 の actions.ts 集約・認可の HARD/SOFT 分離・resilience 境界）は**既に対処済み**で、真の訂正は外科的だった。**dogfood findings は実 spec と照合してから適用する**（findings を盲信して spec を n=1 で動かさない）。
+
 ## 関連 ADR
 
 - ADR-0007: thinking OS positioning（extend 対象）

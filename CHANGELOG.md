@@ -30,6 +30,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 - `.claude/rules/oss-doc-authoring.md`: OSS ドキュメント作法ルールを配布物に追加（単一リポ化 ADR-0006 に伴い開発リポから移行）
 
 ### Changed
+- **Next.js stack pack を dogfood で精緻化**（ARCHITECTURE.md / system-map / ADR-0021）: 実 Next.js+Prisma 業務 PJ への dogfood（7次元）+ 敵対検証（4レンズ・n=2）の結論を反映。**スタンス確定: OSS=ベストプラクティス正・既存 PJ=refactor 対象（legacy に合わせて緩めない・grandfather 不採用）**。S4 を「列挙可能な単一 mutation 機構」を本質に再定義（Server Action は維持・**inline closure 禁止**・cron/webhook を trigger 別に列挙）。決定性スコープを正直化（object-level 認可は存在=HARD/全分岐網羅=SOFT、`@/*`=DX 中立）。webhook idempotency・resilience 境界を要件化。system-map schema に `api.kind`(+webhook/cron)・`trigger`・`validation`・`idempotency`・model `accessedFrom` を追加（HTML バッジ + replay 注意表示）。減算（精緻化）は今・加算（withAuth/brand 等の HARD 化）は下流 dogfood 後に分離。自己検証 verify 41/41 PASS
 - `/release`: 説明・目的・「いつ使うか」を単一リポ（ccs）前提に統一（二リポ連動の記述を削除）
 - `/review`: 公式 bundled スキル（`/code-review`・`/simplify`・`/verify`・`/security-review`）との使い分け Note を追加（置き換えでなく補完。新スキルは作らない）
 - `skill-agent-design.md`: 公式標準と突合し最新化 — §7 の判断軸（宣言的 `context: fork` vs 手続き的 Agent 委譲）に加え、`context: fork`=安定・カスタムサブエージェント=推奨へ是正、frontmatter 追補（effort/paths/hooks 等）、冒頭に「最終検証」スタンプを追加。さらに 2026-06-17 に公式 docs（skills.md / sub-agents.md）で再裏取りし、`agent:` フィールド（`context: fork` 時の subagent 種別・公式文書化済み）の確度を是正、frontmatter 表に `disallowed-tools`・`when_to_use` 等を補完

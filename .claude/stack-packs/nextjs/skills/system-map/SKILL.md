@@ -29,8 +29,8 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Agent
 1. **DB 索引**: `node <pack>/skills/system-map/assets/adapters/extract-indexes.nextjs.js <対象>/prisma/schema.prisma data/db-indexes.json`
 2. **モデル**: `schema.prisma` から `db-schema.json`（モデル名・列・型・PK/FK）。列挙は決定的、`purpose` の意味付けは Step 3 で軟層が足す。
 3. **ルート一覧**: `app/**/page.tsx` と `app/api/**/route.ts` を Glob → 画面・API の素材。
-4. **mutation 面**: `"use server"` を含むファイルの export 関数 = Server Action、`route.ts` の export = Route Handler（`api.kind` ★S4）。
-5. **認可**: `middleware.ts` の matcher と DAL の `requireRole`/所有検証を grep → `permissions.json` の素材。
+4. **mutation 面**: `actions.ts` の module-level `"use server"` export = Server Action、`route.ts` の export = Route Handler（`api.kind` ★S4）。**trigger 別に列挙**: page 到達分に加え `vercel.json` の `crons`（=`cron`）・`app/api/webhooks/**`（=`webhook`）も拾う（page 非到達の高 blast-radius 入口）。webhook/cron は `idempotency` を判定（event-id dedup / 冪等保証 / 未保証）。
+5. **認可**: `middleware.ts` の **matcher 式**（コメントでなく式を一次ソースに）と DAL の `requireRole`/所有検証を grep → `permissions.json` の素材。`validation` は body-schema / file / auth-gate / signature / none で分類（`none` を即「欠落」と断じない）。
 
 > 硬層の素材は LLM に丸読みさせない。Step 3 のサブエージェントには「担当ドメイン分の素材」だけ渡す（トークン節約）。
 

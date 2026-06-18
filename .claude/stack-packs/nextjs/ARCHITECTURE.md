@@ -40,6 +40,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
   - 全 import は `@/*` alias を使う。
   - **barrel（`index.ts` による re-export 集約）を作らない**。例外: ライブラリ的な public entry point は除外してよい（but-clause）。
 - **出自**: 単方向依存は普遍原則。`@/*` は公式デフォルト。**barrel ゼロは Next 標準では SHOULD**（公式は禁止せず `optimizePackageImports` という緩和策を出す立場・対象は外部パッケージ限定で local barrel には効かない / Turbopack も re-export barrel の不要モジュール除去は未対応〔16.2 既知制約〕）→ ccs は parser のシンボル↔ファイル住所トレースのため MUST に格上げ。
+  - 注: 決定性に効くのは **barrel ゼロ + 単方向**。`@/*` alias 自体は DX で決定性中立（① 公式）。dogfood 実測では依存方向の規約は計測 2 PJ とも**自然準拠**で、MUST 化の摩擦は小さい（既に守られているものを焼く形）。
 - **検証**: `grep -rl 'from .@/app' lib components` = 0 ／ `find lib components -name index.ts`（public entry を除く）= 0 ／ `madge --circular` = 0
 
 ## S2. route handler は DB を直接触らない — DAL/service 層経由
@@ -59,12 +60,16 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 - **なぜ決定性**: データ binding が runtime の `useEffect` 文字列でなく **import グラフ**に乗り、screen→data が静的に辿れる。
 - **検証**: `page.tsx` 内に `useEffect` と `fetch(` の同時出現 = 0
 
-## S4. mutation 面 = Server Action（内部）+ route handler（外部）
+## S4. mutation 面 = Server Action（内部）+ route handler（外部）— 本質は「列挙可能な単一機構」
 
-- **判定**: MUST（① 分担 / ③ actions.ts 集約は決定性のため）
-- **規約**: 内部 mutation は **Server Action**、外部公開 HTTP は **route handler** に分ける。Server Action は **`actions.ts` にファイル先頭 `'use server'` + named export** で集約する（route handler に全 mutation を押し込まない）。
-- **出自**: 公式「Next.js handles mutations with Server Actions」。route handler は外部向けに retain。`actions.ts` 固定は ③ ccs 独自（parser が **mutation 面 = `{app/api の route handler}` ∪ `{actions.ts の 'use server' named export}`** を静的列挙できるようにするため）。
-- **検証**: `'use server'` を持つファイルは `actions.ts`（または `**/actions.ts`）に限る ／ route 内の散在 `'use server'` 関数 = 0
+- **判定**: MUST（① 分担 / ③ actions.ts 集約・列挙性は決定性のため）
+- **本質（手段より上位）**: この規約が守りたいのは「**全 mutation 入口が grep で網羅列挙できる単一機構で宣言される**」こと。Server Action / route handler はその手段であって、load-bearing なのは**列挙可能性**。手段（Server Action か route handler か）はスタック流儀で変わってよいが、列挙可能性は変えない。
+- **規約**:
+  - 内部 mutation は **Server Action**、外部公開 HTTP は **route handler** に分ける。Server Action は **`actions.ts` にファイル先頭 `'use server'` + named export** で集約する（route handler に全 mutation を押し込まない）。
+  - **コンポーネント内の inline `'use server'` クロージャは禁止**（JSX 内クロージャは grep 列挙が原理的に不能になり、本質＝列挙可能性を壊す）。Server Action は必ず module-level（`actions.ts`）。
+  - **mutation の trigger を分類する**（system-map が taxonomy 化）: ① page 到達（screen→action/route）/ ② scheduler（cron）/ ③ provider-callback（webhook）/ ④ internal。**②③ は page から辿れないが blast-radius が大きい**（課金照合・一括処理等）。route handler として**必ず mutation 列挙の対象に含める**（「page から辿れる入口だけ」を mutation 面と見なさない）。
+- **出自**: 公式「Next.js handles mutations with Server Actions」（= 内部 mutation のベストプラクティス）。route handler は外部向けに retain。`actions.ts` 集約 + inline 禁止 + trigger 列挙は ③ ccs 独自（parser が mutation 面を**手段非依存に**静的列挙できるようにするため）。
+- **検証**: `'use server'` を持つファイルは `actions.ts`（または `**/actions.ts`）に限る ／ route/component 内の散在・inline `'use server'` = 0 ／ cron（`vercel.json` の `crons` 等）と webhook route も mutation 列挙に含む
 
 ## S5. 認証コア — 単一 helper・データ近接 verify・middleware を唯一境界にしない
 
@@ -125,7 +130,8 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 - **規約**:
   - catch して 5xx を返すなら **PJ 定義の単一エラー seam 経由**で報告（`Sentry.captureException` / `console.error` の直呼びを報告経路にしない）。**特別な後処理が不要なら throw して `instrumentation.ts` の `onRequestError` に委ねる（こちらが原則）**。seam の具体名は PJ が定義する（規約に焼かない）。
   - レスポンスは成功 `{ data }`（必要なら `pagination`）/ 失敗 `{ error }` の単一エンベロープ。
-- **出自**: `onRequestError` 集約は公式方向。エンベロープは公式に標準が無い（③ ccs・SHOULD）。
+  - **webhook / scheduler の冪等性（SHOULD）**: provider-callback（webhook）は **at-least-once 配信前提**。event-id を**永続化して replay を短絡**するか、全副作用が**証明可能に冪等**であること。`findUnique`-based の business-key upsert は DB 行は冪等でも、通知送信等の副作用は replay で二重発火しうる（event-id を log するだけでは不十分）。cron も多重起動を前提に冪等に。
+- **出自**: `onRequestError` 集約は公式方向。エンベロープは公式に標準が無い（③ ccs・SHOULD）。冪等性は分散配信の普遍原則（dogfood で webhook の replay-safety gap を検出・SHOULD）。
 
 ## H3. Rendering & framework files
 
@@ -134,7 +140,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
   - **Rendering baseline = 従来モデル**（`export const dynamic` / `revalidate`）。**Cache Components は opt-in future**（採用するなら golden path 前提として宣言・`dynamic`/`revalidate` は使わない）。
   - server-render 既定・可能なら static。**blanket `force-dynamic` 禁止**（API route の `force-dynamic` は可、page の常時 `force-dynamic` は是正）。segment config は**正当化できる箇所のみ理由コメント付き**で明示（全 route 明示は禁止）。
   - routing 構造（auth 境界・sidebar 有無等）は **route group `(group)` + per-segment `layout.tsx`** で表現。`layout.tsx` が `usePathname()` + ハードコード prefix 配列で分岐するのを禁止。
-  - 各 segment は必要なら `loading.tsx` / `error.tsx` / `not-found.tsx`、app は `global-error.tsx` を1つ（フレームワーク強制 convention）。
+  - **resilience 境界（SHOULD）**: データ取得を伴う segment は `error.tsx` + `loading.tsx` を持つ（部分的失敗・遅延を UI 境界で受ける）。動的 lookup を持つ segment は `not-found.tsx`。app は `global-error.tsx` を1つ（フレームワーク強制 convention）。`global-error.tsx` だけで個別境界ゼロは是正対象（dogfood で全 page に境界ゼロを検出）。
 
 ## H4. 構造ハイジーン
 
@@ -149,8 +155,10 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 
 | | 内容 |
 |---|---|
-| **HARD（地図が自分で描かれる）** | route 一覧 / **API→service→table の import グラフ** / mutation 面（route handler + Server Action）/ 入力 contract / **認可マトリクス（gate 有無 + 要求 role）** / 依存方向 |
-| **SOFT（規約100%でも LLM が要る残余）** | interactive leaf の自前 fetch / 動的クエリの model 到達性 / **行レベルの業務ルール認可** / out-of-band な認証 realm（Basic-Auth 等） |
+| **HARD（地図が自分で描かれる）** | route 一覧 / **API→service→table の import グラフ** / **mutation 面（route handler + module-level Server Action、全 trigger = page到達 + cron + webhook）** / 入力 contract（schema が存在する箇所）/ **認可マトリクス（gate 有無 + 要求 role）** / **object-level 認可の存在**（DAL 取得関数が tenant/owner スコープ引数を持つか）/ 依存方向 |
+| **SOFT（規約100%でも LLM が要る残余）** | interactive leaf の自前 fetch / 動的クエリの model 到達性 / **行レベルの業務ルール認可** / **object-level 認可の全分岐網羅性**（存在は HARD・全 data-path での完全性は data-flow 解析が要り SOFT）/ **入力検証の妥当性**（schema の有無は静的に取れるが「検証として十分か」は別）/ out-of-band な認証 realm（Basic-Auth・webhook 署名・cron secret 等） |
+
+> **mutation 列挙の正準カウント**: route 数は「ファイル数」「method export 数」「page+API 合算」で値が変わる（dogfood で 87/88/92/93/112 と測定がぶれた）。adapter は **route enumerator を単一の正準定義に凍結**し（推奨: route.ts ファイル × 各 method export を 1 entry）、全 fitness 関数がそれを参照する。母集合が未確定のまま HARD/SOFT を配分しない。
 
 ---
 
