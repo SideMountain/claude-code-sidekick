@@ -1,0 +1,33 @@
+{
+  "name": "golden-path-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "vitest run --pool=vmThreads --no-coverage",
+    "test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js .",
+    "db:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "next": "^16.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@prisma/client": "^6.0.0",
+    "zod": "^3.24.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.0.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.2.0",
+    "@eslint/eslintrc": "^3.0.0",
+    "vitest": "^2.1.0"
+  }
+}

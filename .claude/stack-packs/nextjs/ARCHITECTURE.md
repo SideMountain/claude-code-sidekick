@@ -164,6 +164,12 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 
 # 強制（fitness functions）
 
-各 Tier-1 MUST には上記の **検証（grep-checkable assertion）**がある。これらを **architecture fitness 関数**（`__tests__/architecture/*.test.ts`）として CI で実行し、「認知 → 強制 → 検知」の検知層を成立させる。テンプレートは本 pack が同梱する（roadmap 参照）。
+各 Tier-1 MUST の **検証（grep-checkable assertion）**を **architecture fitness 関数**として実装し、CI で実行して「認知 → 強制 → 検知」の検知層を成立させる。本 pack が `fitness-functions/` に同梱する（依存ゼロの plain Node）:
+
+```bash
+node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js .   # = npm run test:arch（error で exit 1）
+```
+
+vitest 統合が要れば `fitness-functions/templates/architecture.test.ts` を `__tests__/architecture/` にコピーする（1 ルール = 1 test）。**error = HARD（落とす）/ warn = SHOULD・SOFT 残差（可視化のみ）** に対応し、上の決定性スコープ表をコードでも守る。新規 PJ は `scaffold/` で最初から規約に乗せられる（scaffold 出力 ≡ fitness の conforming fixture でドリフト不能）。詳細は `fitness-functions/README.md` / `scaffold/README.md`。
 
 > 関連: ADR-0021（stack pack 方式）/ ADR-0019（opt-in ハーネス）/ ADR-0018（北極星）/ ADR-0020（Spine / Observability の解凍）。検証の一次出典は本 pack の `README.md` を参照。

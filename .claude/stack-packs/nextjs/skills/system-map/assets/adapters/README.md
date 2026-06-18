@@ -20,10 +20,12 @@ node extract-indexes.nextjs.js prisma/schema.prisma data/db-indexes.json
 
 | 予定 adapter | 役割 | 決定性 | 備考 |
 |---|---|---|---|
-| `extract-routes.nextjs.js` | `app/**/page.tsx`・`app/api/**/route.ts` を走査し画面・API の素材 | 硬 | 動的 segment `[id]`・ルートグループ `(group)` の解釈 |
-| `extract-mutations.nextjs.js` | `"use server"` の export = Server Action / `route.ts` の export = Route Handler（`api.kind` ★S4） | 硬 | golden path S4 が効くほど正確 |
+| `extract-routes.nextjs.js` | `app/**/page.tsx`・`app/api/**/route.ts` を走査し画面・API の素材 | 硬 | 動的 segment `[id]`・ルートグループ `(group)` の解釈。**正準 enumerator を import**（下記） |
+| `extract-mutations.nextjs.js` | `"use server"` の export = Server Action / `route.ts` の export = Route Handler（`api.kind` ★S4） | 硬 | golden path S4 が効くほど正確。**正準 enumerator を import**（下記） |
 | `extract-authz.nextjs.js` | `middleware.ts` matcher + DAL の `requireRole`/所有検証 | 硬寄り | 二層認可（S5/S6）。middleware だけに依存しない前提 |
 | `extract-links.nextjs.js` | `<Link href>`・`useRouter().push()` の双方向リンク → flow | 硬寄り | 対話的 leaf の動的遷移は SOFT 残差 |
+
+> **正準 enumerator は単一定義（DRY・正準カウント凍結）**: route / screen / server-action / cron / mutation 面の母集合は `../../../../fitness-functions/lib/route-enumerator.js` が**唯一の正準定義**。`extract-routes` / `extract-mutations` を書く際は数え方を再実装せず、このモジュールを `require` する（route 数は数え方で 87/88/92/93/112 と揺れる。母集合を二重定義しない）。fitness-functions と system-map が同じカウントを見ることで「地図」と「検知層」が一致する。
 
 > 各 adapter は **golden path（`ARCHITECTURE.md`）への準拠を前提に決定性が上がる**。準拠しない PJ では素材が欠け、軟層の推測（`uncertainties`）が増える。これは「規約を守らせるほど地図が硬くなる」という pack の中心思想（descriptive→prescriptive）の現れ。
 
