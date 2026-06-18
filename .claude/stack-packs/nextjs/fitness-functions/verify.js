@@ -70,6 +70,22 @@ for (const [dir, exp] of Object.entries(EXPECT)) {
   }
 }
 
+// --- 2.5. false-positive 回帰（正当コードを error にしない・dogfood 由来） ---
+const FALSEPOS = [
+  { dir: 'h1-existence', rule: 'H1' }, // DATABASE_URL の存在チェック / ラベルログは error にしない
+];
+for (const c of FALSEPOS) {
+  const root = path.resolve(HERE, 'fixtures/falsepos', c.dir);
+  const r = runAll(root).find((x) => x.rule === c.rule);
+  const errs = r ? r.findings.filter((x) => x.severity === 'error') : [];
+  if (errs.length === 0) {
+    log(`PASS  falsepos/${c.dir}: ${c.rule} error 0（誤検知なし）`);
+  } else {
+    failed++;
+    log(`FAIL  falsepos/${c.dir}: ${c.rule} が error ${errs.length} 件（false-positive）`);
+  }
+}
+
 // --- 3. 正準カウントが凍結定義どおり ---
 for (const c of COUNT_CASES) {
   const counts = canonicalCounts(path.join(FIX, c.dir));

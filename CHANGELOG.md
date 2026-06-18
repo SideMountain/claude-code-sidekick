@@ -31,6 +31,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
   - **自己検証**（`fitness-functions/verify.js`）: conforming=error 0/warn 0・全 violation fixture で該当ルール発火を機械的に保証（system-map `verify.js` と同じ規律）。
 - **checker 自身に「コメントを一次ソースにしない」を適用**: fitness の静的走査を**文字列・正規表現リテラル保護付き** comment-strip 前処理に変更（コメント内の規約名 `usePathname()` / `new PrismaClient` 等の誤検知、および URL 正規表現 `/^https?:\/\//` の `//` が同一行の実違反を潰す false-negative を根治）。methodology の硬層 adapter 原則を checker にも適用。
 
+### Changed
+- **H1 の接続文字列ログ検知を精緻化（実 PJ dogfood 由来）**: 実 Next.js+Prisma コードベースへの read-only dogfood で、`console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)` 等の**ラベル・存在チェックを値ログと誤判定する false-positive** を検出。`process.env.DATABASE_URL` の**値**を否定なしで出す bare ログのみ error、その他の DATABASE_URL 言及（ラベル / 存在チェック / preview）は warn（値漏洩でないか要確認）に分離。verify に false-positive 回帰 fixture（`fixtures/falsepos/h1-existence`）を追加し、checker が正当コードを error にしないことを保証。
+
 ## [0.9.0] - 2026-06-18
 
 ### Added
