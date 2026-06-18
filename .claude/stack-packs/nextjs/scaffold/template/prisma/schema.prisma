@@ -1,0 +1,61 @@
+// Golden path 参照スキーマ（ARCHITECTURE.md H1）。
+// 認可の tenant 境界 = companyId。object-level authz（S6）は DAL がこの列でスコープする。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  users     User[]
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      Role     @default(MEMBER)
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId String
+  posts     Post[]
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  title     String
+  body      String
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String
+  company   Company   @relation(fields: [companyId], references: [id])
+  companyId String
+  // 論理削除（H1: lib/prisma.ts の $extends が read 系オペ findMany/findFirst/count/aggregate/groupBy に
+  // deletedAt=null を自動注入。findUnique は使わず findFirst を使う）
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([companyId, authorId])
+}
+
+// webhook 冪等性（H2）: provider-callback の event-id を永続化して replay を短絡する。
+// id（provider 側の event-id）を PK にするので findUnique({ where: { id } }) で dedup できる。
+model WebhookEvent {
+  id          String   @id
+  provider    String
+  processedAt DateTime @default(now())
+}

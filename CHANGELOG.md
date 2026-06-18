@@ -23,6 +23,14 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+- **Next.js stack pack に fitness-functions（検知層）+ scaffold（強制層）を新設**（`.claude/stack-packs/nextjs/`）。「認知（ARCHITECTURE.md）→ 強制（scaffold）→ 検知（fitness）」が揃い、下流 Next.js PJ は **opt-in 一発で golden path に乗り・地図が描け・違反が CI で止まる**。
+  - **`fitness-functions/`**: `ARCHITECTURE.md` の各 MUST を grep-checkable assertion として実装（依存ゼロ plain Node・S1-S7/H1/H3/H4）。`run-fitness.js`（主・WSL 安全な単一プロセス・`error` で exit 1）+ 下流向け vitest ラッパーテンプレ（`templates/architecture.test.ts`）。`severity` を **error=HARD / warn=SOFT 残差**に分け、決定性スコープの正直な約束をコードでも守る。escape hatch（`// barrel-ok` / `// authz-ok`）。
+  - **正準 route-enumerator を単一モジュール化**（`fitness-functions/lib/route-enumerator.js`）: route/screen/server-action/cron/mutation 面の母集合を**唯一の正準定義**に凍結（route 数の数え方ぶれ 87/88/92/93/112 を解消）。fitness と（後続の）system-map route adapter が同参照（DRY）。
+  - **`scaffold/`**: golden path skeleton 生成器。`template/`（規約を満たす具体 `posts` 縦スライス）を展開し、新規 PJ を最初から規約に乗せる。**`template/` は fitness の conforming fixture と同一ファイル**＝scaffold 出力 ≡ fitness green を物理的に保証（契約と生成器が互いの受け入れテスト・ドリフト不能）。
+  - **自己検証**（`fitness-functions/verify.js`）: conforming=error 0/warn 0・全 violation fixture で該当ルール発火を機械的に保証（system-map `verify.js` と同じ規律）。
+- **checker 自身に「コメントを一次ソースにしない」を適用**: fitness の静的走査を**文字列・正規表現リテラル保護付き** comment-strip 前処理に変更（コメント内の規約名 `usePathname()` / `new PrismaClient` 等の誤検知、および URL 正規表現 `/^https?:\/\//` の `//` が同一行の実違反を潰す false-negative を根治）。methodology の硬層 adapter 原則を checker にも適用。
+
 ## [0.9.0] - 2026-06-18
 
 ### Added
