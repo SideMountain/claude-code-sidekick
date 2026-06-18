@@ -50,6 +50,10 @@ flowchart LR
 
 UI 品質（デザインシステム、トークン、アクセシビリティ、ビジュアルリグレッション）は**段階的**に、かつ opt-in した PJ にのみ導入する。UI を持たない PJ はコストゼロ。検知は path-scoped rule（新規ファイル作成で発火しない）ではなく PostToolUse hook に乗せる。
 
+## stack pack — opt-in・規定アーキ
+
+既知スタックの PJ には、**opt-in な stack pack** が agnostic core の上に「規定アーキ（golden path）+ システム可視化」を載せる。狙い: 下流が既知アーキに従うと、パーサは*その規約*を読むだけで**地図が決定的に描かれる** — 「汎用」と「決定的」が両立する。core（hooks / brain / 北極星 / skills）は stack 非依存のまま一次、pack は上物であって baseline ではない。**方法**（アーキ規定 → 決定性 → 強制）は stack 非依存で、Next.js は第一インスタンス。opt-in は setup 時に設定する単一フラグ（`STACK_PACK`）で配線され、opt-in しない PJ はコストゼロ。
+
 ## 全体を貫く原則
 
 | 原則 | 一言 |

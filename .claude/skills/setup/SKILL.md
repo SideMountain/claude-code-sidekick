@@ -202,6 +202,28 @@ Yes の場合:
 cp -r .claude/templates/github/.  .github/
 ```
 
+#### 3d. Next.js stack pack（opt-in・ADR-0021）
+
+**Next.js を検知した場合のみ確認する**（非 Next PJ には聞かない＝無コスト）:
+
+```bash
+if [ -f package.json ] && grep -q '"next"' package.json 2>/dev/null; then
+  echo "Next.js を検知しました（stack pack opt-in を確認します）"
+fi
+```
+
+検知時、こう確認する:
+「**Next.js stack pack** を有効にしますか？ 規定アーキ（golden path）+ `system-map` 可視化を提供します。下流PJを一貫した構造に保ち、コードベースを画面↔API↔DB↔権限↔遷移の単一HTML地図に決定的に可視化できます。」
+
+**Yes の場合:**
+- CLAUDE.md Project Configuration の `STACK_PACK: none` を `STACK_PACK: nextjs` に変更
+- 案内する: 「実装・レビューの規約は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）。可視化は `system-map` スキル。出自・roadmap は `.claude/stack-packs/nextjs/README.md`、設計判断は ADR-0021。」
+- Prisma 利用なら `ORM_TYPE: prisma` も併せて提案（golden path は Prisma 前提）。
+
+**No の場合:** `STACK_PACK: none` のまま（後から CLAUDE.md を手動で `nextjs` にすれば有効化できる）。
+
+> **非 Next PJ への配布**: stack pack のファイル（`.claude/stack-packs/`）は配布物に含まれるが、`STACK_PACK: none` の PJ では CLAUDE.md・skills 側がこのレイヤーを参照しない（opt-in gate）。物理的に不要なら削除してよい。
+
 ### Step 3.5: ccs remote 追加（新規PJモード）
 
 下流 PJ が `/adopt-sidekick-update` で sidekick の更新を取り込めるよう、claude-code-sidekick を remote として登録する:

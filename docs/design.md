@@ -50,6 +50,10 @@ Development and distribution live in a **single repository**, so what ships is w
 
 UI quality (design system, tokens, accessibility, visual regression) is introduced **in stages**, and only for projects that opt in — a project without UI pays nothing. Detection rides a PostToolUse hook rather than path-scoped rules, which do not fire on file creation.
 
+## Stack pack — opt-in, prescriptive architecture
+
+For projects on a known stack, an **opt-in stack pack** layers a prescriptive architecture (a "golden path") plus a system visualizer on top of the agnostic core. The bet: when downstream follows a fixed architecture, a parser reads *that* convention and the system map draws itself **deterministically** — "generic" and "deterministic" stop being mutually exclusive. The core (hooks, brain, north star, skills) stays stack-independent; the pack is an upper layer, never the baseline. The *method* (prescribe architecture → determinism → enforce) is stack-agnostic; Next.js is the first reference instance. Opt-in is wired through a single config flag (`STACK_PACK`) set during setup — a project that does not opt in pays nothing.
+
 ## Principles that cut across everything
 
 | Principle | In one line |
