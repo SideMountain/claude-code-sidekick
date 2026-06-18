@@ -166,6 +166,44 @@ After launching Claude Code, run `/setup`. It walks you through interactively (~
 
 Claude will automatically: create a worktree (main stays safe) → fix the typo → self-review with `/review` → open a PR for you to merge. That's your first taste.
 
+### Building a Next.js + Prisma project (opt-in stack pack)
+
+If your app is **Next.js (App Router) + Prisma**, opt into the **stack pack** to start on a
+prescriptive *golden path* (consistent architecture), generate a conforming app skeleton, and gate
+deviations in CI. Non-Next.js projects skip this entirely — leave `STACK_PACK: none` (zero cost).
+
+1. **Enable it.** `/setup` offers this when it detects `next` in `package.json`. On a brand-new repo
+   (no `package.json` yet) auto-detect can't fire, so set it manually in `CLAUDE.md`:
+   `STACK_PACK: nextjs` (and `ORM_TYPE: prisma`).
+2. **Read the contract.** [`.claude/stack-packs/nextjs/ARCHITECTURE.md`](.claude/stack-packs/nextjs/ARCHITECTURE.md)
+   is the golden path (Tier-1 STRUCTURAL / Tier-2 HYGIENE, with `grep`-checkable rules).
+3. **Create the Next.js app shell.** The pack does **not** create the app — bootstrap it first
+   (e.g. `npx create-next-app`) so `next` / `react` / `zod` / `prisma` and a `package.json` exist.
+4. **Scaffold the golden-path skeleton:**
+   ```bash
+   node .claude/stack-packs/nextjs/scaffold/scaffold.js .   # add --force if the target isn't empty
+   ```
+   Copies a conforming `posts` vertical slice (Prisma singleton, auth helper, Zod schema, DAL,
+   Server Action, route handler, webhook + cron). The output is fitness-green by construction.
+5. **Install + database.** `<pm> install`, set `DATABASE_URL` in `.env`, then `npx prisma migrate dev`
+   (author your `prisma/schema.prisma` first).
+6. **Develop.** Duplicate the `posts` slice for each new feature — per-layer rules are in the
+   file-head comments and `.claude/stack-packs/nextjs/scaffold/README.md`.
+7. **Gate the architecture in CI.** Add the script to `package.json`, then run it:
+   ```jsonc
+   "scripts": { "test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js ." }
+   ```
+   ```bash
+   npm run test:arch   # error = HARD (fails CI) · warn = SOFT (advisory)
+   ```
+   (The S1 circular-dependency rule is intentionally out of the zero-dep fitness — add
+   `madge --circular` as a separate CI step.)
+8. **Visualize.** Invoke the bundled `system-map` skill to draw screen ↔ API ↔ DB ↔ authz ↔ flow.
+
+Full details: [stack pack README](.claude/stack-packs/nextjs/README.md) ·
+[scaffold](.claude/stack-packs/nextjs/scaffold/README.md) ·
+[fitness-functions](.claude/stack-packs/nextjs/fitness-functions/README.md).
+
 ---
 
 <details>
@@ -324,6 +362,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 | `STG_ENABLED` | Staging environment | `false` |
 | `ORM_TYPE` | `prisma` / `drizzle` / `none` | `none` |
 | `LANGUAGE` | `typescript` / `python` | `typescript` |
+| `STACK_PACK` | Opt-in Next.js golden path: `none` / `nextjs`. Enables scaffold + architecture fitness + `system-map` ([stack pack](.claude/stack-packs/nextjs/README.md)) | `none` |
 | `NOTION_ENABLED` | External task DB integration | `false` |
 | `TEST_COMMAND` | Test runner command | `""` |
 | `BUILD_COMMAND` | Build command | `""` |
