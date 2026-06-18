@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-18
+
 ### Added
 - **stack pack の opt-in wiring**（下流取り込み導線）: CLAUDE.md Project Configuration に `STACK_PACK`(none|nextjs) フラグ新設 + CLAUDE.md に opt-in gate（`STACK_PACK=nextjs` で `ARCHITECTURE.md` の golden path に従う・`none` は無コスト）。`/setup` に Step 3d（Next.js 検知時のみ opt-in 案内）。`/adopt-sidekick-update` に opt-in aware な配布（`STACK_PACK≠none` の PJ にのみ stack-packs を同期＝非 Next PJ に clutter を配らない）+ 深いネストパス対応（`mkdir -p`）。`design.md`/`design.ja.md` に stack pack 節を追加。非 Next PJ はコストゼロ・Next PJ は明示 opt-in（ADR-0021）
 - **Next.js stack pack（opt-in 参照 pack）新設**（`.claude/stack-packs/nextjs/`）: `ARCHITECTURE.md`（規定アーキ＝golden path・Tier-1 STRUCTURAL/Tier-2 HYGIENE・①公式/②主流/③ccs独自・MUST/SHOULD・grep 検証付き）+ `README.md`（pack 思想・出自・roadmap）。現行公式（Next 16.2.9 docs・2026）で裏取り。`system-map` 可視化スキルの決定的動作を支える規定アーキ。stack pack 方式（アーキ規定→決定性→強制）は stack 非依存で Next.js は第一インスタンス
@@ -40,6 +42,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Removed
 - `/sync-oss` 連動の記述を退役（単一リポ化 ADR-0006）。`/release` の Step 7（二リポ連動）と関連 gotcha/参考、`pii-prevention.md` の sync-oss 自動実行行を削除
+
+### Fixed
+- `docs/images/three-layers.svg` / `three-layers-ja.svg`: Layer 2 のスキル数表記を実数に是正（15 → 17・README と整合）
 
 ## [0.8.1] - 2026-06-14
 
