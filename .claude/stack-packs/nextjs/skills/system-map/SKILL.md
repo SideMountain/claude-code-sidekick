@@ -57,6 +57,18 @@ node verify.js <対象>/docs/visualization/system-map.html   # → PASS を確�
 ```
 `verify.js` が FAIL なら、該当ルートの JSON を直して再ビルド（Gotchas 参照）。
 
+### Step 4.5: 鮮度マーカーを記録（`/review` の drift 検知用）
+生成した地図が「どの構造に対して作られたか」を正準カウントで刻む。次回以降 `/review` の fast-gate が
+この marker と現在のコードを比較し、構造が変わっていれば「🗺 地図が古い」と 1 行 nudge する（生成は強制しない・ADR-0022 C+A）。
+
+```bash
+node <pack>/fitness-functions/canonical-counts.js <対象> > <対象>/.claude/.system-map-counts.json
+```
+
+> **per-dev の鮮度マーカー**: このファイルは「自分が最後に地図を生成した時点の構造」を表す。`.gitignore` に
+> `.claude/.system-map-counts.json` を追加推奨（コミットしない＝再生成毎のコミットノイズを避ける・軽さ優先）。
+> チームで「地図の古さ」を共有したい場合のみコミット運用に切り替える。
+
 ### Step 5: 確認・引き渡し
 - `system-map.html` をブラウザで開いて確認（単一ファイル、共有可能）。
 - `uncertainties` が多い箇所は golden path 非準拠の疑い → ユーザーに報告。

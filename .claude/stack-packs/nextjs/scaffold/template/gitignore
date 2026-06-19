@@ -9,3 +9,8 @@ next-env.d.ts
 !.env.example
 /coverage
 /playwright-report
+# system-map の per-dev 鮮度マーカー（/review の drift 検知用・再生成毎のコミットを避ける）
+/.claude/.system-map-counts.json
+# system-map 生成成果物（再生成可能）
+/docs/visualization/system-map.html
+/docs/visualization/combined.json
