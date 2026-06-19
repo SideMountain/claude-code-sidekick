@@ -76,8 +76,9 @@ git log --oneline -5  # 直近コミット（他チャットで進んだ作業�
 完了:
 - ...
 
-バックログ候補（MEMORY.md に積みますか？）:
-1. [ ] 内容（コンテキスト）
+バックログ候補（行き先 = backlog or Issue）:
+  ※ 振り分け（intake routing・ADR-0022）: 他人が拾える / チームに見せたい / 具体的な作業単位 → **Issue** ／ 個人の次セッション用・working・未成形 → **backlog（既定）**
+1. [ ] 内容（コンテキスト）［推奨: backlog or Issue］
 
 継続検討候補:
 1. [ ] 内容（未解決の論点）
@@ -97,7 +98,7 @@ ADR未記録の判断:
   1. [ ] 内容 → PJ brain (`<PJ>/.claude/brain/thinking.md`) への昇格 or feedback_*.md or ADR
 
 ─────────────────
-各項目について「積む/クローズ/次回」を教えてください。
+各項目について「積む(backlog) / Issue化 / クローズ / 次回」を教えてください。
 知識還流候補は「記録する/スキップ」で判断してください。
 ```
 
@@ -117,6 +118,15 @@ ADR未記録の判断:
 - 追記は `Edit` ツールで MEMORY.md の Backlog セクションに行う
 - 既存のバックログ項目は削除しない（新規追記のみ）
 - コンテキストは「次チャットでゼロから読んでも意味がわかる」程度に書く
+
+#### Issue 起票（チーム/機能改善/bug/可視化したいもの）
+
+「Issue化」と判断された項目を `gh issue create`（適切なテンプレ + ラベル）で起票する。
+
+**ルール（intake routing・ADR-0022・`.claude/rules/task-management.md` 参照）:**
+- **backlog には積まない**（1 アイテム＝1 ホーム・重複禁止）。
+- 既に backlog にある項目を Issue へ昇格する場合は、**backlog 側を削除**し本文に Issue# を残す（feedback→brain と同じ昇格ラダー）。
+- ユーザーが会話中に「これ Issue にして」と言った項目も、フルフロー（`/discover`）を通さず単発 `gh issue create` で起票してよい（casual 起票）。
 
 #### ADR記録
 
