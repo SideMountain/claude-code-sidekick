@@ -7,6 +7,9 @@ const path = require('path');
 const SKIP_DIRS = new Set([
   'node_modules', '.git', '.next', 'dist', 'build', 'coverage',
   '.turbo', '.vercel', 'out', '.cache',
+  // ccs ツール群（下流に同梱される pack 自身の fixtures 等）は PJ の source ではないので走査しない。
+  // これが無いと H4 の .backup 走査が pack の fixtures/violations/h4/stale.backup を誤検知する（greenfield 検証で発見）。
+  '.claude',
 ]);
 
 /** ディレクトリを再帰走査し、条件に合うファイルの絶対パスを返す。 */

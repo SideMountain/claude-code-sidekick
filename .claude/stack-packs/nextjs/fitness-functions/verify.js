@@ -73,6 +73,7 @@ for (const [dir, exp] of Object.entries(EXPECT)) {
 // --- 2.5. false-positive 回帰（正当コードを error にしない・dogfood 由来） ---
 const FALSEPOS = [
   { dir: 'h1-existence', rule: 'H1' }, // DATABASE_URL の存在チェック / ラベルログは error にしない
+  { dir: 'claude-skip', rule: 'H4' },  // .claude 配下（pack 同梱 fixtures 等）の .backup は走査しない（greenfield 回帰）
 ];
 for (const c of FALSEPOS) {
   const root = path.resolve(HERE, 'fixtures/falsepos', c.dir);

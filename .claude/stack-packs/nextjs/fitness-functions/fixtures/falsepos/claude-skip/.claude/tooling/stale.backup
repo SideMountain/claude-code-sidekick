@@ -1,0 +1,3 @@
+// 正当（greenfield 検証由来の回帰ガード）: ccs ツール群（pack 同梱の fixtures 等）配下の .backup。
+// これは PJ の source ではないので H4 は誤検知してはならない（SKIP_DIRS が .claude を除外する）。
+old tooling artifact

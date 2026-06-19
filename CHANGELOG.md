@@ -34,6 +34,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 - **cruft 掃除**: 死んでいた `.husky/pre-commit` + `.husky/pre-push` を削除（`core.hooksPath=.claude/githooks` で経路外・本物の PII pre-commit と矛盾する囮）。`.gitignore` で旧 top-level `.claude/skills/system-map/`（port 残骸・固有名詞含む）を誤コミット防止にガード。
 - **新規 Next.js+Prisma PJ のオンボーディングを README で完結させた（EN/JA 両方）**: v0.10.0 で出荷した stack-pack アプリ層（`STACK_PACK` フラグ・scaffold・fitness `test:arch`・`ARCHITECTURE.md`）が README/`/setup` に未記載だった doc gap を解消。README に `STACK_PACK` 設定行 + 「Building a Next.js + Prisma project」通し手順節を追加（README.md / README.ja.md）。`/setup` Step 3d を拡張（scaffold コマンド・`test:arch` の package.json 配線案内・**生成直後で package.json 不在の chicken-and-egg を直接確認にフォールバック**）。`docs/design.md`/`.ja` の stack pack 節に scaffold + fitness を明記。
 
+### Fixed
+- **fitness が `.claude/` を走査して H4 を誤検知する問題を修正（greenfield 検証で発見）**: pack を取り込んだ下流で `run-fitness .` を回すと、同梱された pack 自身のテスト fixture（`fixtures/violations/h4/stale.backup`）を H4 の `.backup` 走査が拾い spurious error を出していた。`SKIP_DIRS` に `.claude` を追加し、ccs ツール群（PJ の source でない）を走査対象外に。回帰 fixture（`fixtures/falsepos/claude-skip`）+ verify アサーション追加。pack verify は回帰なし・実 `app/` 配下の逸脱検知は維持。
+
 ## [0.10.0] - 2026-06-18
 
 ### Added
