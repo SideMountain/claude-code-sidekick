@@ -84,6 +84,9 @@ GATE=.claude/stack-packs/nextjs/fitness-functions/run-fitness.js
 # scope-gate: STACK_PACK=nextjs かつ pack 同梱あり かつ 変更が app/・lib/・components/・prisma/ に触れる時のみ
 if [ "$PACK" = "nextjs" ] && [ -f "$GATE" ] && git diff $BASE_BRANCH...HEAD --name-only | grep -qE '(^|/)(app|lib|components|prisma)/'; then
   node "$GATE" .
+  # system-map drift 信号（生成は手動 /system-map のまま・ここは「地図が古い」検知だけ・ADR-0022 C+A）
+  COUNTS=.claude/stack-packs/nextjs/fitness-functions/canonical-counts.js
+  [ -f "$COUNTS" ] && node "$COUNTS" --drift .claude/.system-map-counts.json .
 else
   : # 対象外 / pack 未同期 / scope 外 → 沈黙通過（実行しない・fail-safe）
 fi
@@ -92,6 +95,7 @@ fi
 - **error あり（exit 1）** → Step 4 の `[Arch]` を「**逸脱あり**」にし、各 error を **[BLOCKER]** として指摘サマリに入れる（HARD 違反扱い・`PR作成可` にしない）。
 - **warn のみ（exit 0・warn 出力あり）** → `[Arch]` を「警告」にし **[WARN]** に入れる（助言・ブロックしない）。
 - **error/warn なし・scope 外・`STACK_PACK=none`** → `[Arch] アーキ OK / 対象外` で**沈黙通過**（LLM コスト・ノイズ ゼロ）。
+- **system-map drift 行が出た** → `[Arch]` に 1 行添える（**情報提供のみ・ブロックしない**）。「地図が古い」を**検知**するだけで再生成は強制しない（生成は手動 `/system-map`）。snapshot（`.claude/.system-map-counts.json`）が無い or 構造不変なら**沈黙**（追加コスト皆無＝count は fast-gate で既に走る enumerator と同一）。
 
 > **軽さドクトリン（ADR-0022）**: この gate は決定的（grep ベース・単一プロセス・即終）で、LLM 観点を増やさない。`/review` を膨らませないこと。stack が変われば同じ gate 位置が別 pack の検査を呼ぶ（サイクル不変・stack 可変）。fast-gate の結果は Step 2 の各観点にも共有し、観点側でアーキ規約を**重複再チェックさせない**（gate の結論を渡すだけ）。
 
@@ -141,7 +145,7 @@ CLAUDE.md または `.claude/rules/notion.md` に定義された対応表に基�
 [Ops]     運用OK / 要対応 / ユーザー確認必要
 [Design]  UI OK / 指摘あり / 対象外（スキップ）
 [Spec]    仕様OK / 指摘あり / 対象外（スキップ）
-[Arch]    アーキ OK / 逸脱あり（fitness）/ 対象外（STACK_PACK=none・scope外）
+[Arch]    アーキ OK / 逸脱あり（fitness）/ 対象外（STACK_PACK=none・scope外）  ［+ 🗺 system-map drift 行があれば添付・情報のみ］
 
 [不変条件] 全条件クリア / 漏れあり / 対象外（不変条件未定義）
 [設計書影響] なし / 要更新 / 対象外（Notion未連携）
@@ -188,6 +192,7 @@ CLAUDE.md または `.claude/rules/notion.md` に定義された対応表に基�
 
 - **Step 1.5 の誤スキップ** — 変更スコープ判定で `.claude/` 変更のみ → code のみと判定するが、スキル定義の変更がレビューロジック自体に影響する場合がある。変更ファイルが `skills/review*/` を含む場合は全観点実行を検討する
 - **アーキ fast-gate を重くしない（Step 1.6）** — fast-gate は決定的スクリプト（`run-fitness.js`）であって LLM 観点ではない。①LLM 観点を増やさない ②`STACK_PACK=nextjs` かつ関連ファイル変更時のみ走らせる（`none` や scope 外では実行しない＝沈黙通過）③観点側にアーキ規約を重複再チェックさせない（gate の結論だけ渡す）。これを破ると「レビューが重くて回すのが億劫」になりサイクルが死ぬ（ADR-0022 軽さドクトリン）
+- **system-map drift 信号はゲートにしない（Step 1.6）** — drift 行は「地図が古い」の**検知 nudge のみ**で、`PR作成可` をブロックしない・再生成を強制しない（生成は手動 `/system-map`）。count は fast-gate が既に回す enumerator と同一なので**追加コストはほぼゼロ**。これを「ブロッカー化」したり「自動再生成」に格上げすると、ゲートでなく可視化物のために重さを足すことになり軽さドクトリンに反する
 - **Agent 並列実行のコンテキスト汚染** — 各 Agent は独立したコンテキストで動作するが、同一 Worktree 内のファイルを読むため、レビュー中に別チャットがファイルを変更すると不整合が生じうる
 - **Step 3a 矛盾チェックの見落とし** — code が「OK」、test が「テスト追加必要」の場合、実際には code 側にもテスト可能な設計への修正が必要な場合がある。単に test だけの問題と判断しない
 
