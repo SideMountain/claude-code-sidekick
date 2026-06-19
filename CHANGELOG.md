@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-19
+
 ### Added
 - **ADR-0022: stack pack のサイクル統合・軽さドクトリン・intake routing**（原則決定・配線は follow-up）。stack pack は普遍サイクルのゲート（`/review`・`/auto-implement`・hooks）に自動統合し下流はフラグ1個（CI 配線させない）/ 軽さドクトリン（自動化は決定的・安いものだけ・LLM は on-demand）/ ①起票 = backlog（個人）・GitHub Issue（チーム機能/bug/可視化）・Notion（任意）の三層 routing + casual「Issue だけ切る」一級化 + 1アイテム1ホーム + backlog→Issue 昇格。capability audit の「下流が CI を持つ」暫定スタンスを supersede、ADR-0018/0021/0015 を refine。
 - **`/review` に architecture fast-gate（ADR-0022 follow-up a）**: `STACK_PACK=nextjs` かつ関連ファイル（`app/`・`lib/`・`components/`・`prisma/`）変更時のみ `run-fitness.js` を決定的に実行（**6 個目の LLM 観点にしない**・error=BLOCKER / warn=WARN / 対象外・`none`・pack未同期=沈黙 fail-safe）。下流は CI 配線なしで `/review` がアーキ逸脱を自動検知（サイクル不変・stack 可変・`STACK_PACK=none` は no-op）。
