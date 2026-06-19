@@ -23,26 +23,30 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Agent
 - `prisma/schema.prisma`・`app/` ディレクトリ・`middleware.ts` の有無を確認。無ければユーザーに対象パスを聞く。
 - 作業ディレクトリを決める（例: `<対象PJ>/docs/visualization/`）。`data/` を作る。
 
-### Step 1: 硬い層（決定的・無 LLM）
-順に実行し `data/` に出す。
+### Step 1: 硬い層（決定的・無 LLM）— adapter で骨格を全自動生成
+`assets/adapters/` の adapter を順に実行し `data/` に**骨格**を出す。**LLM ゼロ・冪等**。golden path 準拠 PJ ほど欠損なく出る。
 
-1. **DB 索引**: `node <pack>/skills/system-map/assets/adapters/extract-indexes.nextjs.js <対象>/prisma/schema.prisma data/db-indexes.json`
-2. **モデル**: `schema.prisma` から `db-schema.json`（モデル名・列・型・PK/FK）。列挙は決定的、`purpose` の意味付けは Step 3 で軟層が足す。
-3. **ルート一覧**: `app/**/page.tsx` と `app/api/**/route.ts` を Glob → 画面・API の素材。
-4. **mutation 面**: `actions.ts` の module-level `"use server"` export = Server Action、`route.ts` の export = Route Handler（`api.kind` ★S4）。**trigger 別に列挙**: page 到達分に加え `vercel.json` の `crons`（=`cron`）・`app/api/webhooks/**`（=`webhook`）も拾う（page 非到達の高 blast-radius 入口）。webhook/cron は `idempotency` を判定（event-id dedup / 冪等保証 / 未保証）。
-5. **認可**: `middleware.ts` の **matcher 式**（コメントでなく式を一次ソースに）と DAL の `requireRole`/所有検証を grep → `permissions.json` の素材。`validation` は body-schema / file / auth-gate / signature / none で分類（`none` を即「欠落」と断じない）。
+```bash
+PACK=<pack>/skills/system-map/assets
+node $PACK/adapters/extract-schema.nextjs.js  <対象> data/db-schema.json          # 列・型・PK/FK・relations・accessedFrom(1:N)
+node $PACK/adapters/extract-indexes.nextjs.js <対象>/prisma/schema.prisma data/db-indexes.json
+node $PACK/adapters/extract-routes.nextjs.js  <対象> data                          # <domain>.json を複数生成: screen+api（kind★S4/trigger/validation/dbTablesRead-Write/calledByScreens）
+node $PACK/adapters/extract-authz.nextjs.js   <対象> data/permissions.json          # roles(enum)/requireSession・requireRole/out-of-band realm(署名・cron secret)/spaGuards
+node $PACK/adapters/extract-links.nextjs.js   <対象> data/flow-structure.json       # Link/router.push/redirect → 遷移 edges
+```
 
-> 硬層の素材は LLM に丸読みさせない。Step 3 のサブエージェントには「担当ドメイン分の素材」だけ渡す（トークン節約）。
+> 出力は **骨格**（identity・`api.kind`★S4・`trigger`・`validation` 分類・`dbTables`・認可ゲート・遷移）。`purpose`/`summary`/`gotchas`/画面 `kind` の意味/`idempotency` 判定/object-level 認可は空 or `uncertainties` で残る → Step 3 軟層が enrich する。
+> **この時点で Step 4 を回せば「骨格だけの地図」が既に描ける**（軟層は任意・複利の本体は硬層）。正準カウント（route/screen/action/mutation）は `route-enumerator.js` が単一定義で adapter が import する（fitness と母集合一致）。SOFT 残差・1ホップ制限等は `assets/adapters/README.md`。
 
 ### Step 2: ドメイン分割
-- ルート・モデルをドメイン（機能のまとまり）に割る。`app/(group)/` のルートグループや DAL のモジュール境界が手がかり。
-- ドメインのリストを決める（例: `content`, `account`）。
+- **`extract-routes` が決定的に分割済み**（route group `(x)` or `api`/動的 segment を除いた先頭 segment = domain）。生成された `data/<domain>.json` のファイル名がドメイン一覧。
+- 分割が意味的に不適切な箇所だけ軟層で見直す（例: 横断モデルの主ドメイン）。
 
-### Step 3: 軟らかい層（ドメイン別サブエージェント＝ファンアウト）
-- **ドメイン 1 つ = `Agent` 1 つ**で並行起動（`methodology.md` のファンアウト戦略）。
-- 各エージェントに渡す: 担当ドメインのルート群 + Step 1 の素材 + `schema.md`。
-- 各エージェントの **Return Contract**: `<domain>.json`（`schema.md` の形）だけを返す。画面の意図・API の効果・`gotchas`・`uncertainties` を埋める。生レスポンス・全文は返さない。
-- 画面遷移は `flow-<domain>.json`（`screens[]` + `edges[]`）に出す。
+### Step 3: 軟らかい層（ドメイン別サブエージェント＝ファンアウト）— 骨格を enrich
+- **ドメイン 1 つ = `Agent` 1 つ**で並行起動（`methodology.md` のファンアウト戦略）。**ゼロから作らず、Step 1 が出した `<domain>.json` の骨格を上書き enrich** する。
+- 各エージェントに渡す: 担当ドメインの `data/<domain>.json`（骨格）+ 該当ルート群 + `schema.md`。
+- 各エージェントの **Return Contract**: enrich 済み `<domain>.json`（`schema.md` の形）だけを返す。骨格の identity/kind/trigger は壊さず、`purpose`/`summary`/画面 `kind` の意味/`gotchas`/`uncertainties` の解消を埋める。生レスポンス・全文は返さない。
+- 画面遷移の意味（contextual な遷移ラベル等）は `flow-structure.json`（or `flow-<domain>.json`）を enrich。
 
 ### Step 4: マージ & ビルド & 検証
 ```bash

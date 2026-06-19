@@ -995,6 +995,7 @@ function applyZoom(){ const c=$('#gcanvas'),s=$('#gsizer'),l=$('#zlvl'); if(!c||
 function setZoom(z){ flowZoom=Math.min(2,Math.max(0.3,Math.round(z*10)/10)); applyZoom(); }
 function fitZoom(){ const box=$('#gbox'); const bw=box&&box.clientWidth; if(!box||!lastGraph.W||!bw||!isFinite(bw)){applyZoom();return;} const z=(bw-28)/lastGraph.W; flowZoom=isFinite(z)?Math.min(1,Math.max(0.4,Math.round(z*20)/20)):1; applyZoom(); }
 function renderFlow(main,presetKey,sel){
+  if(!flowPresets.length){ main.innerHTML=crumbs([['画面遷移図']])+`<h2 class="view">🗺 画面遷移図 <span class="count-pill">${counts.flow} 画面 / ${flowEdges.length} 遷移</span></h2><p class="lead">遷移データがありません(page 画面が未検出、または module 未付与)。</p>`; return; }
   presetKey=presetKey?decodeURIComponent(presetKey):(flowState.preset||flowPresets[0].key);
   flowState.preset=presetKey; flowState.sel=sel?decodeURIComponent(sel):null;
   let h=crumbs([['画面遷移図']]);

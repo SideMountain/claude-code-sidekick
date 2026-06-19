@@ -8,13 +8,15 @@ system-map は「入力 JSON 群（`data/*.json`）→ `merge.js` → `combined.
 
 `merge.js` はファイル名と中身の形で種類を自動判別する。
 
+各ファイルは **硬層 adapter が骨格を生成 → 軟層が同名ファイルを enrich** する（硬層だけでも地図は描ける）。`merge.js` はファイル名と中身の形で種類を自動判別する。
+
 | ファイル | 形の判別 | 生成方法 |
 |---|---|---|
-| `permissions.json` | ファイル名固定 | 軟層（ロール・認可の読み取り） |
-| `db-schema.json` | ファイル名固定 | 軟層（モデルの意味付け）+ 硬層（列・型・PK/FK） |
+| `permissions.json` | ファイル名固定 | **硬層**: `adapters/extract-authz.nextjs.js`（roles/ゲート/spaGuards 骨格）→ 軟層が scope/description/object-level 認可を enrich |
+| `db-schema.json` | ファイル名固定 | **硬層**: `adapters/extract-schema.nextjs.js`（列・型・PK/FK・relations・accessedFrom）→ 軟層が `domain`/`purpose` を enrich |
 | `db-indexes.json` | ファイル名固定 | **硬層**: `adapters/extract-indexes.nextjs.js` が `schema.prisma` から生成 |
-| `<domain>.json` | `id` を持つ | 軟層（ドメインのサブエージェント） |
-| `flow-<x>.json` | `screens[]` と `edges[]` を持ち `domains`/`apis` を持たない | 軟層（画面遷移） |
+| `<domain>.json` | `id` を持つ | **硬層**: `adapters/extract-routes.nextjs.js`（screen+api 骨格・`kind`/`trigger`/`validation`/`dbTables`）→ 軟層が `purpose`/`summary`/画面 `kind`/`gotchas` を enrich |
+| `flow-<x>.json` / `flow-structure.json` | `screens[]` と `edges[]` を持ち `domains`/`apis` を持たない | **硬層**: `adapters/extract-links.nextjs.js`（遷移 edges）→ 軟層が遷移ラベルの意味を enrich |
 
 ## `<domain>.json`
 
