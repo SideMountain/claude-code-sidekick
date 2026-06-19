@@ -53,6 +53,7 @@ function main() {
   console.log('     手本に新しい feature を複製する（各層の規約はコメントに明記）');
   console.log('  4. アーキ検証: node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js .');
   console.log('     （= npm run test:arch。golden path から逸脱すると error で落ちる）');
+  console.log('  5. 可視化: system-map スキルを起動し、画面↔API↔DB↔権限↔遷移の地図を生成');
 }
 
 main();

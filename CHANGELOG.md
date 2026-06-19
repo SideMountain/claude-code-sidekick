@@ -23,7 +23,12 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+- **`docs/lifecycle.md`（EN/JA）新設 — ccs 全体の「ライフサイクル地図」**: 全機能を 8 つのライフサイクル輪に配置し、各輪が**閉じているか/開いているか**を明示（capability audit 由来）。閉6（session・知識複利・dev・release→adopt・強制×3・逆流）/ 開2（stack-pack 検知→再実行は下流 CI 委譲・upstream-watch は保守者専用 news-upstream で非配布）+ 全機能インベントリ表。README から導線。
+
 ### Changed
+- **README を「点の羅列」から「輪」へ refinement（EN/JA）**: 強制層 hooks インベントリを可視化（従来 `guard-bash.sh` のみ→`session-start`/`prompt-reminder`/commit本文 guard/PII pre-commit を明記）/ 下流逆流ループを Feedback 節で接続（Issue 3種リンク + `/inventory`→backlog→`/release`→`/adopt` の閉じ方を1行）/ skills 表に `system-map`（opt-in）注記 / `lifecycle.md`・ADR 索引へのリンク / `SIDEKICK_VERSION` 例を 0.10.0 に更新。`scaffold.js` の post-copy 手順に system-map（可視化）を追加。
+- **cruft 掃除**: 死んでいた `.husky/pre-commit` + `.husky/pre-push` を削除（`core.hooksPath=.claude/githooks` で経路外・本物の PII pre-commit と矛盾する囮）。`.gitignore` で旧 top-level `.claude/skills/system-map/`（port 残骸・固有名詞含む）を誤コミット防止にガード。
 - **新規 Next.js+Prisma PJ のオンボーディングを README で完結させた（EN/JA 両方）**: v0.10.0 で出荷した stack-pack アプリ層（`STACK_PACK` フラグ・scaffold・fitness `test:arch`・`ARCHITECTURE.md`）が README/`/setup` に未記載だった doc gap を解消。README に `STACK_PACK` 設定行 + 「Building a Next.js + Prisma project」通し手順節を追加（README.md / README.ja.md）。`/setup` Step 3d を拡張（scaffold コマンド・`test:arch` の package.json 配線案内・**生成直後で package.json 不在の chicken-and-egg を直接確認にフォールバック**）。`docs/design.md`/`.ja` の stack pack 節に scaffold + fitness を明記。
 
 ## [0.10.0] - 2026-06-18
