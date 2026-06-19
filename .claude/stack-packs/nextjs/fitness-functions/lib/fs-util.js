@@ -121,6 +121,77 @@ function stripComments(src) {
   return out;
 }
 
+/**
+ * 文字列・テンプレート・正規表現リテラルの**内部を空白化**（区切り文字は残す・長さと改行は保持）。
+ * `stripComments` はコメントを消すが**リテラル内容は保持**する（規約名が文字列に出ても保持される）。
+ * 一方、波括弧マッチや `prisma.x.op(` 抽出を行う側は、リテラル内の `}` や `prisma.x.op(` を
+ * コードと誤認してはいけない（敵対検証で実証: `const t = "}"` が関数本体を途中で打ち切る /
+ * `"call prisma.delta.create("` 文字列が phantom table を生む / `const HELP = "verifySignature()"`
+ * が認可ゲートを誤検知）。本関数を通すと**コードの識別子・演算子・波括弧は残り、リテラル内部だけ空白**になる。
+ * 使い方は `blankLiterals(stripComments(src))`（コメント除去 → リテラル内部空白化）。
+ * `stripComments` と同じ正規表現/除算ヒューリスティックを共有する。
+ */
+function blankLiterals(src) {
+  let out = '';
+  let i = 0;
+  const n = src.length;
+  let state = 'code'; // code | line | block | sq | dq | tpl | regex | class
+  let lastSig = '';
+  // テンプレートリテラルの `${ ... }` 補間部は**コード**（保持する）。ネスト追跡用スタック。
+  const tplStack = []; // 各補間の波括弧深さ（補間内の object `{}` を跨いで終端 `}` を判定）
+  const regexCanStart = () =>
+    lastSig === '' || '(,=:[!&|?{;}'.includes(lastSig) || /[+\-*%<>^~]/.test(lastSig);
+  const blank = (c) => (c === '\n' ? '\n' : ' ');
+  while (i < n) {
+    const c = src[i];
+    const c2 = src[i + 1];
+    if (state === 'code') {
+      // テンプレート補間内: 終端 `}`（深さ 0）で tpl に戻る。object の `{}` は深さで吸収。
+      if (tplStack.length) {
+        const fr = tplStack[tplStack.length - 1];
+        if (c === '{') { fr.depth++; out += c; lastSig = '{'; i++; continue; }
+        if (c === '}') {
+          if (fr.depth === 0) { tplStack.pop(); state = 'tpl'; out += c; lastSig = '}'; i++; continue; }
+          fr.depth--; out += c; lastSig = '}'; i++; continue;
+        }
+      }
+      if (c === '/' && c2 === '/') { state = 'line'; out += '  '; i += 2; continue; }
+      if (c === '/' && c2 === '*') { state = 'block'; out += '  '; i += 2; continue; }
+      if (c === '/' && regexCanStart()) { state = 'regex'; out += c; lastSig = '/'; i++; continue; }
+      if (c === "'") { state = 'sq'; out += c; lastSig = c; i++; continue; }
+      if (c === '"') { state = 'dq'; out += c; lastSig = c; i++; continue; }
+      if (c === '`') { state = 'tpl'; out += c; lastSig = c; i++; continue; }
+      out += c;
+      if (!/\s/.test(c)) lastSig = c;
+      i++; continue;
+    }
+    if (state === 'line') { if (c === '\n') { state = 'code'; out += c; } else out += ' '; i++; continue; }
+    if (state === 'block') { if (c === '*' && c2 === '/') { state = 'code'; out += '  '; i += 2; } else { out += blank(c); i++; } continue; }
+    if (state === 'regex') {
+      if (c === '\\') { out += '  '; i += 2; continue; }          // エスケープ対も空白化
+      if (c === '[') { state = 'class'; out += ' '; i++; continue; }
+      if (c === '/') { state = 'code'; out += c; lastSig = 'x'; i++; continue; } // 終了スラッシュは残す
+      out += blank(c); i++; continue;
+    }
+    if (state === 'class') {
+      if (c === '\\') { out += '  '; i += 2; continue; }
+      if (c === ']') { state = 'regex'; out += ' '; i++; continue; }
+      out += blank(c); i++; continue;
+    }
+    if (state === 'sq' || state === 'dq') {
+      if (c === '\\') { out += '  '; i += 2; continue; }
+      if ((state === 'sq' && c === "'") || (state === 'dq' && c === '"')) { state = 'code'; out += c; lastSig = c; i++; continue; }
+      out += blank(c); i++; continue;
+    }
+    // tpl: 静的部は空白化、`${` で補間（コード）へ、区切りは残す
+    if (c === '\\') { out += '  '; i += 2; continue; }
+    if (c === '`') { state = 'code'; out += c; lastSig = c; i++; continue; }
+    if (c === '$' && c2 === '{') { tplStack.push({ depth: 0 }); state = 'code'; out += '${'; lastSig = '{'; i += 2; continue; }
+    out += blank(c); i++;
+  }
+  return out;
+}
+
 module.exports = {
-  walk, read, resolveAppDir, resolveSourceDirs, isSource, rel, stripComments, SKIP_DIRS,
+  walk, read, resolveAppDir, resolveSourceDirs, isSource, rel, stripComments, blankLiterals, SKIP_DIRS,
 };
