@@ -266,6 +266,8 @@ flowchart LR
 3. **HARD ルール** — Claude があなたに確認してから実行: `git push`（feature）, `gh pr create`, `gh pr merge`
 4. **それ以外** — `Bash(*)` で自動承認（ダイアログなし）
 
+**勝手に発火する hooks**（全インベントリ → [docs/lifecycle.ja.md](./docs/lifecycle.ja.md#強制--hooks--guards)）: `session-start.sh`（自動 ff-pull + Active Work / staleness / 未取込 critical を surface）、`prompt-reminder.sh`（毎ターン ルール再提示）、`guard-commit-message.sh`（commit 本文に 背景/対応/影響 必須）、`guard-protected-branch-edit.sh`（main での編集禁止 → worktree 強制）、そして公開ファイルへの secret/PII コミットを物理ブロックする git-native **PII pre-commit hook**。
+
 ### 🧰 17 スキル
 
 上の3動詞（`/news`, `/close-chat`, `/weekly-inventory`）が手で実行するもの。残りは配管で、必要な瞬間に呼ばれます。
@@ -279,6 +281,8 @@ flowchart LR
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
 | **更新・リリース** | `/adopt-sidekick-update`, `/release` | 上流の更新を取り込む / バージョン付きリリースを切る |
 | **自動化** | `/auto-implement` | 実装→テスト→レビュー→PR を全自動 |
+
+> **+1 opt-in スキル:** `system-map`（Next.js stack pack）はコードベースを単一オフライン HTML 地図に描く — 画面↔API↔DB↔権限↔遷移。[Next.js + Prisma プロジェクトを立ち上げる](#nextjs--prisma-プロジェクトを立ち上げるopt-in-stack-pack) を参照。
 
 ### 🔄 スキル同士のつながり
 
@@ -295,6 +299,8 @@ flowchart LR
     CC -.->|"フィードバック"| TH["個人 brain<br/>（原則に昇格）"]
     TH -.->|"次セッションで<br/>自動適用"| Idea
 ```
+
+> **全体地図** — 全機能と、それが閉じるライフサイクル輪（session・知識複利・dev・release→adopt・強制・下流逆流）— は **[docs/lifecycle.ja.md](./docs/lifecycle.ja.md)** にあります。意図的に開いている輪・保守者専用の輪も明記しています。
 
 ### 🌙 自動モード — 寝てる間に PR ができる
 
@@ -385,10 +391,10 @@ your-project/
 sidekick は **git tag + GitHub Releases** でバージョン管理します。各プロジェクトは取り込み済みバージョンを `CLAUDE.md` に記録:
 
 ```yaml
-SIDEKICK_VERSION: "0.8.0"
+SIDEKICK_VERSION: "0.10.0"
 ```
 
-`/inventory` で最新の GitHub Release と比較し、更新を確認できます。
+`/inventory` で最新の GitHub Release と比較し、更新を確認できます。設計判断の全台帳（なぜそうなっているか）は [ADR 索引](./docs/decisions/README.md)。
 
 ### リリース温度感
 
@@ -412,7 +418,12 @@ SIDEKICK_VERSION: "0.8.0"
 
 ## フィードバック
 
-sidekick を使っていて「ここが良い」「困った」「こうして欲しい」があれば、[Downstream Feedback](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) へ。テンプレートの改善に役立ちます。
+sidekick を使っていて「ここが良い」「困った」「こうして欲しい」があれば、
+[Downstream Feedback](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml)・
+[Bug Report](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=bug-report.yml)・
+[Feature Request](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=feature-request.yml) のいずれかへ。
+
+一方通行ではありません: 立てた Issue は保守者の `/inventory`（`gh issue list`）に surface → backlog に整理 → `/release` で出荷 → `/inventory` + `/adopt-sidekick-update` であなたに戻る。これが下流逆流ループの閉じ方です。
 
 ## ライセンス
 

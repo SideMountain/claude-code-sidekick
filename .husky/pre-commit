@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# pre-commit: lint-staged を実行
-# プロジェクトに lint-staged が設定されている場合のみ有効
-if command -v npx &> /dev/null && [ -f "package.json" ]; then
-  npx lint-staged 2>/dev/null || true
-fi

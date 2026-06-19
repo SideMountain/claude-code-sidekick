@@ -267,6 +267,8 @@ flowchart LR
 3. **HARD rules** — Claude asks you first: `git push` (feature), `gh pr create`, `gh pr merge`
 4. **Everything else** — auto-approved via `Bash(*)` (no dialogs)
 
+**Hooks that fire on their own** (full inventory → [docs/lifecycle.md](./docs/lifecycle.md#enforcement--hooks--guards)): `session-start.sh` (auto ff-pull + surfaces Active Work / staleness / pending critical updates), `prompt-reminder.sh` (re-asserts the rules every turn), `guard-commit-message.sh` (every commit body must carry 背景/対応/影響), `guard-protected-branch-edit.sh` (no edits on `main` → forces a worktree), and a git-native **PII pre-commit hook** that physically blocks committing secrets / PII to public files.
+
 ### 🧰 The 17 skills
 
 The three verbs above (`/news`, `/close-chat`, `/weekly-inventory`) are the ones you run by hand. The rest are plumbing — called when the moment comes.
@@ -280,6 +282,8 @@ The three verbs above (`/news`, `/close-chat`, `/weekly-inventory`) are the ones
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
 | **Updates & Release** | `/adopt-sidekick-update`, `/release` | Pull upstream updates / cut a versioned release |
 | **Automation** | `/auto-implement` | Full auto: implement → test → review → PR |
+
+> **+1 opt-in skill:** `system-map` (Next.js stack pack) renders your codebase as one offline HTML map — screen ↔ API ↔ DB ↔ authz ↔ flow. See [Building a Next.js + Prisma project](#building-a-nextjs--prisma-project-opt-in-stack-pack).
 
 ### 🔄 How the skills connect
 
@@ -296,6 +300,8 @@ flowchart LR
     CC -.->|"feedback"| TH["personal brain<br/>(principles)"]
     TH -.->|"applied next<br/>session"| Idea
 ```
+
+> **The full map** — every capability and which lifecycle loop it closes (session · knowledge-compounding · dev · release→adopt · enforcement · downstream reverse-signal) — lives in **[docs/lifecycle.md](./docs/lifecycle.md)**. It also marks the two loops that are intentionally open or maintainer-only.
 
 ### 🌙 Auto mode — PRs while you sleep
 
@@ -386,10 +392,10 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 sidekick uses **git tags + GitHub Releases** for version management. Each project tracks its adopted version in `CLAUDE.md`:
 
 ```yaml
-SIDEKICK_VERSION: "0.8.0"
+SIDEKICK_VERSION: "0.10.0"
 ```
 
-Run `/inventory` to check for updates against the latest GitHub Release.
+Run `/inventory` to check for updates against the latest GitHub Release. The full decision ledger (why things are the way they are) is the [ADR index](./docs/decisions/README.md).
 
 ### Release severity
 
@@ -413,8 +419,12 @@ Typical flow: `/inventory` (detects the gap + severity) → `/adopt-sidekick-upd
 
 ## Feedback
 
-Using sidekick? Tell us what works, what doesn't, and what's missing.
-File a [Downstream Feedback issue](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml) — it helps improve the template for everyone.
+Using sidekick? Tell us what works, what doesn't, and what's missing. File a
+[Downstream Feedback](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=downstream-feedback.yml),
+[Bug Report](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=bug-report.yml), or
+[Feature Request](https://github.com/SideMountain/claude-code-sidekick/issues/new?template=feature-request.yml) issue.
+
+It's not a one-way street: filed issues surface in the maintainer's `/inventory` (`gh issue list`) → get triaged into the backlog → ship via `/release` → flow back to you through `/inventory` + `/adopt-sidekick-update`. That's the downstream reverse-signal loop closing.
 
 ## License
 
