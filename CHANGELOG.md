@@ -24,6 +24,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 ## [Unreleased]
 
 ### Added
+- **ADR-0022: stack pack のサイクル統合・軽さドクトリン・intake routing**（原則決定・配線は follow-up）。stack pack は普遍サイクルのゲート（`/review`・`/auto-implement`・hooks）に自動統合し下流はフラグ1個（CI 配線させない）/ 軽さドクトリン（自動化は決定的・安いものだけ・LLM は on-demand）/ ①起票 = backlog（個人）・GitHub Issue（チーム機能/bug/可視化）・Notion（任意）の三層 routing + casual「Issue だけ切る」一級化 + 1アイテム1ホーム + backlog→Issue 昇格。capability audit の「下流が CI を持つ」暫定スタンスを supersede、ADR-0018/0021/0015 を refine。
 - **`docs/lifecycle.md`（EN/JA）新設 — ccs 全体の「ライフサイクル地図」**: 全機能を 8 つのライフサイクル輪に配置し、各輪が**閉じているか/開いているか**を明示（capability audit 由来）。閉6（session・知識複利・dev・release→adopt・強制×3・逆流）/ 開2（stack-pack 検知→再実行は下流 CI 委譲・upstream-watch は保守者専用 news-upstream で非配布）+ 全機能インベントリ表。README から導線。
 
 ### Changed
