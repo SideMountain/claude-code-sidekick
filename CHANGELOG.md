@@ -23,6 +23,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Removed
+- **死んだ `.husky/* text eol=lf` ルールを `.gitattributes`（本体 + `.claude/templates/.gitattributes`）から削除**: `.husky/` は v0.11.0 までに削除済（`core.hooksPath=.claude/githooks`）で、この line-ending ルールは存在しないディレクトリを指す cruft だった。templates 版は下流に配布されるため両方を掃除。
+
 ## [0.11.0] - 2026-06-19
 
 ### Added
