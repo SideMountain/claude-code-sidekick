@@ -12,6 +12,19 @@ node .claude/stack-packs/nextjs/scaffold/scaffold.js <targetDir> [--force]
 `template/`（規約を満たす具体 vertical slice・feature=`posts`）をコピーする。
 出力後の手順は scaffold 実行時のメッセージに従う（install → migrate → feature 複製 → `test:arch`）。
 
+### 空ディレクトリ vs create-next-app へのオーバーレイ
+
+pack は Next アプリ本体を作らない。通常は先に `create-next-app` で土台を用意し、その上に重ねる:
+
+- **既存ディレクトリ（create-next-app 済み）**: `--force` が必須（非空ガード）。`package.json` は
+  **破壊的に上書きせず非破壊マージ**する — 既存の `name` / `version` / 解決済み依存バージョンを保持し、
+  golden path の script（`test:arch` 等）と不足依存（`@prisma/client`・`zod`・`server-only`・`prisma`）だけ足す。
+  その他 config（`tsconfig`/`next.config`/`eslint`/`.gitignore`/`layout`）は golden path 版で上書きする（同形・意図的）。
+- **create-next-app の既定ファイルの後始末**: `app/page.tsx` / `app/globals.css` は golden path 外（layout は
+  CSS を import しない）。残すと fitness の screen 数 / system-map に余分な画面 `/` として出るため、scaffold が
+  検知して削除を促す。削除するか `app/page.tsx` を `/posts` へのリダイレクトに置換する。
+- **空ディレクトリ**: そのまま template を展開（`--force` 不要・`package.json` はテンプレ版）。
+
 ## 何を置くか（`posts` 縦スライス = 手本）
 
 | ファイル | 体現する規約 |

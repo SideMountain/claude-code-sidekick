@@ -25,7 +25,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 
 ## 開いている輪（輪が閉じ切らない箇所）
 
-- **7. stack-pack の検知→再実行が自動配線されていない。** ccs の hook / PostToolUse / `.github/workflows` のどれも `test:arch`/`system-map` を回さない。ccs は銃を配り、下流 PJ が引き金を引く（npm script 追加 + 自前 CI）。`system-map` の drift 検知は完全手動（再生成可・gitignore の HTML・staleness 検出器なし）で、その `uncertainties`（golden-path 非準拠）は手動レポートとしてユーザーに届くだけで `fitness`/`ARCHITECTURE.md` に**還流しない**。DRY な `route-enumerator.js` は契約上は共有だが今 import するのは `fitness` のみ（`system-map` の route/mutation/authz adapter は roadmap）。**半分は設計**（下流が CI を持つ）— 正直な明記は README の stack-pack 節に置く。
+- **7. stack-pack の再実行は `/review` ゲート依存で、完全自動配線ではない。** 背景 hook / PostToolUse / `.github/workflows` のどれも単独では `test:arch`/`system-map` を回さない（下流 PJ が自前 CI を配線）。ただしループ内では `/review`（ユーザー起動）が `STACK_PACK: nextjs` 時に fitness fast-gate と `system-map` drift nudge（canonical-counts `--drift`）を回し（v0.11.0）、硬層 adapter（route/authz/links/schema/indexes）は出荷済みで `fitness` と canonical な `route-enumerator.js` を共有する。残る開放点: 地図の**再生成**は on-demand（`/system-map`・意図的に自動再生成しない）、軟層 **enrich** は実行時 LLM 依存（機械化されていない）、`uncertainties`（golden-path 非準拠）は手動レポートとして届くだけで `fitness`/`ARCHITECTURE.md` に**還流しない**。**半分は設計**（下流が CI を持つ・地図はゲートでなく可視化物）— 正直な明記は README の stack-pack 節に置く。
 - **8. 上流ウォッチは保守者のマシンでのみ回る。** `news-upstream` は意図的に**非配布**（`~/.claude/skills/` に退避・ADR-0017/0006）。リポ内 `/news` は*コードベース*の変化を見るもので軸が違う。配布物を読む人には上流→backlog→brain の流入が不可視。意図的だが、欠落段に見えないよう README に1行注記すべき。
 
 ## 保守者専用 vs 配布
@@ -39,7 +39,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 
 ## 機能インベントリ
 
-> `claude-code-sidekick` v0.10.0（main）で実体確認。**配布コア skill 17本** + **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
+> `claude-code-sidekick` v0.11.0（main）で実体確認。**配布コア skill 17本** + **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
 
 ### Skills — session / lifecycle
 | Skill | 何 | トリガ |

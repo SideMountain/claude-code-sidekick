@@ -225,7 +225,7 @@ fi
 **Yes の場合:**
 - CLAUDE.md Project Configuration の `STACK_PACK: none` を `STACK_PACK: nextjs` に変更。
 - Prisma 利用なら `ORM_TYPE: prisma` も併せて提案（golden path は Prisma 前提）。
-- 案内する（**認知 → 強制 → 検知の一式・v0.10.0**）:
+- 案内する（**認知 → 強制 → 検知の一式・v0.11.0**）:
   - **認知**: 実装・レビューの規約は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）。
   - **強制（生成）**: 規約準拠のアプリ骨格を `node .claude/stack-packs/nextjs/scaffold/scaffold.js <targetDir>` で展開（`posts` 縦スライスが手本。**pack は Next アプリ本体を作らないので先に `create-next-app` 等で土台を用意**）。詳細 `.claude/stack-packs/nextjs/scaffold/README.md`。
   - **検知**: `package.json` に `"test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js ."` を追加して CI に挿す（error=HARD で落とす / warn=SOFT）。S1 循環依存は対象外ゆえ `madge --circular` を別ステップで補う。詳細 `.claude/stack-packs/nextjs/fitness-functions/README.md`。

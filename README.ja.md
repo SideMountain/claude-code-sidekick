@@ -71,7 +71,7 @@ Claude : → main で直接修正
 Claude : → Worktree 作成（main は触らない）
          → ステージング DB に接続確認
          → 修正 → スコープ限定テスト
-         → /review（コード + テスト + 運用 の 6観点）
+         → /review（コード/テスト/運用/設計/仕様 の 5観点）
          → PR 作成（マージはあなたの判断）
 ```
 
@@ -181,15 +181,21 @@ Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 �
    `next` / `react` / `zod` / `prisma` と `package.json` を用意する。
 4. **golden path 骨格を scaffold:**
    ```bash
-   node .claude/stack-packs/nextjs/scaffold/scaffold.js .   # 非空なら --force
+   node .claude/stack-packs/nextjs/scaffold/scaffold.js . --force   # step 3 で非空になっているため --force 必須
    ```
    規約準拠の `posts` 縦スライス（Prisma singleton・auth helper・Zod schema・DAL・Server Action・
    route handler・webhook + cron）をコピー。出力は定義上 fitness-green。
-5. **install + DB。** `<pm> install` → `.env` に `DATABASE_URL` 設定 → `prisma/schema.prisma` を書いて
-   `npx prisma migrate dev`。
+   `--force` は step 3 の create-next-app でディレクトリが非空になるため必須。`package.json` は
+   **非破壊マージ**される（app name・解決済み依存バージョンを保持し、`test:arch` 等の golden path script と
+   不足依存を追加）。ただし他の config（`tsconfig.json` / `next.config.ts` / `eslint.config.mjs` /
+   `app/layout.tsx` / `.gitignore`）は golden path 版で**置換**されるので、scaffold 前のカスタマイズは
+   再適用すること。その後 create-next-app の既定 `app/page.tsx` / `app/globals.css` は削除する
+   （golden path 外・scaffold が削除を促す）。
+5. **install + DB。** `<pm> install` → `.env` に `DATABASE_URL` 設定 → `npx prisma migrate dev`。
+   scaffold が `prisma/schema.prisma`（`posts` モデル）を同梱するので、自分のドメインに合わせて拡張する。
 6. **開発。** 新 feature ごとに `posts` スライスを**複製**する（各層の規約はファイル先頭コメントと
    `.claude/stack-packs/nextjs/scaffold/README.md`）。
-7. **アーキを CI で gate する。** `package.json` に script を足して実行:
+7. **アーキを CI で gate する。** scaffold が `test:arch` を `package.json` に配線済み。実行する（CI にも挿す）:
    ```jsonc
    "scripts": { "test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js ." }
    ```
@@ -250,14 +256,14 @@ flowchart LR
     L2["② 強制<br/>Pre-tool Hooks<br/>(物理ブロック)"]
     L2 -->|"危険操作"| DENY(("DENY"))
     L2 --> L3
-    L3["③ 検知<br/>/review<br/>6観点レビュー"] --> SAFE["安全な<br/>変更"]
+    L3["③ 検知<br/>/review<br/>5観点レビュー"] --> SAFE["安全な<br/>変更"]
 ```
 
 | レイヤー | 仕組み | 例 |
 |---|---|---|
 | **① 認知** | CLAUDE.md のルール（HARD / SOFT / GUIDE） | 「main に push するな」 |
 | **② 強制** | Pre-tool hooks（JSON deny = 実行されない） | `guard-bash.sh` が `rm -rf` をブロック |
-| **③ 検知** | `/review` スキル（6観点） | PR でセキュリティ問題を検出 |
+| **③ 検知** | `/review` スキル（5観点） | PR でセキュリティ問題を検出 |
 
 **ブロックの強さ 4 段階:**
 
@@ -293,7 +299,7 @@ flowchart LR
     Idea["💡 アイデア"] --> D["/discover<br/>要件定義<br/>・タスク分解"]
     D --> Design["📋 設計<br/>確定"]
     Design --> AI["/auto-implement<br/>Phase 0-5"]
-    AI --> R["/review<br/>6観点"]
+    AI --> R["/review<br/>5観点"]
     R --> PR["📤 PR"]
     PR --> CC["/close-chat<br/>学習ループ記録"]
     CC -.->|"フィードバック"| TH["個人 brain<br/>（原則に昇格）"]
@@ -391,7 +397,7 @@ your-project/
 sidekick は **git tag + GitHub Releases** でバージョン管理します。各プロジェクトは取り込み済みバージョンを `CLAUDE.md` に記録:
 
 ```yaml
-SIDEKICK_VERSION: "0.10.0"
+SIDEKICK_VERSION: "0.11.0"
 ```
 
 `/inventory` で最新の GitHub Release と比較し、更新を確認できます。設計判断の全台帳（なぜそうなっているか）は [ADR 索引](./docs/decisions/README.md)。
