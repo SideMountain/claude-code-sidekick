@@ -35,14 +35,16 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 
 ## Open loops (where the wheel doesn't fully close)
 
-- **7. Stack-pack detect → re-run is not auto-wired.** No ccs hook / PostToolUse / `.github/workflows`
-  runs `test:arch` or `system-map`. ccs ships the gun; the downstream PJ pulls the trigger (adds the npm
-  script + its own CI). `system-map` drift is fully manual (regenerable, gitignored HTML; no staleness
-  detector), and its `uncertainties` (golden-path non-compliance) reach the user as a manual report,
-  never routing back into `fitness` or `ARCHITECTURE.md`. The DRY `route-enumerator.js` is shared by
-  contract but only `fitness` imports it today; the `system-map` route/mutation/authz adapters are
-  roadmap-only. **This is partly by design** (the downstream owns its CI) — the honest statement is in
-  the README stack-pack section.
+- **7. Stack-pack re-run is gated on `/review`, not fully auto-wired.** No background hook / PostToolUse /
+  `.github/workflows` runs `test:arch` or `system-map` on its own — the downstream PJ wires its own CI.
+  Inside the loop, though, `/review` (user-invoked) runs the fitness fast-gate and a `system-map` drift
+  nudge (canonical-counts `--drift`) when `STACK_PACK: nextjs` (v0.11.0), and the hard-layer adapters
+  (route/authz/links/schema/indexes) ship and share the canonical `route-enumerator.js` with `fitness`.
+  What stays open: map **regeneration** is on-demand (`/system-map`, intentionally not auto-regenerated),
+  the soft **enrich** layer is LLM-at-runtime (not mechanized), and `uncertainties` (golden-path
+  non-compliance) reach the user as a report rather than routing back into `fitness` / `ARCHITECTURE.md`.
+  **Partly by design** (the downstream owns its CI; a map is a visualization, not a gate) — the honest
+  statement is in the README stack-pack section.
 - **8. Upstream watch runs only on the maintainer's machine.** `news-upstream` is intentionally **not
   distributed** (retired to `~/.claude/skills/`, ADR-0017/ADR-0006); the in-repo `/news` watches the
   *codebase*, not Claude Code upstream. For anyone reading the distributed repo the upstream → backlog →
@@ -60,7 +62,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 
 ## Capability inventory
 
-> Verified against `claude-code-sidekick` at v0.10.0 (main). **17 distributed core skills** + **1 opt-in
+> Verified against `claude-code-sidekick` at v0.11.0 (main). **17 distributed core skills** + **1 opt-in
 > stack-pack skill** (`system-map`, Next.js).
 
 ### Skills — session / lifecycle

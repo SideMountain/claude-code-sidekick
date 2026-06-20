@@ -71,7 +71,7 @@ You   : "Fix the login bug"
 Claude: → Creates worktree (main untouched)
         → Confirms staging DB connection
         → Fixes → Runs scoped tests
-        → /review (code + test + ops — 6 perspectives)
+        → /review (code/test/ops/design/spec — 5 perspectives)
         → Creates PR (merging is your call)
 ```
 
@@ -181,15 +181,21 @@ deviations in CI. Non-Next.js projects skip this entirely — leave `STACK_PACK:
    (e.g. `npx create-next-app`) so `next` / `react` / `zod` / `prisma` and a `package.json` exist.
 4. **Scaffold the golden-path skeleton:**
    ```bash
-   node .claude/stack-packs/nextjs/scaffold/scaffold.js .   # add --force if the target isn't empty
+   node .claude/stack-packs/nextjs/scaffold/scaffold.js . --force   # --force: step 3 left the dir non-empty
    ```
    Copies a conforming `posts` vertical slice (Prisma singleton, auth helper, Zod schema, DAL,
    Server Action, route handler, webhook + cron). The output is fitness-green by construction.
-5. **Install + database.** `<pm> install`, set `DATABASE_URL` in `.env`, then `npx prisma migrate dev`
-   (author your `prisma/schema.prisma` first).
+   `--force` is required here because step 3's create-next-app left the directory non-empty; your
+   `package.json` is **merged non-destructively** (app name + resolved dependency versions kept;
+   golden-path scripts incl. `test:arch` and missing deps added), but other config
+   (`tsconfig.json` / `next.config.ts` / `eslint.config.mjs` / `app/layout.tsx` / `.gitignore`) is
+   **replaced** with golden-path versions — re-apply any pre-scaffold customizations. Then delete
+   create-next-app's default `app/page.tsx` / `app/globals.css` (outside the golden path; the scaffold reminds you).
+5. **Install + database.** `<pm> install`, set `DATABASE_URL` in `.env`, then `npx prisma migrate dev`.
+   The scaffold ships `prisma/schema.prisma` (the `posts` model) — extend it for your own domain.
 6. **Develop.** Duplicate the `posts` slice for each new feature — per-layer rules are in the
    file-head comments and `.claude/stack-packs/nextjs/scaffold/README.md`.
-7. **Gate the architecture in CI.** Add the script to `package.json`, then run it:
+7. **Gate the architecture in CI.** The scaffold already wired `test:arch` into `package.json`; run it (and add it to CI):
    ```jsonc
    "scripts": { "test:arch": "node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js ." }
    ```
@@ -251,14 +257,14 @@ flowchart LR
     L2["② Enforcement<br/>Pre-tool Hooks<br/>(physical block)"]
     L2 -->|"dangerous op"| DENY(("DENY"))
     L2 --> L3
-    L3["③ Detection<br/>/review<br/>6 perspectives"] --> SAFE["Safe<br/>change"]
+    L3["③ Detection<br/>/review<br/>5 perspectives"] --> SAFE["Safe<br/>change"]
 ```
 
 | Layer | Mechanism | Example |
 |---|---|---|
 | **① Awareness** | CLAUDE.md rules (HARD / SOFT / GUIDE) | "Don't push to main" |
 | **② Enforcement** | Pre-tool hooks (JSON deny = blocked) | `guard-bash.sh` blocks `rm -rf` |
-| **③ Detection** | `/review` skill (6 perspectives) | Catches security issues in PR |
+| **③ Detection** | `/review` skill (5 perspectives) | Catches security issues in PR |
 
 **Four levels of blocking:**
 
@@ -294,7 +300,7 @@ flowchart LR
     Idea["💡 Idea"] --> D["/discover<br/>requirements<br/>& tasks"]
     D --> Design["📋 Design<br/>confirmed"]
     Design --> AI["/auto-implement<br/>Phase 0-5"]
-    AI --> R["/review<br/>6 perspectives"]
+    AI --> R["/review<br/>5 perspectives"]
     R --> PR["📤 PR"]
     PR --> CC["/close-chat<br/>learning loop"]
     CC -.->|"feedback"| TH["personal brain<br/>(principles)"]
@@ -392,7 +398,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 sidekick uses **git tags + GitHub Releases** for version management. Each project tracks its adopted version in `CLAUDE.md`:
 
 ```yaml
-SIDEKICK_VERSION: "0.10.0"
+SIDEKICK_VERSION: "0.11.0"
 ```
 
 Run `/inventory` to check for updates against the latest GitHub Release. The full decision ledger (why things are the way they are) is the [ADR index](./docs/decisions/README.md).

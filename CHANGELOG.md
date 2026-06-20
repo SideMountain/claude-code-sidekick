@@ -23,6 +23,10 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Fixed
+- **greenfield bootstrap を実走検証して是正（README の「Building a Next.js + Prisma project」を実際に通した）**: scaffold を create-next-app の土台に重ねる経路を temp PJ で end-to-end 実走し、破断点を是正。(1) `scaffold.js` が既存 `package.json` を**破壊的に上書き → 非破壊マージ**に変更（app `name`・解決済み依存バージョンを保持し、`test:arch` 等の golden path script と不足依存〔`@prisma/client`/`zod`/`server-only`/`prisma`〕だけ追加）。(2) create-next-app の既定 `app/page.tsx`/`app/globals.css`（golden path 外・余分な screen `/` になる）と別形式 config（`next.config.js` 等）を検知して後始末を促す post-run note を追加。(3) 不正な既存 `package.json` を clean error で弾く guard。空ディレクトリ展開は従来どおり（回帰なし・fitness `verify.js` / system-map `verify-adapters.js` 32/32 自己検証 PASS）。
+- **doc 事実誤りの是正（README/lifecycle/skills・EN/JA）**: (a) `/review` を「6 観点」→**実体どおり「5 観点」**（code/test/ops/design/spec + PJ固有）。README 本文・**hero SVG（`three-layers.svg`/`.ja`）**・**`review/SKILL.md`**（4 と 6 の自己矛盾も解消）を統一。(b) walkthrough step 4 の `--force` を「任意」→**create-next-app 後は必須**と明記 + 非破壊マージ / config 置換 / leftover 後始末を追記。(c) step 5「`prisma/schema.prisma` を先に書く」→**scaffold が posts モデルの schema を同梱**するため「拡張する」に訂正。(d) `lifecycle` open-loop #7 の「system-map は staleness 検出器なし / route・authz adapter は roadmap」を**実体（#57 drift 信号 + #56 adapter 出荷済・`route-enumerator` 共有）に更新**。(e) `SIDEKICK_VERSION` 例 / `lifecycle` 検証 / `setup` 案内のバージョンを 0.10.0 → 0.11.0。(f) `system-map` SKILL に「再生成時の stale 掃除」gotcha（`merge.js` は `data/*.json` を全 glob する）。
+
 ### Removed
 - **死んだ `.husky/* text eol=lf` ルールを `.gitattributes`（本体 + `.claude/templates/.gitattributes`）から削除**: `.husky/` は v0.11.0 までに削除済（`core.hooksPath=.claude/githooks`）で、この line-ending ルールは存在しないディレクトリを指す cruft だった。templates 版は下流に配布されるため両方を掃除。
 

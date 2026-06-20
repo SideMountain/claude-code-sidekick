@@ -37,6 +37,8 @@ node $PACK/adapters/extract-links.nextjs.js   <対象> data/flow-structure.json 
 
 > 出力は **骨格**（identity・`api.kind`★S4・`trigger`・`validation` 分類・`dbTables`・認可ゲート・遷移）。`purpose`/`summary`/`gotchas`/画面 `kind` の意味/`idempotency` 判定/object-level 認可は空 or `uncertainties` で残る → Step 3 軟層が enrich する。
 > **この時点で Step 4 を回せば「骨格だけの地図」が既に描ける**（軟層は任意・複利の本体は硬層）。正準カウント（route/screen/action/mutation）は `route-enumerator.js` が単一定義で adapter が import する（fitness と母集合一致）。SOFT 残差・1ホップ制限等は `assets/adapters/README.md`。
+>
+> **再生成時の stale 掃除**: `merge.js` は `data/*.json` を全 glob する。ルート/ドメインを削除して再生成すると、硬層が今回出力しない古い `data/<domain>.json`（例: create-next-app の `app/page.tsx` を消した後の `data/..json`）が残り、地図に再出現する。該当ドメインの `data/<domain>.json` を手動削除してから merge する（固定名の `db-*.json`/`permissions.json`/`flow-structure.json` と enrich 済みファイルは消さない）。
 
 ### Step 2: ドメイン分割
 - **`extract-routes` が決定的に分割済み**（route group `(x)` or `api`/動的 segment を除いた先頭 segment = domain）。生成された `data/<domain>.json` のファイル名がドメイン一覧。

@@ -1,6 +1,6 @@
 ---
 name: review
-description: "統合レビュー（オーケストレーター）。4観点（code/test/ops + プロジェクト固有）を並列実行し、結果を統合して総合判定する。"
+description: "統合レビュー（オーケストレーター）。5観点（code/test/ops/design/spec + プロジェクト固有）を並列実行し、結果を統合して総合判定する。"
 user-invocable: true
 allowed-tools: "Read Grep Bash(git *) Agent"
 ---
@@ -9,10 +9,10 @@ allowed-tools: "Read Grep Bash(git *) Agent"
 
 ## 目的
 
-4つの専門レビュー観点を並列実行し、結果を統合して総合判定を行う。
+5つの専門レビュー観点を並列実行し、結果を統合して総合判定を行う。
 コミット前またはPR作成前に実行する。
 
-## 6つの観点
+## 5つの観点（+ プロジェクト固有）
 
 | スキル | 主管 | フォーカス |
 |---|---|---|
@@ -177,7 +177,7 @@ CLAUDE.md または `.claude/rules/notion.md` に定義された対応表に基�
 
 ## 公式 bundled スキルとの使い分け
 
-`/review` は **ccs 統合オーケストレーター**（6観点・CLAUDE.md 不変条件・動的スキップ・PJ 文脈込み）。Claude Code 公式 bundled の単機能スキルとは目的が異なるため、置き換えではなく**補完的に**使う:
+`/review` は **ccs 統合オーケストレーター**（5観点 + PJ固有・CLAUDE.md 不変条件・動的スキップ・PJ 文脈込み）。Claude Code 公式 bundled の単機能スキルとは目的が異なるため、置き換えではなく**補完的に**使う:
 
 | 公式スキル | 役割 | `/review` との関係 |
 |---|---|---|
