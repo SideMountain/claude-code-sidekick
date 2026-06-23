@@ -19,6 +19,10 @@
 - **subagent / workflow は同じ cap から引かれ**、各自が system prompt を再ロードするため掛け算的に積む。
 - **出力は入力より高単価**、拡張思考（thinking）は出力として課金され effort で大きく変動する。
 
+### 実データ源
+
+cap の `used_percentage`（5時間枠 / 7日枠）と `resets_at` は、Claude Code が statusLine の stdin JSON に渡す公式 `rate_limits`（CC v2.1.80+・Claude.ai Pro/Max）で読める。`/token-audit` と budget-gate はこれを推測でなく実データとして使う。制約: `rate_limits` は hook の stdin には渡らず statusLine のみ（強制層 hook で使うには capture リレーが要る）、全製品横断の合算 quota、render ポーリング更新（鮮度ラグあり）、API-key 認証・fresh session では不在。なお cap の絶対トークン数や output/model の重み付けは非開示のため、モデル tiering の効果は依然 A/B 実測前提（決定 3）。
+
 ### オーナー方針（本 ADR の制約条件）
 
 - **cap 消費は減らすが、精度は落とさない（ハード制約）。** 節約は最適化、安全と難所は聖域。
