@@ -25,3 +25,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0020 | [Spine-Driven の棚卸しと構想の凍結（ledger 型）](0020-spine-driven-ledger.md) | 採用（2026-06-17、ledger 型・新機能なし） |
 | 0021 | [stack pack 方式の確立と Next.js 参照インスタンス](0021-stack-pack-and-nextjs-instance.md) | 採用（2026-06-17） |
 | 0022 | [stack pack のサイクル統合・軽さドクトリン・intake routing](0022-stack-pack-cycle-integration.md) | 採用（2026-06-19、原則決定・配線は follow-up） |
+| 0023 | [文脈経済（rate-cap 内で精度を落とさず長く稼働）](0023-context-economy.md) | 採用（2026-06-23、原則決定・実装は段階的） |
