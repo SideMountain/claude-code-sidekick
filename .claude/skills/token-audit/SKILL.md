@@ -66,26 +66,60 @@ echo "  skill $n 本 / description 合計 ${t} 文字"
 - **MEMORY.md 肥大**: 完了履歴・古い backlog が全文常駐していないか → `/weekly-inventory` で圧縮 or 非常駐ファイルへ退避。
 - **重複**: 同じ規約が CLAUDE.md・rules・skill に多重掲載されていないか（単一ソース化候補）。
 
-## Step 3: 実 cap 消費の計測プロトコル（tiering 判断の前提）
+## Step 3: 実 cap 消費の読取り（公式 rate_limits・確度: 高）
 
-cap / model の重みは非公開なので、**実測でキャリブレートする**。
+Claude Code は **statusLine の stdin JSON に公式の `rate_limits`** を渡す（`five_hour`/`seven_day` の `used_percentage` + `resets_at`。**CC v2.1.80+ ・ Claude.ai Pro/Max のみ**）。これは **hook の stdin には来ない**ため、statusLine が書き出したキャプチャ JSON を読む。
 
-1. **セッション使用率**: `/context` で現在の占有を確認（70% 超で新規大探索を避ける＝`context-management.md`）。
-2. **workflow / subagent の消費**: ワークフロー完了通知の `subagent_tokens` を記録。fan-out 1 回の実コストを掴む。
-3. **tiering 効果の A/B**: 同一タスク（同一 PR の `/review` 等）を **(A) 上位モデル単独 / (B) tiering** で実行し、`subagent_tokens` の差と**見落とし findings の差**を比較。トークン削減と精度劣化を同時に測ってから tiering の採否・境界を決める（ADR-0023 決定 3）。
+> **重要（クロスセッション安全）**: `rate_limits` は**全製品横断の合算 quota**（Claude Code + claude.ai web + Cowork）かつ**グローバル値**なので、どのセッションが書いた capture でも `%` は有効。一方 `context_window`/`cost`/`model` 等の **per-session 値は共有 capture から読まない**（並行 worktree では別セッションの値が混入する＝実証済の罠）。per-session は現セッションの `/context` で見る。
+
+```bash
+# rate_limits（グローバル合算 quota）だけを capture から読む。新鮮度を必ず確認。
+CAP=""; AGE=""
+for p in "$HOME/.claude/.cache/ccs-rate-limits.json" "/tmp/claude-statusline-input.json"; do
+  [ -f "$p" ] || continue
+  a=$(( $(date +%s) - $(stat -c %Y "$p") ))
+  [ "$a" -gt 600 ] && continue          # 10分以上古い capture は使わない（render ポーリング鮮度）
+  CAP="$p"; AGE="$a"; break
+done
+if [ -n "$CAP" ]; then
+  now=$(date +%s)
+  jq -r --argjson now "$now" '
+    .rate_limits as $r |
+    if $r and $r.five_hour then
+      ( [ "5時間枠", ($r.five_hour.used_percentage|tostring)+"%",
+          (if ($r.five_hour.resets_at//0) > $now
+           then "あと\(((($r.five_hour.resets_at)-$now)/60)|floor)分"
+           else "リセット済(回復)" end) ] | join(" ") ),
+      ( [ "7日枠",  ($r.seven_day.used_percentage|tostring)+"%",
+          (if ($r.seven_day.resets_at//0) > $now
+           then "あと\(((($r.seven_day.resets_at)-$now)/3600)|floor)時間"
+           else "リセット済(回復)" end) ] | join(" ") )
+    else "rate_limits 不在（fresh session / API-key 認証 / CC<2.1.80 の可能性）" end' "$CAP" 2>/dev/null
+  echo "  ※ 全製品横断の合算 quota（Claude Code 単独ではない）。capture=$CAP（${AGE}s 前）"
+else
+  echo "rate_limits 取得不能: 新鮮な capture が無い（statusLine 未設定 / capturer 未導入 / API-key）。"
+  echo "  → 5h/週% は『未取得』（推測しない）。per-session 占有は /context で代替確認。"
+fi
+```
+
+- `resets_at`（Unix epoch）と now の差で残り時間を算出。**`now > resets_at` なら『リセット済＝回復』**として扱う（古い高%で誤って待たない）。
+- **取得不能時は推測せず「未取得」と明示**（CLAUDE.md ゲート2）。誤った推測で精度を偽装しない＝ユーザー方針「精度優先」と整合。
+- per-session の窓占有・コストは **`/context`**（現セッションの公式表示）で見る。共有 capture から読まない。
+
+> **capturer と強制（PR2）**: 上記の `~/.claude/.cache/ccs-rate-limits.json` は ccs 同梱の statusLine capturer（rate_limits だけを書き出す薄い wrapper）が供給する想定。capturer と budget-gate（Stop 境界 halt 等の強制層）は PR2。本スキル（PR1）は **検知のみ・fail-open**（capture が無ければ静かに「未取得」へ縮退）。
 
 ## Step 4: レポートと是正提案
 
 ```
 === /token-audit 結果 ===
 常駐合計: X 文字（≈ Y トークン）  内訳上位: MEMORY.md / rules / CLAUDE.md ...
-肥大（200行超）: N 件
-path-scope 候補: ...
-重複候補: ...
+肥大（200行超）: N 件 / path-scope 候補: ... / 重複候補: ...
+cap（公式 rate_limits・合算 quota）: 5h X% (あとN分) / 7d Y%   ※未取得なら理由を明示
+検知: capturer 稼働=有/無, capture 鮮度=Ns前, rate_limits=有/不在(理由)
 ─────────────────
 是正提案（read-only・実行はユーザー判断）:
 - （最も効く削減: 例 MEMORY.md 退避 / 重い rule の path-scope）
-- 実 cap 計測の次アクション（A/B 測定の対象）
+- cap が逼迫なら: compact / fan-out 抑制 / 難所のみ上位 model（強制は PR2 budget-gate）
 ```
 
 ## Return Contract
@@ -103,3 +137,7 @@ path-scope 候補: ...
 - path-scoped rule は常駐外なので合計から除外する（除外漏れは過大計上）。
 - auto-memory のパスは slug 依存（`pwd` の `/`→`-`）。worktree や symlink 構成では実体を確認する。
 - これは**検知層**であり、削減の実行（compact / 退避 / path-scope 付与）はユーザー承認のうえ別途行う。
+- **`rate_limits` は statusLine stdin のみ**に来る（hook stdin には来ない）。CC **v2.1.80+ ・ Pro/Max のみ**で、fresh session / `/clear` 直後 / API-key 認証では不在。取得不能は異常でなく仕様 → fail-open（推測せず「未取得」）。
+- **共有 capture ファイルから per-session 値（context/cost/model）を読まない**: 並行 worktree では最後にレンダーした別セッションの値で上書きされる（実証済）。`rate_limits` の % のみグローバルなので共有 capture から読んでよい。
+- capture は **render ポーリング**で更新（イベント駆動でない）。ループ中は分単位で stale になりうる → mtime で鮮度を必ず確認し、古ければ「未取得」扱い。
+- `resets_at` 欠落に備え null 防御。`now > resets_at` は「リセット済（回復）」として扱う。
