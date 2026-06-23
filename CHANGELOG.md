@@ -23,6 +23,12 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+
+- 文脈経済（Context Economy）ドクトリン（ADR-0023）: rate-cap 内で精度を落とさず長時間・自律稼働するためのトークン経済原則。`per-call context hygiene`（不要文脈を渡さない）を最優先に置き、モデル自動選択（tiering）は精度優先で補助レバーに留める。
+- `.claude/rules/context-economy.md`: 安全コア規律（per-call hygiene / cache を壊さない / retrieve>resident / fan-out は難所だけ / 削らない聖域 / lossy には検知層）。
+- `/token-audit` skill: 常駐コンテキストの footprint 計測・汚染/肥大/重複検知・実 cap 消費の計測プロトコル（文脈経済の検知層）。
+
 ## [0.11.1] - 2026-06-20
 
 ### Fixed
