@@ -26,3 +26,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0021 | [stack pack 方式の確立と Next.js 参照インスタンス](0021-stack-pack-and-nextjs-instance.md) | 採用（2026-06-17） |
 | 0022 | [stack pack のサイクル統合・軽さドクトリン・intake routing](0022-stack-pack-cycle-integration.md) | 採用（2026-06-19、原則決定・配線は follow-up） |
 | 0023 | [文脈経済（rate-cap 内で精度を落とさず長く稼働）](0023-context-economy.md) | 採用（2026-06-23、原則決定・実装は段階的） |
+| 0024 | [自律ループと budget-gate（rate-cap 内の長時間・自律稼働）](0024-autonomous-loop-and-budget-gate.md) | 採用（2026-06-24、設計決定・強制配線は follow-up） |
