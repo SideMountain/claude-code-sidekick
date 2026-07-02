@@ -78,6 +78,17 @@
         ]
       }
     ],
-    "Stop": []
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/budget-cycle-halt.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
   }
 }

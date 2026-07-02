@@ -43,3 +43,4 @@ __pycache__/
 venv/
 # 旧 system-map（Spring/Vue 時代の残骸・固有名詞含む）。正規版は .claude/stack-packs/nextjs/skills/system-map/
 /.claude/skills/system-map/
+scratchpad/

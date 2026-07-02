@@ -32,8 +32,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 - 💡 [ENHANCEMENT] 文脈経済（Context Economy）ドクトリン（ADR-0023）: rate-cap 内で精度を落とさず長時間・自律稼働するためのトークン経済原則。`per-call context hygiene`（不要文脈を渡さない）を最優先に置き、モデル自動選択（tiering）は精度優先で補助レバーに留める。
 - 💡 [ENHANCEMENT] `.claude/rules/context-economy.md`: 安全コア規律（per-call hygiene / cache を壊さない / retrieve>resident / fan-out は難所だけ / 削らない聖域 / lossy には検知層）。
 - 💡 [ENHANCEMENT] `/token-audit` skill: 常駐コンテキストの footprint 計測・汚染/肥大/重複検知・公式 rate_limits（statusLine stdin）の実データ読取り（文脈経済の検知層）。配布コアスキルが 17 → 18 本に。
-- 💡 [ENHANCEMENT] 自律ループ + budget-gate 設計（ADR-0024）: 自律稼働を rate-cap 内で長時間・安定に回す設計（状態の disk 外部化 + サイクルリセット / Stop 境界での段階制御 / 精度の聖域 / fail-open）。強制 hook 配線と AUTO_MODE 既定値は実機検証を要するため未配線（論点は ADR-0025 / ADR-0026 に整理）。
-- 💡 [ENHANCEMENT] `.claude/statusline/ccs-rate-capture.sh`: capturer（公式 rate_limits を正準ファイルへ保存するデータ面）。hook は rate_limits を読めないため強制層の唯一のデータ橋。budget-gate の強制 hook 配線は WSL 実機検証を経た follow-up。
+- 💡 [ENHANCEMENT] 自律ループ + budget-gate 設計（ADR-0024）: 自律稼働を rate-cap 内で長時間・安定に回す設計（状態の disk 外部化 + サイクルリセット / Stop 境界での段階制御 / 精度の聖域 / fail-open）。AUTO_MODE 既定値のポリシーは ADR-0026 で審議中（本リリースでは既定を変えない）。
+- 💡 [ENHANCEMENT] `.claude/hooks/budget-cycle-halt.sh` を `Stop` に配線（ADR-0025）: rate 使用率に応じ &lt;60% 無出力 / 60–85% 助言のみ / &gt;85% で Stop 境界に ledger+commit を促して次サイクルを休止する強制面。capturer が新鮮なデータを書けているときだけ発火し、不在・stale・パース失敗は NORMAL に fail-open（capturer 未配線の PJ は無コストで休眠）。session_id 別マーカーで再入ガードし無限ブロックを防止。WSL 実機で発火・冪等・fail-open・安全ガード非短絡を検証済み。
+- 💡 [ENHANCEMENT] `.claude/statusline/ccs-rate-capture.sh`: capturer（公式 rate_limits を正準ファイルへ保存するデータ面）。hook は rate_limits を読めないため強制層の唯一のデータ橋。budget-cycle-halt.sh はこの正準ファイルを読む。
 - 配布テンプレ `.claude/templates/github/ISSUE_TEMPLATE/downstream-feedback.yml`: `.github/` にのみ存在し配布側に欠落していた下流フィードバック用 Issue テンプレを追加（`.github/` 版と byte 一致）。
 
 ### Changed
@@ -57,7 +58,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 - `docs/decisions/0023-context-economy.md`（0.12.0 で初リリース）
 - `docs/decisions/0024-autonomous-loop-and-budget-gate.md`（0.12.0 で初リリース）
-- `docs/decisions/0025-budget-gate-stop-hook-wiring.md`（新規・Proposed: Stop hook 実配線の論点整理）
+- `docs/decisions/0025-budget-gate-stop-hook-wiring.md`（新規・Accepted: Stop hook を gating+fail-open で配線・WSL 検証済み）
 - `docs/decisions/0026-auto-mode-default.md`（新規・Proposed: AUTO_MODE 既定値の意思決定）
 - `docs/decisions/README.md`（索引更新）
 
