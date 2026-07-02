@@ -43,6 +43,14 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Fixed
 
+- ⚠️ [CRITICAL] **強制層ガードの正規表現バイパスを堅牢化（`guard-bash.sh` / `hook-helpers.sh`）**: DENY 判定が「クォート除去後の生文字列への正規表現マッチ」に依存していたため、自明な変形でガードを素通りできた。以下を修正（各修正に模擬入力の回帰テストを用意）。
+  - **C-1 `git -C <dir>` 等のグローバルオプション経由**: `git -C . push origin main` / `git --git-dir=… checkout main` がサブコマンド判定をすり抜けた。`normalize_git_cmd()`（`hook-helpers.sh` 新設）で `-C` / `-c` / `--git-dir` / `--work-tree` / `--namespace` 等のグローバルオプションを除去し、正規化後の文字列で checkout / switch / push ガードを判定。
+  - **C-2 shell executor 経由**: `bash -c '…'` / `sh -c "…"` / `eval` / `xargs` はペイロードがクォート内にあり、クォート除去で消えて破壊系ガードを素通りした。破壊系ガード（rm 再帰 / 保護ブランチ push / `prisma db push` / `.env` 書換）は executor 検知時に生 COMMAND も併せて判定。executor の存在自体は警告（破壊系トークンが生 COMMAND に無い限り DENY はしない＝誤検知回避）。
+  - **H-1 保護ブランチ push の末尾トークン依存**: `git push origin main --quiet` / `-v origin main` / `origin main;` / `origin HEAD:main -v` が行末 `$` アンカーを外れ AUTO 許可されていた。`push_targets_protected_branch()`（新設）で push 引数のトークン列を走査し、`src:dst` の dst・`refs/heads/` 接頭辞・先頭 `+` を解して判定（アンカー非依存・`--force` 有無非依存・連鎖コマンドは segment 単位で走査）。
+  - **H-2 `rm -Rf` / `find -delete`**: 大文字 `-R` や結合フラグを取りこぼしていた再帰判定を `-[rR]` 大小両対応の結合フラグ対応に。`find … -delete` / `find … -exec rm` を警告対象に追加。
+  - **L-1 `git switch`**: checkout ガードを回避できた `git switch main` を（C-1 正規化後に）checkout ガードへ統合。
+  - **M-1 `.env` writer 取りこぼし**: `printf … > .env` / `cat > .env` / `cp x .env` を Guard4 が拾えなかった。writer 集合に `printf` を追加し、任意コマンドのリダイレクト先 `.env`・`cp`/`mv` の宛先 `.env` を検知（`.env.example` / `.env.local` は非対象）。
+  - 方針: AUTO_MODE 既定値（ADR-0026 で審議中のポリシー）は変更せず、バグ修正に限定。判定文字列の抽出に失敗しても破壊系は安全側（確認 / DENY）に倒す fail-safe を維持。既存 7 挙動の回帰・正常系の誤爆なしを確認。
 - `.claude/agent-memory/MEMORY.md` に残存していた旧スキル名 `/weekly-review` を現名 `/weekly-inventory` に是正（0.6.0 の rename 積み残し）。
 
 ### 変更された ADR
