@@ -23,13 +23,35 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-XX
+
+信頼性（強制層を約束に追いつかせる）＋文脈経済スイートのリリース。破壊的変更なし・既存 PJ は無設定で従来動作を維持する（Standard）。文脈経済・自律ループ系は opt-in（`💡 [ENHANCEMENT]`）。
+
 ### Added
 
-- 文脈経済（Context Economy）ドクトリン（ADR-0023）: rate-cap 内で精度を落とさず長時間・自律稼働するためのトークン経済原則。`per-call context hygiene`（不要文脈を渡さない）を最優先に置き、モデル自動選択（tiering）は精度優先で補助レバーに留める。
-- `.claude/rules/context-economy.md`: 安全コア規律（per-call hygiene / cache を壊さない / retrieve>resident / fan-out は難所だけ / 削らない聖域 / lossy には検知層）。
-- `/token-audit` skill: 常駐コンテキストの footprint 計測・汚染/肥大/重複検知・公式 rate_limits（statusLine stdin）の実データ読取り（文脈経済の検知層）。
-- 自律ループ + budget-gate 設計（ADR-0024）: 自律稼働を rate-cap 内で長時間・安定に回す設計（状態の disk 外部化 + サイクルリセット / Stop 境界での段階制御 / 精度の聖域 / fail-open）。
-- `.claude/statusline/ccs-rate-capture.sh`: capturer（公式 rate_limits を正準ファイルへ保存するデータ面）。hook は rate_limits を読めないため強制層の唯一のデータ橋。budget-gate の強制 hook 配線は WSL 実機検証を経た follow-up。
+- 💡 [ENHANCEMENT] 文脈経済（Context Economy）ドクトリン（ADR-0023）: rate-cap 内で精度を落とさず長時間・自律稼働するためのトークン経済原則。`per-call context hygiene`（不要文脈を渡さない）を最優先に置き、モデル自動選択（tiering）は精度優先で補助レバーに留める。
+- 💡 [ENHANCEMENT] `.claude/rules/context-economy.md`: 安全コア規律（per-call hygiene / cache を壊さない / retrieve>resident / fan-out は難所だけ / 削らない聖域 / lossy には検知層）。
+- 💡 [ENHANCEMENT] `/token-audit` skill: 常駐コンテキストの footprint 計測・汚染/肥大/重複検知・公式 rate_limits（statusLine stdin）の実データ読取り（文脈経済の検知層）。配布コアスキルが 17 → 18 本に。
+- 💡 [ENHANCEMENT] 自律ループ + budget-gate 設計（ADR-0024）: 自律稼働を rate-cap 内で長時間・安定に回す設計（状態の disk 外部化 + サイクルリセット / Stop 境界での段階制御 / 精度の聖域 / fail-open）。強制 hook 配線と AUTO_MODE 既定値は実機検証を要するため未配線（論点は ADR-0025 / ADR-0026 に整理）。
+- 💡 [ENHANCEMENT] `.claude/statusline/ccs-rate-capture.sh`: capturer（公式 rate_limits を正準ファイルへ保存するデータ面）。hook は rate_limits を読めないため強制層の唯一のデータ橋。budget-gate の強制 hook 配線は WSL 実機検証を経た follow-up。
+- 配布テンプレ `.claude/templates/github/ISSUE_TEMPLATE/downstream-feedback.yml`: `.github/` にのみ存在し配布側に欠落していた下流フィードバック用 Issue テンプレを追加（`.github/` 版と byte 一致）。
+
+### Changed
+
+- **PROTECTED_BRANCHES を設定化（信頼性・ADR-0023 系の強制層整合）**: `guard-bash.sh` / `guard-protected-branch-edit.sh` / `session-start.sh` の保護ブランチ `"main"` ハードコードを廃し、`hook-helpers.sh` の共通リーダ `get_protected_branches()` 経由で CLAUDE.md Project Configuration の `PROTECTED_BRANCHES` リストから読む（`SIDEKICK_PROTECTED_BRANCHES` env 上書き可・既定 `"main"`・fail-safe）。STG 運用 PJ で認知層（CLAUDE.md）と強制層（hooks）が乖離し release/stg が保護されないバグを解消。**設定が無い既存 PJ は従来どおり main のみ保護（後方互換）**。printf/awk ベース（echo 不使用）・slash 安全な `_branch_in_set()` で membership 判定。
+- ドキュメントのスキル数を実数 18 に統一（README 両言語 / `docs/lifecycle.md` 両言語 / `three-layers` SVG 両言語）。スキル一覧表に `/token-audit` を明記。`lifecycle` の実体確認スタンプと README の `SIDEKICK_VERSION` 例を 0.12.0 に更新。
+
+### Fixed
+
+- `.claude/agent-memory/MEMORY.md` に残存していた旧スキル名 `/weekly-review` を現名 `/weekly-inventory` に是正（0.6.0 の rename 積み残し）。
+
+### 変更された ADR
+
+- `docs/decisions/0023-context-economy.md`（0.12.0 で初リリース）
+- `docs/decisions/0024-autonomous-loop-and-budget-gate.md`（0.12.0 で初リリース）
+- `docs/decisions/0025-budget-gate-stop-hook-wiring.md`（新規・Proposed: Stop hook 実配線の論点整理）
+- `docs/decisions/0026-auto-mode-default.md`（新規・Proposed: AUTO_MODE 既定値の意思決定）
+- `docs/decisions/README.md`（索引更新）
 
 ## [0.11.1] - 2026-06-20
 
