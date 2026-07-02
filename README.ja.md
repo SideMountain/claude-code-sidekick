@@ -397,7 +397,7 @@ your-project/
 sidekick は **git tag + GitHub Releases** でバージョン管理します。各プロジェクトは取り込み済みバージョンを `CLAUDE.md` に記録:
 
 ```yaml
-SIDEKICK_VERSION: "0.11.0"
+SIDEKICK_VERSION: "0.12.0"
 ```
 
 `/inventory` で最新の GitHub Release と比較し、更新を確認できます。設計判断の全台帳（なぜそうなっているか）は [ADR 索引](./docs/decisions/README.md)。

@@ -398,7 +398,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 sidekick uses **git tags + GitHub Releases** for version management. Each project tracks its adopted version in `CLAUDE.md`:
 
 ```yaml
-SIDEKICK_VERSION: "0.11.0"
+SIDEKICK_VERSION: "0.12.0"
 ```
 
 Run `/inventory` to check for updates against the latest GitHub Release. The full decision ledger (why things are the way they are) is the [ADR index](./docs/decisions/README.md).
