@@ -120,3 +120,62 @@ _branch_in_set() {
   done
   return 1
 }
+
+# =============================================================================
+# Git command normalizer — defuses `git -C <dir>` / `-c` / `--git-dir` bypass
+#
+# Strips git's *global* options (those that sit between `git` and the
+# subcommand) so guards can see the real subcommand. Without this,
+# `git -C . push origin main` slips past a `git\s+push` matcher because of the
+# `-C .` wedged in between. Value-taking options (`-C`, `-c`, `--git-dir`,
+# `--work-tree`, `--namespace`, `--super-prefix`, `--config-env`) consume their
+# argument; the flag options below do not. Idempotent: loops until the string
+# stabilises so stacked options (`git -c x=y -C . push`) fully collapse.
+# Fails safe: on any miss it returns the input unchanged (guards still see
+# whatever subcommand is present).
+#
+# Usage: GIT_CMD=$(normalize_git_cmd "<command string>")
+# =============================================================================
+normalize_git_cmd() {
+  local cmd="$1" prev=""
+  while [ "$cmd" != "$prev" ]; do
+    prev="$cmd"
+    cmd=$(printf '%s' "$cmd" | sed -E \
+      -e 's/(^|[^[:alnum:]_])(git)[[:space:]]+(-C|-c|--git-dir|--work-tree|--namespace|--super-prefix|--config-env)([[:space:]]+|=)[^[:space:]]+/\1\2/g' \
+      -e 's/(^|[^[:alnum:]_])(git)[[:space:]]+(-p|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--no-optional-locks)([[:space:]]+)/\1\2\4/g')
+  done
+  printf '%s' "$cmd"
+}
+
+# =============================================================================
+# Protected-branch push detector — token-based, anchor-independent
+#
+# Scans the *arguments* of a `git push` (everything after `git push`) and
+# returns 0 if any refspec targets a protected branch. Works regardless of
+# trailing flags/tokens (`--quiet`, `-v`, `;`, `--force`) that used to slip a
+# protected push past a `$`-anchored matcher. Understands refspecs: for
+# `src:dst` it checks the dst side; strips a leading `+` (force) and a
+# `refs/heads/` prefix. Option flags (`-x`) are skipped. Globbing is disabled
+# for the scan so a stray `*` in the args is not expanded against the fs.
+#
+# Usage: push_targets_protected_branch "<args after 'git push'>" "<set>"
+# =============================================================================
+push_targets_protected_branch() {
+  local args="$1" set="$2" tok dst rc=1 restore=0
+  case $- in *f*) : ;; *) set -f; restore=1 ;; esac
+  for tok in $args; do
+    case "$tok" in -*) continue ;; esac
+    tok="${tok%%;*}"; tok="${tok%%&*}"; tok="${tok%%|*}"
+    tok="${tok//\"/}"; tok="${tok//\'/}"; tok="${tok//\`/}"
+    [ -z "$tok" ] && continue
+    case "$tok" in
+      *:*) dst="${tok##*:}" ;;
+      *)   dst="$tok" ;;
+    esac
+    dst="${dst#+}"
+    dst="${dst#refs/heads/}"
+    if _branch_in_set "$dst" "$set"; then rc=0; break; fi
+  done
+  [ "$restore" -eq 1 ] && set +f
+  return "$rc"
+}
