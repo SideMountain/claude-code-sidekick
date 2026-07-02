@@ -62,7 +62,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 
 ## Capability inventory
 
-> Verified against `claude-code-sidekick` at v0.11.0 (main). **17 distributed core skills** + **1 opt-in
+> Verified against `claude-code-sidekick` at v0.12.0 (main). **18 distributed core skills** + **1 opt-in
 > stack-pack skill** (`system-map`, Next.js).
 
 ### Skills — session / lifecycle
@@ -81,6 +81,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 | `/auto-implement` | Autonomous: parse → worktree → impl+test → `/review` → PR → capture | user / unattended |
 | `/record-decision` | Numbered ADR + update decisions index | user / `/close-chat` / `/discover` |
 | `/tune` | Read-only 4-lane PJ health audit → human-gated remediation (never deletes tests) | user |
+| `/token-audit` | Read-only context-economy audit: resident footprint + pollution/bloat/dup detection + official `rate_limits` read | user |
 | `/review` | Orchestrator → 5 perspectives in parallel | user / `/auto-implement` |
 | `/review-code` · `/review-test` · `/review-ops` · `/review-design` · `/review-spec` | Per-perspective pre-PR sub-reviews | via `/review` |
 

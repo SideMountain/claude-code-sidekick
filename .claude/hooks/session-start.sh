@@ -14,6 +14,8 @@
 # chmod +x .claude/hooks/session-start.sh
 # =============================================================================
 
+source "$(dirname "$0")/hook-helpers.sh"
+
 INPUT=$(cat)
 if command -v jq &>/dev/null; then
   CWD=$(printf '%s\n' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null)
@@ -42,8 +44,9 @@ fi
 cd "$PROJECT_DIR" 2>/dev/null || exit 0
 
 # --- Configuration ---
-# Protected branches: branches that should not be directly committed to
-PROTECTED_BRANCHES=("main")
+# Protected branches sourced from CLAUDE.md PROTECTED_BRANCHES
+# (SIDEKICK_PROTECTED_BRANCHES env override; defaults to "main"). See hook-helpers.sh.
+read -ra PROTECTED_BRANCHES <<< "$(get_protected_branches "$PROJECT_DIR/CLAUDE.md")"
 
 echo "=== SESSION START: Automated Checks ==="
 echo ""

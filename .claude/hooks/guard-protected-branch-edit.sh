@@ -3,7 +3,7 @@
 # PreToolUse Hook (Edit|Write): Block file edits on protected branches
 #
 # Guards:
-#   1. Block ALL file edits on protected branches (main)
+#   1. Block ALL file edits on protected branches (from CLAUDE.md PROTECTED_BRANCHES)
 #      -> Forces work to happen in feature branches via worktrees
 #   2. Block .env DATABASE_URL modifications in ALL environments
 #      -> Production DB access must use inline env vars, not .env changes
@@ -58,7 +58,9 @@ if [ -z "$BRANCH" ]; then
 fi
 
 # Not on a protected branch -> allow
-if [ "$BRANCH" != "main" ]; then
+# Protected set sourced from CLAUDE.md (env override / default "main"; see hook-helpers.sh)
+PROTECTED_BRANCHES=$(get_protected_branches "$(dirname "$0")/../../CLAUDE.md")
+if ! _branch_in_set "$BRANCH" "$PROTECTED_BRANCHES"; then
   allow_silent
 fi
 

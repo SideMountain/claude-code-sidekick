@@ -23,13 +23,44 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-XX
+
+信頼性（強制層を約束に追いつかせる）＋文脈経済スイートのリリース。破壊的変更なし・既存 PJ は無設定で従来動作を維持する（Standard）。文脈経済・自律ループ系は opt-in（`💡 [ENHANCEMENT]`）。
+
 ### Added
 
-- 文脈経済（Context Economy）ドクトリン（ADR-0023）: rate-cap 内で精度を落とさず長時間・自律稼働するためのトークン経済原則。`per-call context hygiene`（不要文脈を渡さない）を最優先に置き、モデル自動選択（tiering）は精度優先で補助レバーに留める。
-- `.claude/rules/context-economy.md`: 安全コア規律（per-call hygiene / cache を壊さない / retrieve>resident / fan-out は難所だけ / 削らない聖域 / lossy には検知層）。
-- `/token-audit` skill: 常駐コンテキストの footprint 計測・汚染/肥大/重複検知・公式 rate_limits（statusLine stdin）の実データ読取り（文脈経済の検知層）。
-- 自律ループ + budget-gate 設計（ADR-0024）: 自律稼働を rate-cap 内で長時間・安定に回す設計（状態の disk 外部化 + サイクルリセット / Stop 境界での段階制御 / 精度の聖域 / fail-open）。
-- `.claude/statusline/ccs-rate-capture.sh`: capturer（公式 rate_limits を正準ファイルへ保存するデータ面）。hook は rate_limits を読めないため強制層の唯一のデータ橋。budget-gate の強制 hook 配線は WSL 実機検証を経た follow-up。
+- 💡 [ENHANCEMENT] 文脈経済（Context Economy）ドクトリン（ADR-0023）: rate-cap 内で精度を落とさず長時間・自律稼働するためのトークン経済原則。`per-call context hygiene`（不要文脈を渡さない）を最優先に置き、モデル自動選択（tiering）は精度優先で補助レバーに留める。
+- 💡 [ENHANCEMENT] `.claude/rules/context-economy.md`: 安全コア規律（per-call hygiene / cache を壊さない / retrieve>resident / fan-out は難所だけ / 削らない聖域 / lossy には検知層）。
+- 💡 [ENHANCEMENT] `/token-audit` skill: 常駐コンテキストの footprint 計測・汚染/肥大/重複検知・公式 rate_limits（statusLine stdin）の実データ読取り（文脈経済の検知層）。配布コアスキルが 17 → 18 本に。
+- 💡 [ENHANCEMENT] 自律ループ + budget-gate 設計（ADR-0024）: 自律稼働を rate-cap 内で長時間・安定に回す設計（状態の disk 外部化 + サイクルリセット / Stop 境界での段階制御 / 精度の聖域 / fail-open）。AUTO_MODE 既定値のポリシーは ADR-0026 で審議中（本リリースでは既定を変えない）。
+- 💡 [ENHANCEMENT] `.claude/hooks/budget-cycle-halt.sh` を `Stop` に配線（ADR-0025）: rate 使用率に応じ &lt;60% 無出力 / 60–85% 助言のみ / &gt;85% で Stop 境界に ledger+commit を促して次サイクルを休止する強制面。capturer が新鮮なデータを書けているときだけ発火し、不在・stale・パース失敗は NORMAL に fail-open（capturer 未配線の PJ は無コストで休眠）。session_id 別マーカーで再入ガードし無限ブロックを防止。WSL 実機で発火・冪等・fail-open・安全ガード非短絡を検証済み。
+- 💡 [ENHANCEMENT] `.claude/statusline/ccs-rate-capture.sh`: capturer（公式 rate_limits を正準ファイルへ保存するデータ面）。hook は rate_limits を読めないため強制層の唯一のデータ橋。budget-cycle-halt.sh はこの正準ファイルを読む。
+- 配布テンプレ `.claude/templates/github/ISSUE_TEMPLATE/downstream-feedback.yml`: `.github/` にのみ存在し配布側に欠落していた下流フィードバック用 Issue テンプレを追加（`.github/` 版と byte 一致）。
+
+### Changed
+
+- **PROTECTED_BRANCHES を設定化（信頼性・ADR-0023 系の強制層整合）**: `guard-bash.sh` / `guard-protected-branch-edit.sh` / `session-start.sh` の保護ブランチ `"main"` ハードコードを廃し、`hook-helpers.sh` の共通リーダ `get_protected_branches()` 経由で CLAUDE.md Project Configuration の `PROTECTED_BRANCHES` リストから読む（`SIDEKICK_PROTECTED_BRANCHES` env 上書き可・既定 `"main"`・fail-safe）。STG 運用 PJ で認知層（CLAUDE.md）と強制層（hooks）が乖離し release/stg が保護されないバグを解消。**設定が無い既存 PJ は従来どおり main のみ保護（後方互換）**。printf/awk ベース（echo 不使用）・slash 安全な `_branch_in_set()` で membership 判定。
+- ドキュメントのスキル数を実数 18 に統一（README 両言語 / `docs/lifecycle.md` 両言語 / `three-layers` SVG 両言語）。スキル一覧表に `/token-audit` を明記。`lifecycle` の実体確認スタンプと README の `SIDEKICK_VERSION` 例を 0.12.0 に更新。
+
+### Fixed
+
+- ⚠️ [CRITICAL] **強制層ガードの正規表現バイパスを堅牢化（`guard-bash.sh` / `hook-helpers.sh`）**: DENY 判定が「クォート除去後の生文字列への正規表現マッチ」に依存していたため、自明な変形でガードを素通りできた。以下を修正（各修正に模擬入力の回帰テストを用意）。
+  - **C-1 `git -C <dir>` 等のグローバルオプション経由**: `git -C . push origin main` / `git --git-dir=… checkout main` がサブコマンド判定をすり抜けた。`normalize_git_cmd()`（`hook-helpers.sh` 新設）で `-C` / `-c` / `--git-dir` / `--work-tree` / `--namespace` 等のグローバルオプションを除去し、正規化後の文字列で checkout / switch / push ガードを判定。
+  - **C-2 shell executor 経由**: `bash -c '…'` / `sh -c "…"` / `eval` / `xargs` はペイロードがクォート内にあり、クォート除去で消えて破壊系ガードを素通りした。破壊系ガード（rm 再帰 / 保護ブランチ push / `prisma db push` / `.env` 書換）は executor 検知時に生 COMMAND も併せて判定。executor の存在自体は警告（破壊系トークンが生 COMMAND に無い限り DENY はしない＝誤検知回避）。
+  - **H-1 保護ブランチ push の末尾トークン依存**: `git push origin main --quiet` / `-v origin main` / `origin main;` / `origin HEAD:main -v` が行末 `$` アンカーを外れ AUTO 許可されていた。`push_targets_protected_branch()`（新設）で push 引数のトークン列を走査し、`src:dst` の dst・`refs/heads/` 接頭辞・先頭 `+` を解して判定（アンカー非依存・`--force` 有無非依存・連鎖コマンドは segment 単位で走査）。
+  - **H-2 `rm -Rf` / `find -delete`**: 大文字 `-R` や結合フラグを取りこぼしていた再帰判定を `-[rR]` 大小両対応の結合フラグ対応に。`find … -delete` / `find … -exec rm` を警告対象に追加。
+  - **L-1 `git switch`**: checkout ガードを回避できた `git switch main` を（C-1 正規化後に）checkout ガードへ統合。
+  - **M-1 `.env` writer 取りこぼし**: `printf … > .env` / `cat > .env` / `cp x .env` を Guard4 が拾えなかった。writer 集合に `printf` を追加し、任意コマンドのリダイレクト先 `.env`・`cp`/`mv` の宛先 `.env` を検知（`.env.example` / `.env.local` は非対象）。
+  - 方針: AUTO_MODE 既定値（ADR-0026 で審議中のポリシー）は変更せず、バグ修正に限定。判定文字列の抽出に失敗しても破壊系は安全側（確認 / DENY）に倒す fail-safe を維持。既存 7 挙動の回帰・正常系の誤爆なしを確認。
+- `.claude/agent-memory/MEMORY.md` に残存していた旧スキル名 `/weekly-review` を現名 `/weekly-inventory` に是正（0.6.0 の rename 積み残し）。
+
+### 変更された ADR
+
+- `docs/decisions/0023-context-economy.md`（0.12.0 で初リリース）
+- `docs/decisions/0024-autonomous-loop-and-budget-gate.md`（0.12.0 で初リリース）
+- `docs/decisions/0025-budget-gate-stop-hook-wiring.md`（新規・Accepted: Stop hook を gating+fail-open で配線・WSL 検証済み）
+- `docs/decisions/0026-auto-mode-default.md`（新規・Proposed: AUTO_MODE 既定値の意思決定）
+- `docs/decisions/README.md`（索引更新）
 
 ## [0.11.1] - 2026-06-20
 

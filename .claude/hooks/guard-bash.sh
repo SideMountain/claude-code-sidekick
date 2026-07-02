@@ -3,14 +3,23 @@
 # PreToolUse Hook (Bash): Block dangerous bash commands
 #
 # Guards:
-#   1. git checkout (blocked in main workspace — use worktrees instead)
+#   1. git checkout / switch (blocked in main workspace — use worktrees instead)
 #   2. git push to protected branches (hard block — must use PRs)
 #   3. git push general (warning — defers to permission dialog)
 #   4. .env DATABASE_URL modification via shell commands (hard block)
+#   4.5 any shell write to .env — redirect / cp / mv (hard block)
 #   5. rm recursive deletion (hard block — requires user confirmation)
 #   6. prisma db push (hard block — must use prisma migrate dev)
 #   7. gh api write operations (hard block — POST/PUT/DELETE/PATCH)
 #   8. gh pr merge (warning — defers to permission dialog)
+#   9. find bulk deletion (-delete / -exec rm) (warning)
+#  10. shell executor present (bash -c / sh -c / eval / xargs) (warning)
+#
+# Guard hardening (red-team): git invocations are normalised first so that
+# `git -C <dir>` / `-c` / `--git-dir` cannot smuggle a subcommand past a guard
+# (normalize_git_cmd). Destructive guards additionally inspect the raw command
+# when a shell executor is present, because executors carry their payload inside
+# the quotes that CLEAN_CMD strips.
 #
 # Output: JSON (hookSpecificOutput) to stdout, human-readable to stderr
 # NOTE: Uses printf instead of echo for JSON piping (echo expands backslashes
@@ -42,8 +51,10 @@ fi
 CLEAN_CMD=$(printf '%s\n' "$COMMAND" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/<<'EOF'.*//; s/<<EOF.*//")
 
 # --- Configuration ---
-# Protected branches that cannot be directly pushed to
-PROTECTED_BRANCHES="main"
+# Protected branches that cannot be directly pushed to (space-separated).
+# Sourced from CLAUDE.md PROTECTED_BRANCHES (SIDEKICK_PROTECTED_BRANCHES env
+# override; defaults to "main" when unset). See hook-helpers.sh.
+PROTECTED_BRANCHES=$(get_protected_branches "$(dirname "$0")/../../CLAUDE.md")
 
 # --- Auto Mode ---
 # Set SIDEKICK_AUTO=true to auto-approve warnings (allow guards).
@@ -63,24 +74,56 @@ is_main_workspace() {
   fi
 }
 
-# --- Guard 1: git checkout (blocked in main workspace) ---
-if printf '%s\n' "$CLEAN_CMD" | grep -qE 'git\s+checkout\b'; then
+# --- Normalization & executor detection (guard hardening) ---
+# C-1: neutralise `git -C <dir>` / `-c` / `--git-dir` / `--work-tree` so the git
+#      guards see the real subcommand instead of skipping over a leading option.
+GIT_CMD=$(normalize_git_cmd "$CLEAN_CMD")
+
+# C-2: shell executors (bash -c / sh -c / eval / xargs) carry their payload
+#      inside the quotes that CLEAN_CMD strips, defeating the quote-based
+#      defence. When one is present we ALSO inspect the raw COMMAND for
+#      destructive patterns so the wrapped payload cannot hide. A harmless
+#      executor only triggers a warning (Guard 10), never a deny.
+EXECUTOR_PRESENT=0
+if printf '%s\n' "$COMMAND" | grep -qE '\b(bash|sh)[[:space:]]+-c\b|\beval\b|\bxargs\b'; then
+  EXECUTOR_PRESENT=1
+fi
+
+# Haystacks for destructive checks. Default: quote-stripped CLEAN_CMD (avoids
+# false positives from quoted text). With an executor present, append the raw
+# COMMAND / its git-normalised form so the hidden payload is matched too.
+DESTRUCT_CMD="$CLEAN_CMD"
+GIT_CHECK_CMD="$GIT_CMD"
+if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
+  DESTRUCT_CMD=$(printf '%s\n%s' "$CLEAN_CMD" "$COMMAND")
+  GIT_CHECK_CMD=$(printf '%s\n%s' "$GIT_CMD" "$(normalize_git_cmd "$COMMAND")")
+fi
+
+# --- Guard 1: git checkout / switch (blocked in main workspace) [C-1, L-1] ---
+if printf '%s\n' "$GIT_CHECK_CMD" | grep -qE 'git\s+(checkout|switch)\b'; then
   if is_main_workspace; then
-    deny "git checkout is forbidden in the main workspace. Use 'git worktree add' for branch work or 'git restore' for file restoration."
+    deny "git checkout/switch is forbidden in the main workspace. Use 'git worktree add' for branch work or 'git restore' for file restoration."
   fi
 fi
 
-# --- Guard 2: Direct push to protected branches (hard block) ---
-BRANCH_PATTERN=$(printf '%s\n' "$PROTECTED_BRANCHES" | tr ' ' '|')
-if printf '%s\n' "$CLEAN_CMD" | grep -qE "git\s+push\s+\S+\s+($BRANCH_PATTERN)\s*$"; then
-  deny "Direct push to protected branches ($PROTECTED_BRANCHES) is forbidden. Use PRs."
-fi
-if printf '%s\n' "$CLEAN_CMD" | grep -qE "git\s+push\s+\S+\s+\S*:($BRANCH_PATTERN)\s*$"; then
-  deny "Direct push to protected branches ($PROTECTED_BRANCHES) is forbidden. Use PRs."
+# --- Guard 2: Direct push to protected branches (hard block) [H-1, C-1, C-2] ---
+# Token-based: any refspec whose target is a protected branch is blocked,
+# regardless of trailing flags/tokens or `$`-anchoring (H-1). Each command
+# segment is scanned independently so chained pushes are all covered.
+if printf '%s\n' "$GIT_CHECK_CMD" | grep -qE 'git\s+push\b'; then
+  while IFS= read -r _seg; do
+    printf '%s\n' "$_seg" | grep -qE 'git\s+push\b' || continue
+    _push_args=$(printf '%s\n' "$_seg" | sed -E 's/^.*git[[:space:]]+push[[:space:]]*//')
+    if push_targets_protected_branch "$_push_args" "$PROTECTED_BRANCHES"; then
+      deny "Direct push to protected branches ($PROTECTED_BRANCHES) is forbidden. Use PRs."
+    fi
+  done <<SEGMENTS_EOF
+$(printf '%s\n' "$GIT_CHECK_CMD" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
+SEGMENTS_EOF
 fi
 
 # --- Guard 3: git push general (allow with context) ---
-if printf '%s\n' "$CLEAN_CMD" | grep -qE 'git\s+push\b'; then
+if printf '%s\n' "$GIT_CHECK_CMD" | grep -qE 'git\s+push\b'; then
   if [ "$AUTO_MODE" = "true" ]; then
     allow_with_context "AUTO: git push auto-approved (SIDEKICK_AUTO=true)."
   else
@@ -88,18 +131,26 @@ if printf '%s\n' "$CLEAN_CMD" | grep -qE 'git\s+push\b'; then
   fi
 fi
 
-# --- Guard 4: .env DATABASE_URL modification via shell (hard block) ---
-if printf '%s\n' "$COMMAND" | grep -qE '(sed|awk|echo.*>|tee)' && printf '%s\n' "$COMMAND" | grep -q 'DATABASE_URL' && printf '%s\n' "$COMMAND" | grep -q '\.env'; then
+# --- Guard 4: .env DATABASE_URL modification via shell (hard block) [M-1] ---
+if printf '%s\n' "$COMMAND" | grep -qE '(sed|awk|echo.*>|printf.*>|tee)' && printf '%s\n' "$COMMAND" | grep -q 'DATABASE_URL' && printf '%s\n' "$COMMAND" | grep -q '\.env'; then
   deny "Modifying DATABASE_URL in .env via shell is forbidden. .env must always point to the staging DB. For production DB operations, use inline env vars: DATABASE_URL=\"prod-string\" node scripts/xxx.js"
 fi
 
-# --- Guard 5: rm recursive deletion (hard block) ---
-if printf '%s\n' "$CLEAN_CMD" | grep -qE 'rm\s+(-rf|-fr|-r|--recursive)\b|rm\s+-f\s+-r\b|rm\s+-r\s+-f\b'; then
+# --- Guard 4.5: Any shell write to .env — redirect / cp / mv (hard block) [M-1] ---
+# The terminator class [^A-Za-z0-9._-] keeps `.env.example` / `.env.local` /
+# `.env-prod` from matching (only the exact `.env` basename is protected).
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '>>?[[:space:]]*[^[:space:]|&;>]*\.env([^A-Za-z0-9._-]|$)' \
+   || printf '%s\n' "$DESTRUCT_CMD" | grep -qE '(^|[^[:alnum:]])(cp|mv)[[:space:]].*[[:space:]]\.env[[:space:]]*([;&|"'"'"'`]|$)'; then
+  deny "Writing to .env via shell (redirect / cp / mv) is forbidden. .env is protected and must always point to the staging DB. Edit .env manually, or pass production credentials inline: DATABASE_URL=\"prod-string\" node scripts/xxx.js"
+fi
+
+# --- Guard 5: rm recursive deletion (hard block) [H-2: -r/-R + combined flags] ---
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '\brm\s+(-[a-zA-Z]*[rR]|--recursive)|\brm\s+-[a-zA-Z]*\s+-[a-zA-Z]*[rR]'; then
   deny "Recursive file deletion requires user confirmation. Confirm the target path and reason with the user before executing."
 fi
 
 # --- Guard 6: prisma db push (hard block) ---
-if printf '%s\n' "$CLEAN_CMD" | grep -qE 'prisma\s+db\s+push'; then
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE 'prisma\s+db\s+push'; then
   deny "'prisma db push' is forbidden. Use 'prisma migrate dev --name <description>' instead."
 fi
 
@@ -119,7 +170,7 @@ if printf '%s\n' "$MERGE_CHECK_CMD" | grep -qE 'gh\s+pr\s+merge'; then
   PR_NUM=$(printf '%s\n' "$MERGE_CHECK_CMD" | grep -oE 'gh\s+pr\s+merge\s+([0-9]+)' | grep -oE '[0-9]+')
   if [ -n "$PR_NUM" ]; then
     BASE=$(gh pr view "$PR_NUM" --json baseRefName -q '.baseRefName' 2>/dev/null)
-    if printf '%s\n' "$PROTECTED_BRANCHES" | grep -qw "$BASE"; then
+    if _branch_in_set "$BASE" "$PROTECTED_BRANCHES"; then
       deny "PR #$PR_NUM targets protected branch '$BASE'. Merging to protected branches requires explicit user confirmation."
     fi
   fi
@@ -128,6 +179,20 @@ if printf '%s\n' "$MERGE_CHECK_CMD" | grep -qE 'gh\s+pr\s+merge'; then
   else
     allow_with_context "WARNING: gh pr merge detected. Verify the PR number, target branch, and changes."
   fi
+fi
+
+# --- Guard 9: find bulk deletion (warning) [H-2] ---
+# find ... -exec rm -rf already denies via Guard 5; this catches the softer
+# forms (-delete / -exec rm without recursion) that still remove many files.
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '\bfind\b.*-delete\b' \
+   || printf '%s\n' "$DESTRUCT_CMD" | grep -qE '\bfind\b.*-exec\s+rm\b'; then
+  allow_with_context "WARNING: bulk deletion via find (-delete / -exec rm) detected. This can remove many files irreversibly. Verify the path and predicate before proceeding."
+fi
+
+# --- Guard 10: shell executor present (warning) [C-2b] ---
+# Reached only when no destructive pattern was found inside the executor.
+if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
+  allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
 fi
 
 allow_silent
