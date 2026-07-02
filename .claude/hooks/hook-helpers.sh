@@ -52,3 +52,71 @@ allow_with_context() {
 allow_silent() {
   exit 0
 }
+
+# =============================================================================
+# Protected-branch configuration reader
+#
+# Resolves the project's protected-branch set so the guards and session-start
+# stay in sync with the authoritative config instead of a hard-coded "main".
+# This keeps the recognition layer (CLAUDE.md) and the enforcement layer (hooks)
+# aligned for STG projects that protect more than one branch.
+#
+# Priority (first hit wins):
+#   1. SIDEKICK_PROTECTED_BRANCHES env var (space-separated) — CI / testing
+#   2. CLAUDE.md Project Configuration: the PROTECTED_BRANCHES: YAML list
+#   3. "main" (default — preserves prior behaviour when nothing is configured)
+#
+# Args: $1 = path to CLAUDE.md (optional). Output: space-separated branch names.
+# Uses printf + awk (no echo). Fails safe to "main" on any parse miss.
+# =============================================================================
+get_protected_branches() {
+  local claude_md="${1:-}"
+  local default_branches="main"
+
+  # 1. Env override (highest priority; useful for CI / testing)
+  if [ -n "${SIDEKICK_PROTECTED_BRANCHES:-}" ]; then
+    printf '%s' "$SIDEKICK_PROTECTED_BRANCHES"
+    return 0
+  fi
+
+  # 2. Parse the PROTECTED_BRANCHES: YAML list block from CLAUDE.md
+  if [ -n "$claude_md" ] && [ -f "$claude_md" ]; then
+    local parsed
+    parsed=$(awk '
+      done { next }
+      /^[[:space:]]*PROTECTED_BRANCHES[[:space:]]*:/ { inblock=1; next }
+      inblock == 1 {
+        # active list item "  - name" (commented "  # - name" is skipped below)
+        if ($0 ~ /^[[:space:]]*-[[:space:]]*[^#[:space:]]/) {
+          line = $0
+          sub(/#.*/, "", line)                        # strip trailing comment
+          sub(/^[[:space:]]*-[[:space:]]*/, "", line)  # strip leading "  - "
+          gsub(/[[:space:]"]/, "", line)               # strip spaces and quotes
+          if (line != "") printf "%s ", line
+          next
+        }
+        # comment or blank line inside the block: keep scanning
+        if ($0 ~ /^[[:space:]]*(#|$)/) { next }
+        # any other content line ends the block
+        inblock = 0; done = 1
+      }
+    ' "$claude_md" 2>/dev/null | sed 's/[[:space:]]*$//')
+    if [ -n "$parsed" ]; then
+      printf '%s' "$parsed"
+      return 0
+    fi
+  fi
+
+  # 3. Fallback (backward compatible: main-only protection)
+  printf '%s' "$default_branches"
+}
+
+# Exact membership test against a space-separated set (slash-safe, unlike grep -w).
+# Usage: _branch_in_set "<branch>" "<space-separated set>"
+_branch_in_set() {
+  local needle="$1" set="$2" item
+  for item in $set; do
+    [ "$needle" = "$item" ] && return 0
+  done
+  return 1
+}

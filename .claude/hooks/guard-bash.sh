@@ -42,8 +42,10 @@ fi
 CLEAN_CMD=$(printf '%s\n' "$COMMAND" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/<<'EOF'.*//; s/<<EOF.*//")
 
 # --- Configuration ---
-# Protected branches that cannot be directly pushed to
-PROTECTED_BRANCHES="main"
+# Protected branches that cannot be directly pushed to (space-separated).
+# Sourced from CLAUDE.md PROTECTED_BRANCHES (SIDEKICK_PROTECTED_BRANCHES env
+# override; defaults to "main" when unset). See hook-helpers.sh.
+PROTECTED_BRANCHES=$(get_protected_branches "$(dirname "$0")/../../CLAUDE.md")
 
 # --- Auto Mode ---
 # Set SIDEKICK_AUTO=true to auto-approve warnings (allow guards).
@@ -119,7 +121,7 @@ if printf '%s\n' "$MERGE_CHECK_CMD" | grep -qE 'gh\s+pr\s+merge'; then
   PR_NUM=$(printf '%s\n' "$MERGE_CHECK_CMD" | grep -oE 'gh\s+pr\s+merge\s+([0-9]+)' | grep -oE '[0-9]+')
   if [ -n "$PR_NUM" ]; then
     BASE=$(gh pr view "$PR_NUM" --json baseRefName -q '.baseRefName' 2>/dev/null)
-    if printf '%s\n' "$PROTECTED_BRANCHES" | grep -qw "$BASE"; then
+    if _branch_in_set "$BASE" "$PROTECTED_BRANCHES"; then
       deny "PR #$PR_NUM targets protected branch '$BASE'. Merging to protected branches requires explicit user confirmation."
     fi
   fi
