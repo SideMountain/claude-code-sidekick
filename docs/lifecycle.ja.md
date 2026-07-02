@@ -39,7 +39,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 
 ## 機能インベントリ
 
-> `claude-code-sidekick` v0.11.0（main）で実体確認。**配布コア skill 17本** + **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
+> `claude-code-sidekick` v0.12.0（main）で実体確認。**配布コア skill 18本** + **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
 
 ### Skills — session / lifecycle
 | Skill | 何 | トリガ |
@@ -57,6 +57,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `/auto-implement` | 自律: 解析 → worktree → 実装+テスト → `/review` → PR → 回収 | user / 無人 |
 | `/record-decision` | 採番 ADR 作成 + decisions index 更新 | user / `/close-chat` / `/discover` |
 | `/tune` | read-only 4レーン PJ 健全性監査 → 人手ゲート修正（テスト削除はしない） | user |
+| `/token-audit` | read-only 文脈経済監査: 常駐 footprint + 汚染/肥大/重複検知 + 公式 `rate_limits` 読取り | user |
 | `/review` | オーケストレータ → 5観点を並列 | user / `/auto-implement` |
 | `/review-code`・`/review-test`・`/review-ops`・`/review-design`・`/review-spec` | 観点別の pre-PR サブレビュー | `/review` 経由 |
 
