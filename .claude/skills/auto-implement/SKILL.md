@@ -68,9 +68,10 @@ git worktree add "../$(basename $(pwd))-auto" -b "$BRANCH_NAME" "origin/$BASE_BR
 ## Phase 2: 計画 + 実装（公式部品）
 
 1. **plan mode で分解** — 作業を検証可能な最小単位に割る。1 単位 = テスト緑で都度証明できる粒度。
-2. **`/goal` で完了条件を宣言** — Phase 0 の完了条件（コマンド／テスト／画面）を `/goal` に渡し、複数ターン自動実行させる。`/goal` の評価器が「未達」を判定するので、ccs 側で完了を再判断しない。
+2. **`/goal` で完了条件を宣言** — Phase 0 の完了条件（コマンド／テスト／画面）を `/goal` に渡し、複数ターン自動実行させる。**駆動主体は本スキルの指揮ループ**。/goal は完了条件の宣言と達成確認の補助で、内側の実装リトライ（最大3回）は下記 Agent 隔離実行が担う。**/goal 評価器の判定は補助入力**であって、完了の主判定は機械検証（`TEST/TYPECHECK/BUILD` green・Phase 4）。
 3. **実装は Agent ツールで隔離実行**（CLAUDE.md / brain 自動ロード）。thinking.md Step 1（現状調査）→ 実装 → スコープテスト → 失敗は修正ループ（最大3回）→ コミット（背景/対応/影響・H15）。
-4. **`/verify` で動作実証（R9）** — diff がランタイム表面（`app/` `api/` `src/` UI・hooks 実体）に触れる → `/verify` で end-to-end 実証。docs / rules / テストのみ → 省略。
+   - **R4-impl（編集直前ゲート・ADR-0028 決定4）**: 変更対象の関数・シンボル・設定キーを当該セッションで Read していなければ、編集前に必ず Read する。新規に呼ぶ外部 API・コマンドは一次ソース（公式ドキュメント・`--help` 実行）を確認してから使う。記憶・推測で API 名・引数・挙動を書かない。
+4. **`/verify` で動作実証（R9）** — diff がランタイム表面（`app/` `api/` `src/` UI・hooks 実体）に触れる → `/verify` で end-to-end 実証。docs / rules / テストのみ → `/verify` は省略するが、**完了判定に機械確認を最低 1 つ必須**（リンク切れ grep・整形チェック・当該スクリプトの実行のいずれか）。評価器のみでの完了判定は禁止。
 
 > 公式部品は**存在チェック**してから使う（ADR-0027 決定3・外部依存は失敗する前提）: `source .claude/hooks/hook-helpers.sh; ccs_official_gate goal; ccs_official_gate verify`。不在なら WARN を surface し、Phase 2 の Agent ループ（テスト緑ゲート）に fallback する（silent 破綻禁止）。
 
@@ -118,19 +119,15 @@ Stop hook（`budget-cycle-halt.sh`）の systemMessage で状態を受け取り�
 | **THROTTLE**（60–85%） | **fan-out 幅のみ縮退**（並列 worktree 本数を減らす・R3 敵対検証の**票数のみ**減らす・出力簡約）。難所の敵対検証は**発火自体は維持**。縮退した事実（何を何票→何票にしたか）を **ledger に明示**（silent drop 禁止・§7）。 |
 | **PAUSE**（>85%） | 次の Stop 境界で ledger + commit を残して休止。実行中の単一ツールは殺さない。`resets_at` まで新規着手しない。 |
 
-## 難所の閉集合（R2）+ 敵対検証（R3）
+## 難所判定（R2）— 単一ソース + 機械 force-flag
 
-閉集合と「判定に迷う場合も難所として扱う（上位既定）」の規約は `.claude/rules/context-economy.md` §8。auto-implement で発火する難所:
+**閉集合 5 項目・エスカレーション ladder（L1–L4）・R3 敵対検証の定型は `.claude/rules/context-economy.md` §8 が単一ソース**（ここには再掲しない）。本スキルでの発火点:
 
-1. **設計判断**（複数案の裁定 / スキーマ・API 契約変更）　2. **root-cause 分析**（間欠・並行性・環境依存）　3. **矛盾裁定**（Phase 3 の食い違い）　4. **セキュリティ**（認可・信頼境界・ガード変更）　5. **最終 judge**（Phase 3 のマージ可否 / 無人続行可否）
+1. **機械 force-flag を前置**（ADR-0028 決定3）: `bash .claude/scripts/detect-hard-spot.sh "origin/$BASE_BRANCH"` を実行し、**HARD_SPOT 出力が 1 行でもあれば難所として扱う**。モデルの自己判定で force-flag を**否定するのは禁止**（追加する方向のみ可）。
+2. **Phase 2**: 実装中の設計判断・root-cause は難所 → §8 ladder（L2 多視点 3 票 / L3 実行 arbiter）を発火。
+3. **Phase 3**: レビューの矛盾裁定は難所。**最終 judge（マージ可否 / 無人続行可否）は L4**（多エージェント裁定 + min()）。
 
-難所では単発判断を禁止し、結論を出す前に R3 のいずれか1つ以上を必ず実行する:
-
-- **反証プロンプト**: 「この結論を落とす理由を1つ挙げよ。挙がらなければ確認した根拠を1行で示せ」
-- **premise-check**: 「前提にしている事実を3つ列挙し、各々を当該セッションで確認したか YES/NO」
-- **消失テスト**（削除・統合・縮退時）: 「この変更で消える検証が過去に捕まえた問題を挙げよ。挙がらないと確認してから進める」
-
-多視点 judge へ fan-out する場合は Agent を独立に起動し、各エージェントに別レンズ（correctness / security / 再現性）を割り当てる。THROTTLE 時は票数のみ縮退。
+多視点 judge へ fan-out する時は Agent を独立起動し別レンズ（correctness / security / 再現性）を割り当てる。THROTTLE 時は票数のみ縮退し ledger に記録（L1 の 1 本・L3 の実行 arbiter は縮退対象外・§8）。
 
 ## fan-out 発火条件（R8 trivial-gating）
 
