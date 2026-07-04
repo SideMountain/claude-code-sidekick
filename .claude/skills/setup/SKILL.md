@@ -149,7 +149,7 @@ PARENT_DIR=$(cd .. && pwd)
 > `settings.local.json` は git 非追跡なので、マシン固有のパスが入っても問題ない。
 >
 > **`/add-dir` との関係**: `/add-dir` はセッション単位の一時的な許可。`additionalDirectories` は永続設定。
-> `/setup` で後者を設定済みなら、rules/git-strategy.md Worktree 手順のステップ1.5（`/add-dir`）は省略できる。
+> `/setup` で後者を設定済みなら、`.claude/docs/worktree-guide.md` Worktree 作成手順のステップ1.5（`/add-dir`）は省略できる。
 >
 > **注意**: 親ディレクトリ配下の他プロジェクトもアクセス対象になる。
 > 秘匿情報を含むプロジェクトが同階層にある場合は、WT専用の親ディレクトリで運用することを推奨。

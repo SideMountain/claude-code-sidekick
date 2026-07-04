@@ -1,4 +1,14 @@
+---
+paths:
+  - "prisma/**"
+  - "drizzle/**"
+  - "**/migrations/**"
+  - "scripts/**"
+---
+
 # Deploy Strategy
+
+> path-scoped: マイグレーション / デプロイ / backfill スクリプトに触れる変更でのみロードされる（常駐ダイエット）。DB 無し PJ では非ロード（dead weight 解消）。
 
 ## マイグレーションとデプロイの順序
 

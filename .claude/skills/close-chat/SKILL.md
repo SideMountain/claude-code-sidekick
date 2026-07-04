@@ -213,7 +213,7 @@ MEMORY.md は「Claudeのローカル作業メモ」、Tasks DB は「オーナ�
 > **前提条件**: CLAUDE.md の `NOTION_JUDGMENT_SYNC` が `true`、かつ `NOTION_JUDGMENT_DB_URL` が設定されている、かつ Notion MCP が接続済み。
 > いずれか欠けている場合はこのステップ全体をスキップする。
 
-セッション中に出た**設計判断・方針判断**を Notion 判断ログDB に集約する（`.claude/rules/task-management.md` の「判断ログ同期」セクション参照）。
+セッション中に出た**設計判断・方針判断**を Notion 判断ログDB に集約する（`.claude/docs/task-db-layer2.md` の「判断ログ同期」セクション参照）。
 
 #### 抽出
 
