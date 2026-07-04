@@ -7,7 +7,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 ## 背骨（一本の筋）
 
 - **北極星（ADR-0018）**: 下流開発者はハーネスを意識せず恩恵だけ感じる。既定で安全・組み立て不要・**手で打つのは3動詞だけ**（`/news` → 作業 → `/close-chat`、＋週次 `/weekly-inventory`）。他は全部勝手に発火する配管。
-- **仕組み化 = 認知 → 強制 → 検知**。ルールだけでは守れないので、CLAUDE.md の HARD/SOFT/GUIDE ルール（`prompt-reminder.sh` が毎ターン再提示＝認知）を PreToolUse guard + `settings.json` deny list + git-native PII pre-commit hook（強制）で物理的に裏打ちし、すり抜けは `/review` の並列観点（検知）が捕まえる。
+- **仕組み化 = 認知 → 強制 → 検知**。ルールだけでは守れないので、CLAUDE.md の HARD/SOFT/GUIDE ルール（`prompt-reminder.sh` が毎ターン再提示＝認知）を PreToolUse guard + `settings.json` deny list + git-native PII pre-commit hook（強制）で物理的に裏打ちし、すり抜けは `/review`（決定的 fitness + 公式 `/code-review` + REVIEW.md 規範・検知）が捕まえる。
 - **知識複利（moat・ADR-0007/0016）**: feedback → auto-memory → `/close-chat` 還流フラグ → `/weekly-inventory` 昇格 → PJ brain → 個人 brain → OSS テンプレ → 翌セッション自動適用。AGENTS.md 的な instruction 共有では運べない判断層。
 
 ## 輪の一覧
@@ -58,8 +58,8 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `/record-decision` | 採番 ADR 作成 + decisions index 更新 | user / `/close-chat` / `/discover` |
 | `/tune` | read-only 4レーン PJ 健全性監査 → 人手ゲート修正（テスト削除はしない） | user |
 | `/token-audit` | read-only 文脈経済監査: 常駐 footprint + 汚染/肥大/重複検知 + 公式 `rate_limits` 読取り | user |
-| `/review` | オーケストレータ → 5観点を並列 | user / `/auto-implement` |
-| `/review-code`・`/review-test`・`/review-ops`・`/review-design`・`/review-spec` | 観点別の pre-PR サブレビュー | `/review` 経由 |
+| `/review` | アダプタ → 決定的 fitness → 公式 `/code-review`（REVIEW.md 規範）→ min() 総合判定 | user / `/auto-implement` |
+| `/review-code`・`/review-test`・`/review-ops`・`/review-design`・`/review-spec` | 非推奨 → `/review` に統合（次リリースで撤去） | `/review` 経由 |
 
 ### Skills — release / adopt
 | Skill | 何 | トリガ |
