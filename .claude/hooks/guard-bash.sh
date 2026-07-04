@@ -57,12 +57,15 @@ CLEAN_CMD=$(printf '%s\n' "$COMMAND" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/<<'
 PROTECTED_BRANCHES=$(get_protected_branches "$(dirname "$0")/../../CLAUDE.md")
 
 # --- Auto Mode ---
-# Set SIDEKICK_AUTO=true to auto-approve warnings (allow guards).
-# Hard blocks (deny) are NEVER auto-approved — they protect against
-# irreversible damage regardless of execution mode.
+# Default FALSE: interactive sessions honor H7/H8 (confirm before push / PR) —
+# the safe, intuitive default. Unattended runs opt in explicitly through the
+# launch command, which already carries SIDEKICK_AUTO=true, so the opt-in is
+# coupled to entering unattended mode rather than a hidden toggle a user must
+# discover (ADR-0026). Hard blocks (deny) are NEVER auto-approved — they guard
+# irreversible damage regardless of AUTO_MODE.
 #
-# Usage: SIDEKICK_AUTO=true claude --dangerouslySkipPermissions
-AUTO_MODE="${SIDEKICK_AUTO:-true}"
+# Usage (unattended, full-auto): SIDEKICK_AUTO=true claude --dangerouslySkipPermissions
+AUTO_MODE="${SIDEKICK_AUTO:-false}"
 
 # Detect if running in the main workspace (not a worktree)
 is_main_workspace() {

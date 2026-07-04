@@ -16,7 +16,7 @@ allowed-tools: "Read Write Edit Grep Glob Bash Agent Skill"
 
 - **設計・仕様が確定済み** であること（壁打ち・ADR が完了している）
 - 未確定の場合はこのスキルを使わず、対話で設計を固めてから再実行する
-- `SIDEKICK_AUTO=true` 環境変数での起動を推奨（警告の自動承認）
+- **全自律にするには `SIDEKICK_AUTO=true` 環境変数での起動が必須**（警告の自動承認）。既定は `false`（対話は H7/H8 どおり確認）なので、未指定だと push / PR で確認待ちになる（ADR-0026）
 
 ---
 

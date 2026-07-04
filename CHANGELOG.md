@@ -23,6 +23,10 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Changed
+
+- **`guard-bash.sh` の `AUTO_MODE` 既定を `true` → `false` に変更**（ADR-0026 Accepted）: 対話セッションは既定で H7/H8 を厳守（feature push / 非保護 merge も確認）。無人稼働は起動コマンドが内包する `SIDEKICK_AUTO=true` で明示 opt-in（隠しトグルにしない導線）。ハードブロック（保護ブランチ・`.env`・`rm -rf`・PRD DB 等）は AUTO_MODE 非依存で不変。既定 `false` により「必ず確認」（HARD 文言）と guard 既定が一致する。実機検証済（3 設定 × 3 コマンド）。
+
 ## [0.12.0] - 2026-07-02
 
 信頼性（強制層を約束に追いつかせる）＋文脈経済スイートのリリース。強制層ガードのバイパス修正を含むため **⚠️ [CRITICAL]（即取り込み推奨）**。破壊的変更なし・既存 PJ は無設定で従来動作を維持する。文脈経済・自律ループ系は opt-in（`💡 [ENHANCEMENT]`）。
