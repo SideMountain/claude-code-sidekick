@@ -100,7 +100,15 @@ SCRIPTS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/scripts/' |
 # 遅延ロード doc（.claude/docs/、例: knowledge-reflux.md / worktree-guide.md）。
 # rules から参照される単一ソース群。非配布だと下流で参照切れになる。
 DOCS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/docs/' | sort -u)
-PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' '.gitignore' 'docs/migrations/' | sort -u)
+# 初期テンプレ素材（.claude/templates/、Issue テンプレ・labels・CLAUDE.local 雛形等）。
+# /setup（再実行含む）のコピー元。非配布だと setup が fork 時点の古いテンプレを配り続ける。
+TEMPLATES=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/templates/' | sort -u)
+# PJ migration には PJ 調整を保持したまま追従が必要なコアファイルも含める:
+# REVIEW.md（PJ 規範・/setup 3e で条件ブロック調整済み → 6.4e で diff 案内）と
+# .claude/settings.json（強制層 hooks の配線 + PJ 拡張されうる permissions → 6.4f で
+# hooks キーのみ partial merge）。非配布だと PJ 規範の drift / 新規 hook の silent 未配線
+# （ファイルだけ届いて発火しない）が起きる（ADR-0015 完結性）。
+PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' '.gitignore' 'docs/migrations/' 'REVIEW.md' '.claude/settings.json' | sort -u)
 
 # stack pack は opt-in（ADR-0021）。PJ の STACK_PACK が none 以外のときだけ同期する（非 Next PJ に clutter を配らない）。
 PACK=$(grep -E "^STACK_PACK:" CLAUDE.md 2>/dev/null | sed -E 's/^STACK_PACK:[[:space:]]*([a-z]+).*/\1/')
@@ -126,6 +134,8 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
 | `.gitignore` | PJ ごとにパターンが異なる | 同上 |
 | `docs/decisions/` 全体 | sidekick の ADR は sidekick 自身の判断記録。下流 PJ の判断空間とは独立（ADR-0014） | 取り込み対象外。Step 6.4d で更新有無を参考表示 |
 | `docs/migrations/` | sidekick が用意する移行ガイドは下流に flat に置く | sidekick → 下流の transient docs。`a` 適用 OK |
+| `REVIEW.md` | PJ 規範。`/setup` 3e で条件ブロック削除・§1b 仕様書在り処など PJ 調整済み | 6.4e で diff 案内（blind overwrite 禁止） |
+| `.claude/settings.json` | `hooks` キーは強制層の配線（ccs 側が正）だが `permissions` は PJ 拡張されうる | 6.4f で hooks キーのみ partial merge |
 
 ### Step 3: 前回スキップ項目の再提示
 
@@ -138,7 +148,7 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
 
 ### Step 4: カテゴリ一括判断（**default モードの核心**）
 
-カテゴリごとにサマリ + 一括判断プロンプト。`[rules]` `[skills]` `[hooks]` `[scripts]` `[docs]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
+カテゴリごとにサマリ + 一括判断プロンプト。`[rules]` `[skills]` `[hooks]` `[scripts]` `[docs]` `[templates]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
 
 `[hooks]` は下流 PJ が `pre-commit` 等に PJ 固有カスタマイズ（PII パターン等）を加えている場合があるため、**カスタマイズ済みなら `[n]個別判断` で diff 確認を推奨**（Critical 修正は取り込みつつ PJ ローカル追記を守る）。
 
@@ -161,6 +171,8 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
   - 更新: guard-bash.sh, githooks/pre-commit
   → [Y]全適用 / [n]個別判断（PJ カスタマイズ済みなら推奨） / [s]全スキップ
   ※ pre-commit に PJ 固有 PII パターンを追記している場合は [n] で diff 確認
+  ※ このリリースは settings.json の hooks 配線変更も含む → [PJ migration] の 6.4f を必ず通す
+    （hook 本体だけ適用して配線をスキップすると新 hook はファイルが存在しても発火しない）
   > _
 
 [scripts] 1件
@@ -171,6 +183,12 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
 [docs] 1件
   - 更新: .claude/docs/knowledge-reflux.md （rules 参照先の遅延ロード doc）
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  > _
+
+[templates] 1件
+  - 更新: .claude/templates/github/labels.yml （/setup のコピー元素材。既存の .github/ 配置済みファイルは触らない）
+  → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  ※ .claude/templates/ 自体を PJ で編集している場合（非典型）は [n] で diff 確認（blind 適用で上書きされる）
   > _
 
 [brain] 1件
@@ -186,9 +204,11 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
   ※ STACK_PACK=none の PJ ではこのカテゴリは出ない（opt-in・非 Next PJ は無コスト）
   > _
 
-[PJ migration] 3件 ⚠️ PJ 固有内容を含むため**デフォルト個別判断**
+[PJ migration] 5件 ⚠️ PJ 固有内容を含むため**デフォルト個別判断**
   - CLAUDE.md (Project Configuration 値が PJ 固有 → 6.4 で partial merge)
   - README.md / README.ja.md (PJ 独自 → 通常スキップ)
+  - REVIEW.md (PJ 規範・PJ 調整を保持 → 6.4e で diff 案内)
+  - .claude/settings.json (hooks 配線のみ同期 → 6.4f で partial merge。[hooks] を適用した場合は s スキップ禁止 — 配線が届かず silent 未配線になる)
   → [n]個別判断（推奨） / [Y]全適用（注意） / [s]全スキップ
   > _
 
@@ -197,7 +217,7 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
   → 詳細はリリースノート / sidekick リポを参照
 ```
 
-**Enter 連打 = PJ migration 以外の全カテゴリ（rules / skills / hooks / scripts / docs / brain / stack pack）を全適用 + PJ migration は個別判断**（安全な最速経路）。
+**Enter 連打 = PJ migration 以外の全カテゴリ（rules / skills / hooks / scripts / docs / templates / brain / stack pack）を全適用 + PJ migration は個別判断**（安全な最速経路）。
 **n を選んだカテゴリのみ** Step 5（個別）に進む。
 
 ### Step 5: 個別判断（Step 4 で n を選んだカテゴリのみ）
@@ -216,18 +236,18 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
 - **d**: reason 入力任意、defer_until 入力 → スキップ記録
 - **D**: diff 表示後に再選択
 
-PJ-protected files（CLAUDE.md / README* / .gitignore）が個別判断に来た場合は、`a` 選択後も Step 6 の blind overwrite ではなく Step 6.4 の merge 経路に入る。
+PJ-protected files（CLAUDE.md / README* / .gitignore / REVIEW.md / .claude/settings.json）が個別判断に来た場合は、`a` 選択後も Step 6 の blind overwrite ではなく Step 6.4 の merge 経路に入る。
 
 ### Step 6: 適用実行 + SIDEKICK_VERSION 更新 + Critical フラグ削除
 
-選択が完了したら、一括適用実行。**PJ-protected files（CLAUDE.md / README* / .gitignore）はこのステップで上書きしない**（Step 6.4 で扱う）。
+選択が完了したら、一括適用実行。**PJ-protected files（CLAUDE.md / README* / .gitignore / REVIEW.md / .claude/settings.json）はこのステップで上書きしない**（Step 6.4 で扱う）。
 
 ```bash
 # blind overwrite から PJ-protected files を除外
-PROTECTED='^(CLAUDE\.md|README\.md|README\.ja\.md|\.gitignore)$'
+PROTECTED='^(CLAUDE\.md|README\.md|README\.ja\.md|\.gitignore|REVIEW\.md|\.claude/settings\.json)$'
 
 # APPLIED_FILES は承認された各カテゴリ
-# （$RULES / $SKILLS / $HOOKS / $SCRIPTS / $DOCS / $BRAIN / $STACKPACK）の合算
+# （$RULES / $SKILLS / $HOOKS / $SCRIPTS / $DOCS / $TEMPLATES / $BRAIN / $STACKPACK）の合算
 for f in $APPLIED_FILES; do
   if echo "$f" | grep -qE "$PROTECTED"; then
     PROTECTED_PENDING+=("$f")  # Step 6.4 で扱う
@@ -312,7 +332,9 @@ fi
 
 ```bash
 for f in README.md README.ja.md .gitignore; do
-  if echo "$PROTECTED_PENDING" | grep -q "^${f}$"; then
+  # PROTECTED_PENDING は配列。スカラー展開（$PROTECTED_PENDING）は先頭要素しか見ず
+  # 2 件目以降を取りこぼす（REVIEW.md / settings.json 追加で複数要素が常態化）
+  if printf '%s\n' "${PROTECTED_PENDING[@]}" | grep -q "^${f}$"; then
     echo "ℹ️  ${f} は sidekick で更新があるが、PJ 固有のため自動取り込みしない:"
     git diff "v${CURRENT}..${LATEST}" -- "$f" | head -20
     echo "   必要な部分だけ手動で取り込んでください。"
@@ -403,6 +425,59 @@ fi
 
 **仕様の根拠を確認したい場合**: rules / brain / CHANGELOG が一次情報源。それでも判断経緯を追いたい場合のみ sidekick リポの ADR を直接参照する。下流 PJ の `docs/decisions/` は下流自身の領域として完全独立。
 
+#### 6.4e: REVIEW.md — PJ 調整を保持したまま規範に追従（diff 案内）
+
+REVIEW.md は `/setup` 3e で PJ 調整済み（該当しない条件ブロック §1e/§1f の削除・§1b の仕様書在り処の反映）のため、blind overwrite すると調整が消える。上流更新は diff で提示し、手動で取り込む:
+
+```bash
+if printf '%s\n' "${PROTECTED_PENDING[@]}" | grep -q '^REVIEW\.md$'; then
+  echo "📋 REVIEW.md（PJ 規範）に上流更新があります。PJ 調整を保持したまま手動で取り込んでください:"
+  git diff "v${CURRENT}..${LATEST}" -- REVIEW.md
+  echo ""
+  echo "   取り込み指針:"
+  echo "   - §2 severity 定義・§3 min() ルール・§4 findings 契約の変更 → 取り込み推奨（判定の互換性維持）"
+  echo "   - §1 の観点追加 → PJ に該当するものだけ取り込む"
+  echo "   - PJ で削除した条件ブロック（§1e design-system / §1f STACK_PACK）→ 再追加しない"
+fi
+```
+
+REVIEW.md が下流に未配置の場合（旧バージョンから飛び石で取り込む等）は diff でなく全文配置: `git show "${LATEST}:REVIEW.md" > REVIEW.md` → `/setup` 3e のロジックで条件ブロックを調整する。
+
+#### 6.4f: .claude/settings.json — hooks キーのみ partial merge
+
+settings.json は **hooks キー（強制層の配線・ccs 側が正）** と **permissions（PJ が allow/deny を拡張しうる・PJ 側が正）** の複合。blind overwrite は PJ の permissions 拡張を消し、非配布は新規 hook が「ファイルだけ届いて発火しない」silent 未配線を生む。hooks キーだけを上流版へ同期する:
+
+```bash
+if printf '%s\n' "${PROTECTED_PENDING[@]}" | grep -q '^\.claude/settings\.json$'; then
+  echo "🔌 .claude/settings.json（hooks 配線 + permissions）に上流更新があります。"
+  if command -v jq &>/dev/null; then
+    UP=$(mktemp)
+    git show "${LATEST}:.claude/settings.json" > "$UP"
+    echo "--- hooks キーの差分（現 PJ ⇔ 上流）---"
+    diff <(jq -S '.hooks' .claude/settings.json 2>/dev/null) <(jq -S '.hooks' "$UP" 2>/dev/null)
+    echo "※ 置換は hooks キー丸ごと。diff に PJ 独自の配線（上流に無いエントリ）が見える場合は N → 手動マージ（PJ 配線の clobber 防止）"
+    echo "hooks キーを上流版に置き換えますか?（permissions は現状維持） [Y/n]"
+    read -r CHOICE
+    if [ "${CHOICE:-Y}" = "Y" ] || [ "${CHOICE:-Y}" = "y" ]; then
+      MERGED=$(mktemp)
+      if jq --slurpfile up "$UP" '.hooks = $up[0].hooks' .claude/settings.json > "$MERGED"; then
+        mv "$MERGED" .claude/settings.json
+        echo "hooks キーを同期しました（permissions は不変）"
+      else
+        rm -f "$MERGED"
+        echo "⚠️  jq merge 失敗（現 settings.json が不正 JSON の可能性）。settings.json は未変更。上記 diff から手動で取り込んでください"
+      fi
+    fi
+    rm -f "$UP"
+  else
+    echo "   jq 不在のため手動マージ: 以下の diff の hooks 部分だけ取り込んでください（permissions は PJ 側を維持）"
+    git diff "v${CURRENT}..${LATEST}" -- .claude/settings.json
+  fi
+fi
+```
+
+**判断基準**: hooks 配線は ccs の強制層設計と一体（hook 本体は [hooks] カテゴリで届くため、配線が届かないと新規 guard/Stop hook が発火しない）。permissions は PJ の裁量領域。両者の正が異なるので partial merge が唯一の安全解。PJ が hooks 配線自体をカスタマイズしている場合は N を選び diff から手動マージする。
+
 ### Step 6.5: 個人 brain の取り扱い（ADR-0016、2 層 brain モデル）
 
 OSS テンプレート（`brain/thinking.md`）に変更があった場合、または利用者の個人 brain（`~/.claude/brain/thinking.md`）が未配置の場合に、案内を出す。
@@ -482,13 +557,14 @@ vX.Y.Z-1 → vX.Y.Z
 - **永久スキップの見直し**: PJ 性質が変わったら（UI 追加等）、`/weekly-inventory` で棚卸し提案が出る
 - **個人 brain は絶対上書きしない**: Step 6.5 で `~/.claude/brain/thinking.md` を自動更新しない。育てた判断軸を失う事故を防ぐ（ADR-0016）。不在時のみ初期化を提案、存在時は差分提案のみ
 - **OSS テンプレートはリポ内のみ**: `brain/thinking.md` は配布素材としてリポ内に配置されるが、ロード対象外。利用者が育てるのは個人 brain のみ
-- **Step 6.5 / 6.4d の `read` は対話前提**: `--all` 等の auto モード対応は本スキル全体の課題。本 Step だけ対応すると整合崩れ。auto モードでは Step 6.5 (1) の初期化プロンプトと Step 6.4d の cleanup プロンプトでハングし得る点に注意（auto 化は別タスク）
-- **PJ-protected files の blind overwrite 禁止**: `CLAUDE.md` `README*` `.gitignore` は Step 6 で上書きしない（Step 6.4 で扱う）。下流 PJ の Project Configuration 値や独自 README が消える事故を防ぐ
+- **Step 6.5 / 6.4d / 6.4f の `read` は対話前提**: `--all` 等の auto モード対応は本スキル全体の課題。本 Step だけ対応すると整合崩れ。auto モードでは Step 6.5 (1) の初期化プロンプト・Step 6.4d の cleanup プロンプト・Step 6.4f の hooks 同期プロンプトでハングし得る点に注意（auto 化は別タスク）
+- **PJ-protected files の blind overwrite 禁止**: `CLAUDE.md` `README*` `.gitignore` `REVIEW.md` `.claude/settings.json` は Step 6 で上書きしない（Step 6.4 で扱う）。下流 PJ の Project Configuration 値・独自 README・PJ 調整済み規範・permissions 拡張が消える事故を防ぐ
 - **brain @import の手動接続**: Step 6.4b で CLAUDE.md に `@.claude/brain/thinking.md` を自動挿入しないのが default。PJ ごとに §構成が違うため、誤配置を生む。手動位置決め推奨
 - **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり
 - **SIDEKICK_VERSION 抽出のクォート**: シングル/ダブルクォート両対応の regex を Step 0 で使う。下流 PJ で書式が揺れていても CURRENT を正しく抽出する
 - **`while read` は heredoc で**: パイプ経由 (`... | while read; do ...; done`) はサブシェル化により 1 イテレーション後に停止する事象あり。`done <<< "$VAR"` のヒアストリング形式を使うと配列収集も含めて確実に動く
-- **配布カバレッジ（hooks / scripts / docs / skills scripts）**: skills の `scripts/`・`templates/`、`.claude/hooks/`・`.claude/githooks/`、`.claude/scripts/`、`.claude/docs/` も配布対象。従来これらは無カテゴリで下流に届かず、Critical 修正（guard-bash 強化等）や rules 参照先 doc が配布されない配布ブロッカーだった。`.claude/statusline/` は settings.json の statusLine 配線が PJ 固有のため既定の自動配布に含めない（必要なら手動）
+- **配布カバレッジ（hooks / scripts / docs / templates / skills scripts / REVIEW.md / settings.json）**: skills の `scripts/`・`templates/`、`.claude/hooks/`・`.claude/githooks/`、`.claude/scripts/`、`.claude/docs/`、`.claude/templates/` も配布対象。加えて `REVIEW.md`（6.4e diff 案内）と `.claude/settings.json` の hooks キー（6.4f partial merge）を PJ migration 経由で追従させる。従来これらは無カテゴリで下流に届かず、Critical 修正（guard-bash 強化等）・rules 参照先 doc・PJ 規範の更新・新規 hook の配線が配布されない配布ブロッカーだった。`.claude/statusline/` は settings.json の statusLine 配線が PJ 固有のため既定の自動配布に含めない（必要なら手動）
+- **settings.json の hooks 未配線は silent no-op**: hook 本体（.sh）だけ取り込んで settings.json の hooks 配線を取り込まないと、新規 guard / Stop hook はファイルが存在しても発火しない。[hooks] を適用したリリースでは 6.4f の hooks 同期を必ず通す
 - **`.sh` の実行権限**: `git show > file` は mode を保持しない。適用時に `chmod +x` + `git update-index --chmod=+x` で復元する（WSL の fs exec bit 不安定対策）。復元しないと下流でガード・検査スクリプトが実行不能になる
 - **hooks の PJ カスタマイズ clobber 注意**: `.claude/githooks/pre-commit` は下流 PJ が PII パターン等を末尾に追記している場合がある（`/setup` 2d の運用）。`[hooks]` を `[Y]全適用` で blind overwrite すると PJ ローカル追記が消える。カスタマイズ済み PJ は `[n]個別判断` で diff 確認してから取り込む
 
