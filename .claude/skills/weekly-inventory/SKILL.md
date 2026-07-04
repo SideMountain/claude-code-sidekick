@@ -283,6 +283,32 @@ fi
 - 頻繁にブロックされるパターンがないか（ルールの認知不足の兆候）
 - ブロックされるべきだがすり抜けているパターンがないか
 
+#### 5d. 公式スキル鮮度 watch（ADR-0027 決定4）
+
+公式スキル採用は一度きりの移行でなく継続追随プロセス。公式の新機能・挙動変更と ccs ラッパー（`/review`・`/auto-implement`・`/setup`）の gap を毎回検知し、skills/rules を刷新し続ける。
+
+**機械部分（drift 検知）** — 稼働 CLI が各ラッパーの参照する公式 feature の version floor を満たすか:
+
+```bash
+.claude/skills/weekly-inventory/scripts/official-freshness.sh
+```
+
+- floor は `hook-helpers.sh` の `_ccs_official_min_version`（single source of truth）。未達 feature はラッパーが fallback 稼働 = 品質縮退なので報告する。
+- fail-open（ADR-0027 決定3）: バージョン検出不能・floor 不明は「利用可」に倒す（壊れたプローブでラッパーを無効化しない）。
+
+**判断部分（機械化不可）** — 新規公式スキル・挙動変更の検知。入力ソース:
+
+1. `news-upstream`（個人スキル・任意）の gap 分析 = **ラッパー刷新の一次入力**。公式・業界・Zenn・X の週次ウォッチ結果を照合する。
+2. 公式リリースノート（Claude Code changelog）。
+
+検知した gap の扱い:
+
+- **新規公式スキルが ccs のラップ対象になりうる** → `gh issue create`（ラベル: `official-adoption`）で起票し、逆流ループ（Issue → `/inventory` → `/discover`/`/auto-implement` → `/release`）に載せる。
+- **既存 floor が公式リリースノートと乖離**（レビューフラグ #4・初回照合）→ `_ccs_official_min_version` を正しい値に修正する（値の断定は当該セッションで公式ノートを見た場合のみ。未確認なら「要照合」として Issue 化）。
+- **挙動変更**（REVIEW.md 注入仕様・`/goal` 評価器等）→ 該当ラッパーの調整タスクを Issue 化。
+
+silent drop 禁止（context-economy §7）: gap を見つけたら必ず Issue か報告に残す。
+
 ### Step 6: 結果サマリ & 実行
 
 ```
@@ -302,6 +328,8 @@ fi
   - PJ 固有: X件
 
 [ADR] X件の要対応
+
+[公式鮮度 watch] floor 未達 X件 / 新規公式スキル・挙動変更の gap X件（Issue 化 X件）
 
 ─────────────────
 上記を実行してよいですか？
@@ -324,7 +352,7 @@ weekly-inventory は Step 1-5 を Agent に委譲する場合がある。その�
 - Step 2 の整理候補リスト（削除・統合・陳腐化の各候補）
 - Step 3 の feedback 統合候補・昇格候補
 - Step 4 の知識還流フラグ一覧
-- Step 5 の ADR 要対応リスト
+- Step 5 の ADR 要対応リスト + Step 5d の公式鮮度 gap（floor 未達・新規スキル・挙動変更・Issue 化候補）
 
 ### 返さないもの
 - 実際の編集・削除操作（メインで承認後に実行）

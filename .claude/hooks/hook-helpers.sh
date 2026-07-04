@@ -215,6 +215,11 @@ ccs_claude_version() {
 # Floors are pinned from the official Claude Code release notes:
 #   schedule 2.1.72 / code-review-ultra 2.1.86 / goal 2.1.139 /
 #   verify 2.1.145 / run 2.1.145 / simplify 2.1.154 / workflows 2.1.154
+# Re-validated 2026-07-04 (WS7 first freshness run): code-review-ultra 2.1.86,
+# goal 2.1.139, simplify 2.1.154, workflows 2.1.154 CONFIRMED against release
+# notes/docs. schedule/verify/run unconfirmed on re-check (routines docs cite a
+# 2.1.81 minimum for schedule) — flagged for correction. fail-open keeps an
+# unverified floor safe: it only relaxes a WARN, never breaks a wrapper.
 # Drift is caught by the weekly-inventory freshness watch (ADR-0027 decision 4).
 # Unknown feature → empty output (callers treat it as fail-open).
 _ccs_official_min_version() {
@@ -226,6 +231,15 @@ _ccs_official_min_version() {
     simplify|workflows)  printf '%s' "2.1.154" ;;
     *)                   : ;;
   esac
+}
+
+# Every official feature ccs wraps, space-separated. The freshness watch
+# (weekly-inventory Step 5d, ADR-0027 decision 4) iterates this to detect
+# floor/availability drift without re-listing the case keys above.
+# INVARIANT: keep this list in sync with _ccs_official_min_version — a new
+# wrapped feature must be added to BOTH (add it here so the watch surfaces it).
+ccs_official_features() {
+  printf '%s' "schedule code-review-ultra goal verify run simplify workflows"
 }
 
 # Numeric dotted-version compare: is $1 >= $2 ?
