@@ -179,3 +179,107 @@ push_targets_protected_branch() {
   [ "$restore" -eq 1 ] && set +f
   return "$rc"
 }
+
+# =============================================================================
+# Official-skill feature gate — boundary layer (ADR-0027 decision 3)
+#
+# Official Claude Code skills appear at specific CLI versions and may change
+# without notice. This block closes all knowledge of that dependency into one
+# place: wrapper skills call ccs_official_gate as a preflight and switch to
+# their fallback with an explicit WARN when the feature is unavailable.
+# Two invariants:
+#   - never break: undetectable/unparsable versions fail OPEN (available),
+#     and the gate is advisory (always succeeds, never blocks)
+#   - never silent: confirmed unavailability is always surfaced as a WARN
+# Pure bash string handling (no jq — version strings are not JSON).
+# =============================================================================
+
+# Print the running Claude Code CLI version (e.g. "2.1.201"), or "" when the
+# CLI is missing (callers treat "" as undetectable → fail-open).
+# Verified output format of `claude --version` (2026-07-04, v2.1.201):
+#   "2.1.201 (Claude Code)"  → first whitespace-separated token.
+# CCS_CLAUDE_VERSION_OVERRIDE, when *set*, wins — even if empty, so tests and
+# CI can simulate an undetectable version without uninstalling the CLI.
+ccs_claude_version() {
+  if [ -n "${CCS_CLAUDE_VERSION_OVERRIDE+set}" ]; then
+    printf '%s' "$CCS_CLAUDE_VERSION_OVERRIDE"
+    return 0
+  fi
+  local out
+  out=$(claude --version 2>/dev/null) || out=""
+  printf '%s' "${out%% *}"
+}
+
+# Feature name → minimum Claude Code version that ships it. Single source of
+# truth for official-skill version floors (add new features here only).
+# Floors are pinned from the official Claude Code release notes:
+#   schedule 2.1.72 / code-review-ultra 2.1.86 / goal 2.1.139 /
+#   verify 2.1.145 / run 2.1.145 / simplify 2.1.154 / workflows 2.1.154
+# Drift is caught by the weekly-inventory freshness watch (ADR-0027 decision 4).
+# Unknown feature → empty output (callers treat it as fail-open).
+_ccs_official_min_version() {
+  case "$1" in
+    schedule)            printf '%s' "2.1.72" ;;
+    code-review-ultra)   printf '%s' "2.1.86" ;;
+    goal)                printf '%s' "2.1.139" ;;
+    verify|run)          printf '%s' "2.1.145" ;;
+    simplify|workflows)  printf '%s' "2.1.154" ;;
+    *)                   : ;;
+  esac
+}
+
+# Numeric dotted-version compare: is $1 >= $2 ?
+# Returns 0 (yes) / 1 (no) / 2 (either side unparsable — caller fails open).
+# Missing components count as 0 ("2.1" == "2.1.0"); leading zeros are safe
+# (forced base-10). Empty strings, stray characters, and malformed dots
+# ("2.", ".2", "2..1") all yield 2.
+_ccs_version_ge() {
+  local i n c1 c2
+  case "$1" in ''|.*|*.|*..*|*[!0-9.]*) return 2 ;; esac
+  case "$2" in ''|.*|*.|*..*|*[!0-9.]*) return 2 ;; esac
+  local IFS='.'
+  local -a a1 a2
+  read -r -a a1 <<<"$1"
+  read -r -a a2 <<<"$2"
+  n="${#a1[@]}"
+  [ "${#a2[@]}" -gt "$n" ] && n="${#a2[@]}"
+  for ((i = 0; i < n; i++)); do
+    c1="${a1[i]-0}"
+    c2="${a2[i]-0}"
+    [ "$((10#$c1))" -gt "$((10#$c2))" ] && return 0
+    [ "$((10#$c1))" -lt "$((10#$c2))" ] && return 1
+  done
+  return 0
+}
+
+# Is the official feature $1 usable on the running CLI? No output either way.
+# Returns 0 = usable, 1 = CLI confirmed below the feature's version floor.
+# Fail-open cases (return 0): unknown feature, undetectable version,
+# unparsable version — a broken version probe must not disable wrappers
+# (ADR-0027 decision 3: the boundary degrades to WARN, never to breakage).
+# Usage: ccs_official_available <feature>
+ccs_official_available() {
+  local feature="$1" min current
+  min=$(_ccs_official_min_version "$feature")
+  [ -z "$min" ] && return 0             # unknown feature: fail-open
+  current=$(ccs_claude_version)
+  [ -z "$current" ] && return 0         # version undetectable: fail-open
+  _ccs_version_ge "$current" "$min"
+  case "$?" in
+    1) return 1 ;;                      # confirmed below the floor
+    *) return 0 ;;                      # 0 = usable / 2 = unparsable: fail-open
+  esac
+}
+
+# Preflight for wrapper skills: emits a single WARN line on stdout when the
+# official feature is confirmed unavailable, so the wrapper surfaces it and
+# switches to its fallback (silent breakage is forbidden). Always returns 0 —
+# advisory only, never blocks (ADR-0027 decision 3).
+# Usage: ccs_official_gate <feature>
+ccs_official_gate() {
+  local feature="$1"
+  if ! ccs_official_available "$feature"; then
+    printf '%s\n' "WARN: official '$feature' unavailable (Claude Code $(ccs_claude_version) < required $(_ccs_official_min_version "$feature")) — use the ccs fallback instead."
+  fi
+  return 0
+}

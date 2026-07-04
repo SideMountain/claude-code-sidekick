@@ -234,3 +234,14 @@ preloaded されたスキルに従い、変更を分析して判定を返して�
 2. 「実行方式」セクションを削除（frontmatter が自動で隔離する）
 3. Return Contract はそのまま維持（サマリ設計は隔離手段に依存しない）
 4. 必要に応じて `.claude/agents/` にカスタムエージェント定義を作成し、`agent:` フィールドで指定
+
+---
+
+## 8. 公式スキルのラップ規約（ADR-0027）
+
+公式スキル（code-review / verify / goal 等）を採用する場合、ccs が配布するのは「規範を注入する薄いラッパー」だけ。
+
+- **機構は公式・規範は ccs**: 実行機構（レビューエンジン・検証ループ・反復制御）は公式に委ねる。ccs が注入するのは規範のみ（HARD ルール照合・総合判定 rubric・REVIEW.md・brain の判断軸）
+- **再実装禁止**: ラッパーは公式スキルの引数・挙動を再実装しない。引数は公式にそのまま透過させる（fork による改変は ADR-0027 で却下済み）
+- **preflight（境界層）**: ラッパー冒頭で `.claude/hooks/hook-helpers.sh` の `ccs_official_available <feature>` / `ccs_official_gate <feature>` を呼ぶ。不在時は WARN を表示し、fallback（従来 ccs 実装 or 手動手順の案内）を明示する。**silent 破綻禁止**。gate は advisory（常に成功・ブロックしない）で、バージョン検出不能時は fail-open
+- **鮮度 watch**: 公式スキルの挙動変更・新機能とラッパーの gap は `/weekly-inventory` の公式鮮度 watch（ADR-0027 決定 4）で検知し、skills/rules を刷新する
