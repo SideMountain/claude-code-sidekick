@@ -50,6 +50,13 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 - `.claude/skills/review/agents/review-agent-template.md`: 5 観点 fan-out 廃止に伴い撤去。
 
+### Fixed
+
+- **`guard-bash.sh` の STG PR 経路ガード（H10/H11）の到達性・抽出を堅牢化**（強制層バイパス修正・検知は広げる方向のみ／判定表は不変）: (1) executor 包み（`bash -c "gh pr create --base main ..."`）が Guard 10 の warning-exit で Guard 11 に到達せず素通りしていた → deny 判定を Guard 10 の exit より前に評価するよう並べ替え、executor 内の payload も検査。(2) `--base`/`--head` を `head -1` で 1 組しか見ておらず、連結（`;` `&&` `||` 改行）した 2 本目以降の `gh pr create` が抜けていた → 各セグメントを個別評価（1 つでも禁止経路なら deny）。(3) `STG_ENABLED: "true"`（クォート付き設定値）が parse 不一致で silent no-op していた → クォートを剥がして比較。従来 deny だった全経路は Candidate A（whole-command）で不変に保持（strict superset・弱体化なし）。実機検証済（18 マトリクス + 8 敵対ケース、修正前後で回帰なしを確認）。
+- **公式スキル floor の `schedule` を 2.1.72 → 2.1.81 に是正**（`hook-helpers.sh` `_ccs_official_min_version`）: 公式 CHANGELOG（raw main）に 2.1.81 より前の schedule/routines 導入記載が無いため、公式 routines docs の最低要求（2.1.81）に引き上げ（2026-07-04 確認）。fail-open のため WARN を緩めるだけで wrapper を壊さない。WS7 鮮度 watch の初回照合フラグを解消。
+- **`weekly-inventory` の `allowed-tools` に実使用パターンを追加**: Step 0.5 / Step 5d が使う `Bash(gh api *)`・`Bash(date *)`・`Bash(ls *)`・鮮度 watch スクリプトを最小限で許可（`Bash(gh *)` の広域許可は避け、`gh pr create` 等を許可しない。`gh api` の write は `guard-bash.sh` Guard 7 が別途 deny）。
+- **`review/SKILL.md` の Gotchas 表記を実態に整合**: 「旧 6 スキルは撤去済み」→「deprecation スタブ化済み（次マイナーで撤去）」。スタブ 5 本 + 移行ガイド（`docs/migrations/review-6to1-adapter.md`）が現存する実態に合わせた。
+
 ## [0.12.0] - 2026-07-02
 
 信頼性（強制層を約束に追いつかせる）＋文脈経済スイートのリリース。強制層ガードのバイパス修正を含むため **⚠️ [CRITICAL]（即取り込み推奨）**。破壊的変更なし・既存 PJ は無設定で従来動作を維持する。文脈経済・自律ループ系は opt-in（`💡 [ENHANCEMENT]`）。

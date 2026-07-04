@@ -213,18 +213,21 @@ ccs_claude_version() {
 # Feature name → minimum Claude Code version that ships it. Single source of
 # truth for official-skill version floors (add new features here only).
 # Floors are pinned from the official Claude Code release notes:
-#   schedule 2.1.72 / code-review-ultra 2.1.86 / goal 2.1.139 /
+#   schedule 2.1.81 / code-review-ultra 2.1.86 / goal 2.1.139 /
 #   verify 2.1.145 / run 2.1.145 / simplify 2.1.154 / workflows 2.1.154
 # Re-validated 2026-07-04 (WS7 first freshness run): code-review-ultra 2.1.86,
 # goal 2.1.139, simplify 2.1.154, workflows 2.1.154 CONFIRMED against release
-# notes/docs. schedule/verify/run unconfirmed on re-check (routines docs cite a
-# 2.1.81 minimum for schedule) — flagged for correction. fail-open keeps an
-# unverified floor safe: it only relaxes a WARN, never breaks a wrapper.
+# notes/docs. schedule CORRECTED 2.1.72 → 2.1.81 (2026-07-04): the official
+# CHANGELOG (raw main) lists no schedule/routines introduction earlier than
+# this, so we pin the documented minimum from the official routines docs
+# (2.1.81). verify/run 2.1.145 remain unconfirmed on re-check — still flagged
+# for correction. fail-open keeps an unverified floor safe: it only relaxes a
+# WARN, never breaks a wrapper.
 # Drift is caught by the weekly-inventory freshness watch (ADR-0027 decision 4).
 # Unknown feature → empty output (callers treat it as fail-open).
 _ccs_official_min_version() {
   case "$1" in
-    schedule)            printf '%s' "2.1.72" ;;
+    schedule)            printf '%s' "2.1.81" ;;
     code-review-ultra)   printf '%s' "2.1.86" ;;
     goal)                printf '%s' "2.1.139" ;;
     verify|run)          printf '%s' "2.1.145" ;;

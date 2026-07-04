@@ -2,7 +2,7 @@
 name: weekly-inventory
 description: "定期棚卸し。MEMORY.md整理、feedback圧縮、知識還流フラグ処理、ADR同期確認を実行する。"
 user-invocable: true
-allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(wc *) Agent"
+allowed-tools: "Read Edit Write Grep Glob Bash(git *) Bash(wc *) Bash(gh api *) Bash(date *) Bash(ls *) Bash(bash .claude/skills/weekly-inventory/scripts/official-freshness.sh) Agent"
 ---
 
 # /weekly-inventory — 定期棚卸しスキル
@@ -290,7 +290,7 @@ fi
 **機械部分（drift 検知）** — 稼働 CLI が各ラッパーの参照する公式 feature の version floor を満たすか:
 
 ```bash
-.claude/skills/weekly-inventory/scripts/official-freshness.sh
+bash .claude/skills/weekly-inventory/scripts/official-freshness.sh
 ```
 
 - floor は `hook-helpers.sh` の `_ccs_official_min_version`（single source of truth）。未達 feature はラッパーが fallback 稼働 = 品質縮退なので報告する。
