@@ -62,8 +62,9 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 
 ## Capability inventory
 
-> Verified against `claude-code-sidekick` at v0.12.0 (main). **18 distributed core skills** + **1 opt-in
-> stack-pack skill** (`system-map`, Next.js).
+> Verified against `claude-code-sidekick` at main (2026-07-05, post-v0.12.0). **13 distributed core skills**
+> (plus 5 deprecated `review-*` stubs slated for removal next minor) + **1 opt-in stack-pack skill**
+> (`system-map`, Next.js).
 
 ### Skills — session / lifecycle
 | Skill | What | Trigger |
@@ -105,7 +106,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 | `settings.json` deny list | Hard-blocks `prisma db push`, `git push --force` | permission engine |
 | `session-start.sh` | 7-step open report (branch+ff-pull, uncommitted, Active Work, worktrees, staleness, critical flag, brain) | SessionStart |
 | `prompt-reminder.sh` | Injects CRITICAL RULES every prompt | UserPromptSubmit |
-| `guard-bash.sh` | 8 Bash guards (checkout-on-main, protected push, `.env` DATABASE_URL, `rm -rf`, `prisma db push`, migrate warn, gh writes, pr merge) | PreToolUse Bash |
+| `guard-bash.sh` | 11 Bash guards (checkout-on-main, protected push, `.env` writes, `rm -rf`, `prisma db push`, migrate warn, gh api writes, pr merge, find bulk-delete, shell-executor warn, STG PR routing H10/H11) | PreToolUse Bash |
 | `guard-commit-message.sh` | Blocks commit lacking 背景/対応/影響 (H15) | PreToolUse Bash |
 | `guard-db-operation.sh` | DENY writes to `PRD_DB_PATTERN` (dormant in ccs; active downstream) | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | DENY `.env` DATABASE_URL edits + ALL edits on `main` (worktree-forcing) | PreToolUse Edit/Write |
