@@ -85,8 +85,21 @@ git fetch ccs --tags
 RANGE="v${CURRENT}..${LATEST}"
 
 RULES=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/rules/*.md' | sort -u)
-SKILLS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | grep 'SKILL.md$\|references/' | sort -u)
+# skills 配下は SKILL.md 本体 + references/ に加え、決定的検査を担う scripts/ と
+# 雛形の templates/ も配布対象にする（review-fitness.sh / official-freshness.sh 等が
+# 従来 drop されていた配布ブロッカーの是正）。
+SKILLS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | grep 'SKILL.md$\|references/\|scripts/\|templates/' | sort -u)
 BRAIN=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'brain/' | sort -u)
+# 強制層 hooks（PreToolUse guards / session-start 等）と git pre-commit hook。
+# Critical 修正（guard-bash 強化等）の配布経路として必須。git 非追跡設定の
+# core.hooksPath 有効化は /setup 側（下流での初期セットアップ）が担う。
+HOOKS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/hooks/' '.claude/githooks/' | sort -u)
+# 共有の決定的検査スクリプト（.claude/scripts/、例: detect-hard-spot.sh）。
+# skills 配下ではなく top-level に置かれ、複数スキル・rule から参照される。
+SCRIPTS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/scripts/' | sort -u)
+# 遅延ロード doc（.claude/docs/、例: knowledge-reflux.md / worktree-guide.md）。
+# rules から参照される単一ソース群。非配布だと下流で参照切れになる。
+DOCS=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/docs/' | sort -u)
 PJ_MIG=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'CLAUDE.md' 'README.md' 'README.ja.md' '.gitignore' 'docs/migrations/' | sort -u)
 
 # stack pack は opt-in（ADR-0021）。PJ の STACK_PACK が none 以外のときだけ同期する（非 Next PJ に clutter を配らない）。
@@ -125,7 +138,9 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
 
 ### Step 4: カテゴリ一括判断（**default モードの核心**）
 
-カテゴリごとにサマリ + 一括判断プロンプト。`[rules]` `[skills]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
+カテゴリごとにサマリ + 一括判断プロンプト。`[rules]` `[skills]` `[hooks]` `[scripts]` `[docs]` `[brain]` はデフォルト `[Y]全適用`、**`[PJ migration]` のみデフォルト `[n]個別判断`**（PJ 固有の上書き事故を防ぐ）。
+
+`[hooks]` は下流 PJ が `pre-commit` 等に PJ 固有カスタマイズ（PII パターン等）を加えている場合があるため、**カスタマイズ済みなら `[n]個別判断` で diff 確認を推奨**（Critical 修正は取り込みつつ PJ ローカル追記を守る）。
 
 ```
 === 変更サマリ (Severity: Standard) ===
@@ -138,6 +153,23 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
 
 [skills] 7件
   - 更新: adopt-sidekick-update, close-chat, record-decision, setup, weekly-inventory + 2 references
+  - scripts: review-fitness.sh, official-freshness.sh （決定的検査。.sh は実行権限を復元）
+  → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  > _
+
+[hooks] 2件 ⚠️ 強制層（Critical 修正の配布経路）
+  - 更新: guard-bash.sh, githooks/pre-commit
+  → [Y]全適用 / [n]個別判断（PJ カスタマイズ済みなら推奨） / [s]全スキップ
+  ※ pre-commit に PJ 固有 PII パターンを追記している場合は [n] で diff 確認
+  > _
+
+[scripts] 1件
+  - 更新: .claude/scripts/detect-hard-spot.sh （共有決定的検査。.sh は実行権限を復元）
+  → [Y]全適用 / [n]個別判断 / [s]全スキップ
+  > _
+
+[docs] 1件
+  - 更新: .claude/docs/knowledge-reflux.md （rules 参照先の遅延ロード doc）
   → [Y]全適用 / [n]個別判断 / [s]全スキップ
   > _
 
@@ -165,7 +197,7 @@ ADR_NOTICE=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*
   → 詳細はリリースノート / sidekick リポを参照
 ```
 
-**Enter 連打 = 上 3 カテゴリ全適用 + PJ migration は個別判断**（安全な最速経路）。
+**Enter 連打 = PJ migration 以外の全カテゴリ（rules / skills / hooks / scripts / docs / brain / stack pack）を全適用 + PJ migration は個別判断**（安全な最速経路）。
 **n を選んだカテゴリのみ** Step 5（個別）に進む。
 
 ### Step 5: 個別判断（Step 4 で n を選んだカテゴリのみ）
@@ -194,14 +226,20 @@ PJ-protected files（CLAUDE.md / README* / .gitignore）が個別判断に来た
 # blind overwrite から PJ-protected files を除外
 PROTECTED='^(CLAUDE\.md|README\.md|README\.ja\.md|\.gitignore)$'
 
-# APPLIED_FILES は承認された各カテゴリ（$RULES / $SKILLS / $BRAIN / $STACKPACK / …）の合算
+# APPLIED_FILES は承認された各カテゴリ
+# （$RULES / $SKILLS / $HOOKS / $SCRIPTS / $DOCS / $BRAIN / $STACKPACK）の合算
 for f in $APPLIED_FILES; do
   if echo "$f" | grep -qE "$PROTECTED"; then
     PROTECTED_PENDING+=("$f")  # Step 6.4 で扱う
     continue
   fi
-  mkdir -p "$(dirname "$f")"      # 新規ネストパス（stack pack の deep tree 等）に対応
+  mkdir -p "$(dirname "$f")"      # 新規ネストパス（stack pack の deep tree・hooks/scripts 等）に対応
   git show "${LATEST}:$f" > "$f"  # タグ参照（drift 回避）
+  # .sh は実行権限を復元する。git show は内容のみ書き出し mode を保持しない。
+  # WSL では fs の exec bit が不安定なため index にも記録する（リポの WSL exec-bit 慣行）。
+  case "$f" in
+    *.sh) chmod +x "$f"; git add "$f" && git update-index --chmod=+x "$f" 2>/dev/null || true ;;
+  esac
 done
 
 # SIDEKICK_VERSION を最新に（CLAUDE.md は単一行 sed なので safe）
@@ -450,6 +488,9 @@ vX.Y.Z-1 → vX.Y.Z
 - **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり
 - **SIDEKICK_VERSION 抽出のクォート**: シングル/ダブルクォート両対応の regex を Step 0 で使う。下流 PJ で書式が揺れていても CURRENT を正しく抽出する
 - **`while read` は heredoc で**: パイプ経由 (`... | while read; do ...; done`) はサブシェル化により 1 イテレーション後に停止する事象あり。`done <<< "$VAR"` のヒアストリング形式を使うと配列収集も含めて確実に動く
+- **配布カバレッジ（hooks / scripts / docs / skills scripts）**: skills の `scripts/`・`templates/`、`.claude/hooks/`・`.claude/githooks/`、`.claude/scripts/`、`.claude/docs/` も配布対象。従来これらは無カテゴリで下流に届かず、Critical 修正（guard-bash 強化等）や rules 参照先 doc が配布されない配布ブロッカーだった。`.claude/statusline/` は settings.json の statusLine 配線が PJ 固有のため既定の自動配布に含めない（必要なら手動）
+- **`.sh` の実行権限**: `git show > file` は mode を保持しない。適用時に `chmod +x` + `git update-index --chmod=+x` で復元する（WSL の fs exec bit 不安定対策）。復元しないと下流でガード・検査スクリプトが実行不能になる
+- **hooks の PJ カスタマイズ clobber 注意**: `.claude/githooks/pre-commit` は下流 PJ が PII パターン等を末尾に追記している場合がある（`/setup` 2d の運用）。`[hooks]` を `[Y]全適用` で blind overwrite すると PJ ローカル追記が消える。カスタマイズ済み PJ は `[n]個別判断` で diff 確認してから取り込む
 
 ## 参考
 

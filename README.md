@@ -19,7 +19,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 
 | 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
 |---|---|---|
-| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **18 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **13 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
 
 The "Thinking OS" is what sets sidekick apart from other templates.
 
@@ -97,7 +97,7 @@ In other words, **you stop repeating yourself.**
 | | Vanilla Claude Code | Typical template | **sidekick** |
 |---|:---:|:---:|:---:|
 | Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
-| Reusable skills | ❌ | △ | ✅ 18 skills |
+| Reusable skills | ❌ | △ | ✅ 13 skills |
 | **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
 | Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
 | Tracks design decisions (ADR) | ❌ | △ | ✅ |
@@ -275,7 +275,7 @@ flowchart LR
 
 **Hooks that fire on their own** (full inventory → [docs/lifecycle.md](./docs/lifecycle.md#enforcement--hooks--guards)): `session-start.sh` (auto ff-pull + surfaces Active Work / staleness / pending critical updates), `prompt-reminder.sh` (re-asserts the rules every turn), `guard-commit-message.sh` (every commit body must carry 背景/対応/影響), `guard-protected-branch-edit.sh` (no edits on `main` → forces a worktree), and a git-native **PII pre-commit hook** that physically blocks committing secrets / PII to public files.
 
-### 🧰 The 18 skills
+### 🧰 The 13 skills
 
 The three verbs above (`/news`, `/close-chat`, `/weekly-inventory`) are the ones you run by hand. The rest are plumbing — called when the moment comes.
 
@@ -346,14 +346,17 @@ Advanced setup (cron, Slack) → [cron-setup-guide.md](./docs/cron-setup-guide.m
 ```
 your-project/
 ├── CLAUDE.md                    # Rules & config (HARD/SOFT/GUIDE)
+├── REVIEW.md                    # PJ review norms injected into official /code-review
 ├── brain/
 │   └── thinking.md              # Personal-brain TEMPLATE (not loaded; /setup copies to ~/.claude/brain/)
 ├── .claude/
 │   ├── hooks/                   # Safety enforcement layer (guard-bash, db-operation, session-start, …)
-│   ├── skills/                  # 18 reusable workflows
+│   ├── skills/                  # 13 reusable workflows
+│   ├── scripts/                 # Shared deterministic checks (detect-hard-spot, …)
 │   ├── brain/
 │   │   └── thinking.md          # PJ brain (@imports personal brain ~/.claude/brain/thinking.md)
 │   ├── rules/                   # Project rules (coding standards, DB, Git strategy)
+│   ├── docs/                    # Lazy-load reference docs (worktree-guide, knowledge-reflux, …)
 │   ├── templates/               # Opt-in files deployed by /setup
 │   └── settings.json            # Permissions, hooks, deny list
 └── docs/
@@ -415,7 +418,7 @@ Severity is shown in the Release title and banner, and emitted as a machine-read
 
 ### Receiving updates (`/adopt-sidekick-update`)
 
-Pull new releases with **`/adopt-sidekick-update`**. It is interactive and category-batched: it diffs your project against the target release, groups changes (rules / skills / hooks / docs), and lets you accept per category or drill into individual files. Declined items are remembered so they aren't re-proposed.
+Pull new releases with **`/adopt-sidekick-update`**. It is interactive and category-batched: it diffs your project against the target release, groups changes (rules / skills / hooks / scripts / docs), and lets you accept per category or drill into individual files. Declined items are remembered so they aren't re-proposed.
 
 Your **personal brain** (`~/.claude/brain/thinking.md`) is never auto-overwritten — template updates are offered as a diff you approve (ADR-0016).
 
