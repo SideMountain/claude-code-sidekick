@@ -34,6 +34,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Added
 
+- **公式スキル鮮度 watch**（ADR-0027 決定4・モデル非依存化 WS7）: `/weekly-inventory` に Step 5d を追加し、公式スキル採用を継続追随プロセスとして常設。`.claude/skills/weekly-inventory/scripts/official-freshness.sh` が稼働 CLI と各ラッパー（`/review`・`/auto-implement`・`/setup`）の参照する公式 feature の version floor（`hook-helpers.sh` の single source of truth）の drift を機械検知（fail-open）。新規公式スキル・挙動変更は news-upstream / 公式リリースノートを一次入力に照合し、gap を `gh issue create`（ラベル `official-adoption`）で逆流ループに載せる。`hook-helpers.sh` に `ccs_official_features`（feature 列挙・floor リストと同期）を追加。
 - `REVIEW.md`（リポルート）: 公式 `/code-review` へ PJ 規範を注入するファイル。`/setup` が下流 PJ 向けに配置・調整する（Step 3e / Step 2E）。
 - `.claude/skills/review/scripts/review-fitness.sh`: 破壊的マイグレーションキーワード・a11y（alt/label 欠落）・空 catch を決定的に検出する前置ゲート（破壊的キーワード検出の 4 重定義を 1 本化）。
 - `docs/migrations/`: 下流移行ガイドの標準ディレクトリ（初適用: `review-6to1-adapter.md`）。
