@@ -35,7 +35,7 @@ Commands（ユーザー入力）
 
 | 分類 | 性質 | コンテキスト隔離 | 例 |
 |---|---|---|---|
-| **タスク型** | 調べて→まとめて→報告。途中でユーザー判断が不要 | する | `/news`, `/inventory`, `/review-code` |
+| **タスク型** | 調べて→まとめて→報告。途中でユーザー判断が不要 | する | `/news`, `/inventory`, `/token-audit` |
 | **対話型** | 途中でユーザーの確認・承認・判断が必要 | しない | `/close-chat`, `/setup`, `/record-decision` |
 | **参照型** | 手順ではなく知識。スキルから読み込まれるリソース | — | `scoring-guide`, `feedback-compression-rules` |
 
@@ -169,14 +169,14 @@ preloaded されたスキルに従い、変更を分析して判定を返して�
 スキル本文に「Agent ツールで隔離実行」の指示と Return Contract を記述する。
 最もシンプル。Agent が手順を実行し、サマリだけメインに返る。
 
-例: `/news`, `/inventory`, `/review-code`
+例: `/news`, `/inventory`, `/token-audit`
 
 ### パターンB: オーケストレーター + 子スキル委譲
 
 親スキルがメインで実行され、複数の子スキルを Agent ツールで並列実行する。
 各子スキルの結果を統合して最終判定を出す。
 
-例: `/review`（→ `/review-code`, `/review-test`, `/review-ops` を並列実行）
+例: 観点別の子を並列実行し統合する親スキル（旧 `/review` はこの形。現在は公式 `/code-review` へ委譲するアダプタに刷新＝ADR-0027。委譲型パターンは下流の設計オプションとして残す）
 
 ### パターンC: 対話型スキル（隔離しない）
 

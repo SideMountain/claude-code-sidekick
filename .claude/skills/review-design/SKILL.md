@@ -1,89 +1,16 @@
 ---
 name: review-design
-description: "設計品質レビュー。UI/UXの一貫性・デザインシステム準拠・アクセシビリティを検証する。"
+description: "[DEPRECATED→/review] 次リリースで撤去。設計品質レビューは /review（REVIEW.md 規範 + 公式 /code-review）に統合。"
 user-invocable: true
-allowed-tools: "Read Grep Glob Bash(git *) Agent"
+allowed-tools: "Read"
 ---
 
-# /review-design — 設計品質レビュー
+# ⚠️ /review-design は非推奨（deprecated）
 
-## 実行方式
+このスキルは **`/review` アダプタに統合**されました（ADR-0027・WS2）。**次のリリースで撤去**されます。
 
-このスキルは **Agent ツールで隔離実行する**。
-メインコンテキストを保護するため、Agent にこのスキルの全手順を渡し、結果のみ受け取る。
+- **今すぐの代替**: `/review` を実行する。UI 一貫性・design-system 準拠・a11y の観点は **REVIEW.md §1e と fitness（`review-fitness.sh` の alt / label 欠落検出）**でカバーする。
+- **移行ガイド**: `docs/migrations/review-6to1-adapter.md`
+- **なぜ**: 機構は公式 `/code-review` に委ね、ccs は PJ 規範の注入と最終ゲートだけを持つ（二重投資の解消・モデル tier 非依存化）。
 
-## 目的
-
-UI/UX の一貫性、デザインシステムへの準拠、アクセシビリティを検証する。
-
----
-
-## 手順
-
-### Step D0: PJ固有チェックの読み込み
-
-このスキルと同階層の `references/` 配下にPJ固有のチェックファイルがあれば読み込む。
-以降のステップに加えて、PJ固有チェックも実行する。
-
-> PJ固有チェックの例: エリア別カラー規約、CSS フレームワーク固有の禁止パターン、ブランドガイドライン等。
-> ファイルがなければこのステップはスキップ。
-
-### Step D1: 変更ファイルの特定
-
-```bash
-git diff $BASE_BRANCH...HEAD --name-only | grep -E '\.(tsx|jsx|css|scss|html)$'
-```
-
-### Step D2: UI/UX 一貫性チェック
-
-- [ ] コンポーネントの命名がプロジェクト規約に準拠しているか
-- [ ] レイアウト・スペーシングが既存画面と統一されているか
-- [ ] ユーザーフローに不自然な遷移・手順がないか
-- [ ] エラー状態・ローディング状態・空状態が適切にハンドリングされているか
-
-### Step D3: デザインシステム準拠
-
-- [ ] `.claude/rules/design-system.md` が存在する場合、そのカラー・タイポグラフィ規約に準拠しているか
-- [ ] 既存コンポーネントの再利用が可能な箇所で新規作成していないか
-- [ ] レスポンシブ対応が必要な箇所で対応されているか
-
-### Step D4: アクセシビリティ
-
-- [ ] img に alt 属性があるか
-- [ ] フォーム要素に label が紐づいているか
-- [ ] キーボード操作でナビゲーション可能か
-- [ ] 色のコントラスト比が十分か
-
-### Step D5: 出力
-
-```
-=== /review-design 結果 ===
-
-[D1] UI/UX一貫性: OK / 指摘あり
-[D2] デザインシステム: OK / 指摘あり / 対象外（design-system.md 未定義）
-[D3] アクセシビリティ: OK / 指摘あり
-
-指摘事項:
-  [BLOCKER] ...
-  [WARN] ...
-  [INFO] ...
-```
-
----
-
-## Return Contract
-
-### 返すもの
-- Step D5 の出力フォーマットに従ったレビュー結果
-- 各指摘の重要度（BLOCKER / WARN / INFO）
-
-### 返さないもの
-- 変更ファイルの全文内容
-- デザインシステム定義の全文
-
----
-
-## Gotchas
-
-- **design-system.md が未定義の PJ** — Step D3 は「対象外」として報告する。存在しないルールに基づいてレビューしない
-- **CSS-in-JS と従来 CSS の混在** — プロジェクトのスタイリング方式を先に確認してからレビューする
+このまま続ける場合は **`/review` を実行**してください。

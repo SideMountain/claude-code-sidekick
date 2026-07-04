@@ -79,7 +79,7 @@ Standard:
 
 Enhancement（opt-in、後回し可）:
   v0.7.0 — 2026-04-25 (当日)
-    Highlights: /review-design の minor 改善
+    Highlights: /token-audit の minor 改善
     変更: 2ファイル
 
 永久スキップ: X件

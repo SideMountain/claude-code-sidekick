@@ -71,7 +71,7 @@ You   : "Fix the login bug"
 Claude: → Creates worktree (main untouched)
         → Confirms staging DB connection
         → Fixes → Runs scoped tests
-        → /review (code/test/ops/design/spec — 5 perspectives)
+        → /review (fitness → official /code-review + REVIEW.md → min verdict)
         → Creates PR (merging is your call)
 ```
 
@@ -257,14 +257,14 @@ flowchart LR
     L2["② Enforcement<br/>Pre-tool Hooks<br/>(physical block)"]
     L2 -->|"dangerous op"| DENY(("DENY"))
     L2 --> L3
-    L3["③ Detection<br/>/review<br/>5 perspectives"] --> SAFE["Safe<br/>change"]
+    L3["③ Detection<br/>/review<br/>fitness + /code-review"] --> SAFE["Safe<br/>change"]
 ```
 
 | Layer | Mechanism | Example |
 |---|---|---|
 | **① Awareness** | CLAUDE.md rules (HARD / SOFT / GUIDE) | "Don't push to main" |
 | **② Enforcement** | Pre-tool hooks (JSON deny = blocked) | `guard-bash.sh` blocks `rm -rf` |
-| **③ Detection** | `/review` skill (5 perspectives) | Catches security issues in PR |
+| **③ Detection** | `/review` adapter (fitness + official `/code-review` + REVIEW.md) | Catches security issues in PR |
 
 **Four levels of blocking:**
 
@@ -282,7 +282,7 @@ The three verbs above (`/news`, `/close-chat`, `/weekly-inventory`) are the ones
 | Category | Skills | Purpose |
 |---|---|---|
 | **Ideation** | `/discover` | Idea → requirements (gap analysis, task breakdown) |
-| **Review** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | Runs only relevant perspectives based on change scope |
+| **Review** | `/review` | Adapter: deterministic fitness → official `/code-review` (REVIEW.md norms injected) → min() verdict |
 | **Lifecycle** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | Session & project management |
 | **Health** | `/tune`, `/token-audit` | Speed up tests/CI, prune-free test inventory (consolidate/strengthen), code dedup; measure resident-context footprint & detect token bloat — read-only audits → human-gated |
 | **Knowledge** | `/record-decision`, `/inventory` | ADR recording, version tracking |
@@ -300,7 +300,7 @@ flowchart LR
     Idea["💡 Idea"] --> D["/discover<br/>requirements<br/>& tasks"]
     D --> Design["📋 Design<br/>confirmed"]
     Design --> AI["/auto-implement<br/>Phase 0-5"]
-    AI --> R["/review<br/>5 perspectives"]
+    AI --> R["/review<br/>fitness + /code-review"]
     R --> PR["📤 PR"]
     PR --> CC["/close-chat<br/>learning loop"]
     CC -.->|"feedback"| TH["personal brain<br/>(principles)"]
