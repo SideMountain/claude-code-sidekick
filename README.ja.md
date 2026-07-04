@@ -19,7 +19,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 
 | 🛡️ 安全ガード | 🧰 再利用ワークフロー | 🧠 思考OS |
 |---|---|---|
-| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**18スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
+| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**13スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
 
 最後の「思考OS」が sidekick の一番の差別化です。
 
@@ -97,7 +97,7 @@ Claude : → Worktree 作成（main は触らない）
 | | 素の Claude Code | 一般的なテンプレ | **sidekick** |
 |---|:---:|:---:|:---:|
 | 危険操作の物理ブロック | ❌ | △（ルール記述のみ） | ✅ hooks で強制 |
-| 再利用スキル | ❌ | △ | ✅ 18 種類 |
+| 再利用スキル | ❌ | △ | ✅ 13 種類 |
 | **あなたの判断軸を学習** | ❌ | ❌ | ✅ **思考OS** |
 | 完全自動実装（寝てる間に PR） | ❌ | ❌ | ✅ `/auto-implement` |
 | ADR で設計判断を追跡可能 | ❌ | △ | ✅ |
@@ -274,7 +274,7 @@ flowchart LR
 
 **勝手に発火する hooks**（全インベントリ → [docs/lifecycle.ja.md](./docs/lifecycle.ja.md#強制--hooks--guards)）: `session-start.sh`（自動 ff-pull + Active Work / staleness / 未取込 critical を surface）、`prompt-reminder.sh`（毎ターン ルール再提示）、`guard-commit-message.sh`（commit 本文に 背景/対応/影響 必須）、`guard-protected-branch-edit.sh`（main での編集禁止 → worktree 強制）、そして公開ファイルへの secret/PII コミットを物理ブロックする git-native **PII pre-commit hook**。
 
-### 🧰 18 スキル
+### 🧰 13 スキル
 
 上の3動詞（`/news`, `/close-chat`, `/weekly-inventory`）が手で実行するもの。残りは配管で、必要な瞬間に呼ばれます。
 
@@ -345,14 +345,17 @@ flowchart LR
 ```
 your-project/
 ├── CLAUDE.md                    # ルール・設定（HARD/SOFT/GUIDE）
+├── REVIEW.md                    # PJ レビュー規範（公式 /code-review に注入）
 ├── brain/
 │   └── thinking.md              # 個人 brain テンプレート（ロード対象外。/setup が ~/.claude/brain/ にコピー）
 ├── .claude/
 │   ├── hooks/                   # 安全の強制層（guard-bash, db-operation, session-start, …）
-│   ├── skills/                  # 18 の再利用ワークフロー
+│   ├── skills/                  # 13 の再利用ワークフロー
+│   ├── scripts/                 # 共有の決定的検査（detect-hard-spot, …）
 │   ├── brain/
 │   │   └── thinking.md          # PJ brain（~/.claude/brain/thinking.md を @import）
 │   ├── rules/                   # プロジェクト固有ルール（コーディング規約、DB、Git）
+│   ├── docs/                    # 遅延ロード doc（worktree-guide, knowledge-reflux, …）
 │   ├── templates/               # /setup が opt-in で配置するファイル
 │   └── settings.json            # 権限、hooks、deny リスト
 └── docs/
@@ -414,7 +417,7 @@ SIDEKICK_VERSION: "0.12.0"
 
 ### 更新の受け取り方（`/adopt-sidekick-update`）
 
-**`/adopt-sidekick-update`** で新リリースを取り込みます。対話型・カテゴリ一括方式で、対象リリースとの差分を取り、カテゴリ（rules / skills / hooks / docs）ごとにまとめて承認するか、ファイル単位で個別確認できます。見送った項目は記録され、再提案されません。
+**`/adopt-sidekick-update`** で新リリースを取り込みます。対話型・カテゴリ一括方式で、対象リリースとの差分を取り、カテゴリ（rules / skills / hooks / scripts / docs）ごとにまとめて承認するか、ファイル単位で個別確認できます。見送った項目は記録され、再提案されません。
 
 **個人 brain**（`~/.claude/brain/thinking.md`）は決して自動上書きされません — テンプレート側の更新は、あなたが承認する差分として提示されます（ADR-0016）。
 

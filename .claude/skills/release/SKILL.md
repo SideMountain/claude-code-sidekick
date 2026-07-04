@@ -82,8 +82,14 @@ git diff --name-only --diff-filter=AM "$RANGE" -- 'docs/decisions/*.md' | sort -
 # 変更された rules
 git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/rules/*.md' | sort -u
 
-# 変更された skills（**/SKILL.md は git pathspec の glob 制約があるため grep で絞る）
-git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | grep 'SKILL.md$' | sort -u
+# 変更された skills（SKILL.md 本体 + references/ + 決定的検査の scripts/ + templates/）
+git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/skills/' | grep 'SKILL.md$\|references/\|scripts/\|templates/' | sort -u
+
+# 変更された hooks（強制層・Critical 修正の配布経路）と共有スクリプト
+git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/hooks/' '.claude/githooks/' '.claude/scripts/' | sort -u
+
+# 変更された遅延ロード doc（rules 参照先の単一ソース）
+git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/docs/*.md' | sort -u
 
 # マージされた PR（コミット履歴が欲しいため git log のまま）
 git log "$RANGE" --merges --oneline
