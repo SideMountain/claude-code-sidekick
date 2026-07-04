@@ -134,7 +134,7 @@ ADR未記録の判断:
 
 #### 知識還流の記録
 
-承認された知識還流候補を、分類に応じて記録する。記録先は `references/knowledge-reflux-guide.md` の「記録アクション」テーブルに従う。
+承認された知識還流候補を、分類（`.claude/docs/knowledge-reflux.md` R7）に応じて還流タグ付きで記録する。手順は `references/knowledge-reflux-guide.md` の「記録アクション」に従う。
 
 **重要: 即座に brain ファイル（PJ brain / 個人 brain / OSS テンプレート）を更新しない。** フラグを立てるだけ。統合は棚卸し時にまとめてやる。
 ただし、ユーザーが「今すぐ反映して」と言った場合はその場で実行する。

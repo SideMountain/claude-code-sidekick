@@ -101,7 +101,7 @@ $TEST_COMMAND && $TYPECHECK_COMMAND && $BUILD_COMMAND   # PR 作成前ゲート
 無人でも知識をロストしない。
 
 - **5a 実行サマリ** → ledger + MEMORY.md Active Work（ブランチ / PR / 結果 / 停止時は理由 + 再開情報）。
-- **5b 知識還流** — 記録トリガ: /review で WARN 以上 / テスト失敗→修正ループ発生 / 新パターン採用。分類は knowledge-map の**還流 3 分類（R7）**に従う（`[OSS 還流候補]` / `[個人 brain 昇格]` / `[PJ 固有]`）→ MEMORY.md 知識還流フラグ。該当なしは記録しない（過剰蓄積防止）。
+- **5b 知識還流** — 記録トリガ: /review で WARN 以上 / テスト失敗→修正ループ発生 / 新パターン採用。分類は `.claude/docs/knowledge-reflux.md` の**還流 3 分類（R7）**に従う（`[OSS 還流候補]` / `[個人 brain 昇格]` / `[PJ 固有]`）→ MEMORY.md 知識還流フラグ。該当なしは記録しない（過剰蓄積防止）。
 - **5c バックログ** — INFO 指摘 / 変更ファイル外 / 再現手順が書ける、の YES で MEMORY.md Backlog へ。
 - **5d 外部DB同期**（Layer 2・任意）。
 - **5e 統合レポート** — フォーマットと few-shot 3 例は `references/report-examples.md` を Read して生成。ゴール: 朝5秒で状況把握・PR を開かず次アクションを決められる。
