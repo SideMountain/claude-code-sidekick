@@ -1,0 +1,23 @@
+# 凍結判定: 2026-07-04 / claude-fable-5（Mythos-class）
+# 変更禁止（append-only）。被測定モデルには絶対に見せない。
+
+- id: REL-01
+  severity: "Critical"
+  rationale: |
+    R10-1「ガード/hook の迂回可能性の修正」に該当（バイパス 6 件修正）。
+    下流 PJ は取り込まない限り迂回可能なガードで走り続けるため、
+    最優先で取り込ませる Critical。Stop hook 配線が新規追加でも min ではなく
+    「上から順に最初に該当した severity」なので Critical が確定。
+
+- id: REL-02
+  severity: "Standard"
+  rationale: |
+    Critical 該当なし。ただしロードタイミングという既存挙動が変わるため
+    「既存挙動の変更ゼロ」を要求する Enhancement には該当しない。
+    内容削除がなくても配置変更は挙動変更。よって Standard。
+
+- id: REL-03
+  severity: "Enhancement"
+  rationale: |
+    新規追加のみ・opt-in・既定 PJ に無影響・既存ファイル変更ゼロで
+    R10-2 の条件を完全に満たす。
