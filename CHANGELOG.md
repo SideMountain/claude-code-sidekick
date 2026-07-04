@@ -25,6 +25,9 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Changed
 
+- **`/auto-implement` を指揮者に刷新**（ADR-0027・モデル非依存化 WS3）: 機構を公式部品（plan mode で分解 → `/goal` で完了条件宣言 → 実装 → `/verify` で動作実証 → `/code-review`+`/review` アダプタで裁定）に委ね、ccs は無人実行の安全の要だけを担う。(1) Phase 0 入口ゲートを **R1 rubric（7 問・1つでも NG→停止）**に置換し、未決定マーカー・曖昧語・migration パスを機械 grep で判定 (2) budget-gate 連動で **THROTTLE 時は fan-out 幅（並列本数・敵対検証の票数）のみ縮退**し、縮退を **progress ledger（ADR-0024）に明示**（silent drop 禁止） (3) **難所の閉集合 R2 + 敵対検証 R3** を配線し、`/review` の verdict をそのまま採用（再判断禁止）・矛盾 findings は多視点 judge へ fan-out。R8 trivial-gating で fan-out 発火を機械判定。SKILL.md はレポート実例を `references/report-examples.md` へ分離。
+- `.claude/rules/context-economy.md` §8 を改訂: 難所の閉集合（R2）+「判定に迷う場合も難所（上位既定）」+ 敵対検証（R3）の定型を明文化（`/auto-implement` 他が参照する単一ソース）。
+- `/setup` に無人稼働の opt-in 導線を追加（ADR-0026 の `/setup` 配線）: `SIDEKICK_AUTO=true` の起動コマンドを案内し、隠しトグル化を回避。
 - **`guard-bash.sh` の `AUTO_MODE` 既定を `true` → `false` に変更**（ADR-0026 Accepted）: 対話セッションは既定で H7/H8 を厳守（feature push / 非保護 merge も確認）。無人稼働は起動コマンドが内包する `SIDEKICK_AUTO=true` で明示 opt-in（隠しトグルにしない導線）。ハードブロック（保護ブランチ・`.env`・`rm -rf`・PRD DB 等）は AUTO_MODE 非依存で不変。既定 `false` により「必ず確認」（HARD 文言）と guard 既定が一致する。実機検証済（3 設定 × 3 コマンド）。
 - **review 系 6 スキルを 1 アダプタに統合**（ADR-0027・モデル非依存化 WS2）: `/review` を「決定的 fitness → 公式 `/code-review`（REVIEW.md 規範注入）→ min() 総合判定」の薄いアダプタに刷新。機構は公式に委ね、ccs は PJ 規範（HARD照合・ADR整合・破壊的変更・a11y・hook教訓）と最終ゲート（min）だけを持つ。`/review` SKILL.md は 203→105 行。
 - `.claude/skills/review/references/scoring-guide.md` を severity→min() モデルに整合（rubric 既在だが未配線だった最終判定の配線を解消）。

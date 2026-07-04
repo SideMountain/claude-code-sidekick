@@ -160,6 +160,15 @@ PJの特性に応じてスキルの活用方針を案内する:
 - DB を使わないPJでは review-code の DB 観点をスキップ対象とする
 - auto-implement の適用範囲を案内する（「推奨ユースケース」セクション参照）
 
+**無人稼働の opt-in 導線（ADR-0026）**: `/auto-implement` は既定（`SIDEKICK_AUTO` 未設定 → `false`）では push/PR で H7/H8 どおり確認待ちになる。無人で PR まで走らせたいか尋ね、使う場合は起動コマンドを案内する（別途 env var を探させない）:
+
+```bash
+# 無人稼働（設計確定済みの作業を PR 作成まで自律実行）
+SIDEKICK_AUTO=true claude --dangerouslySkipPermissions -p "/auto-implement #123"
+```
+
+保護ブランチ push・`.env`・`rm -rf`・PRD DB 等のハードブロックは `SIDEKICK_AUTO` の値と無関係に常に deny される（不可逆操作の保護は無人でも不変）。
+
 #### 2d. PII pre-commit hook の有効化（core.hooksPath）
 
 `.claude/githooks/pre-commit`（PII 強制層、`.claude/rules/pii-prevention.md` の enforcement 実装）を有効化する。

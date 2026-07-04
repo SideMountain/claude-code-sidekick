@@ -1,394 +1,183 @@
 ---
 name: auto-implement
-description: "全自動実装。設計確定済みの作業を実装→テスト→レビュー→PR作成まで無人で実行する。"
+description: "全自動実装の指揮者。設計確定済みの作業を、公式部品（plan mode・/goal・/verify・/code-review）を brain + HARD 制約下で組み合わせて実装→検証→レビュー→PR まで無人で回す。"
 user-invocable: true
 allowed-tools: "Read Write Edit Grep Glob Bash Agent Skill"
 ---
 
-# /auto-implement — 全自動実装スキル
+# /auto-implement — 全自動実装の指揮者
 
-## 目的
+## 役割（ADR-0027・指揮者化）
 
-設計が確定済みの作業を、実装→テスト→レビュー→PR作成まで**無人で**実行する。
-寝てる間や離席中に作業を完了させるためのスキル。
+機構（分解・完了条件評価・動作実証・レビュー）は**公式部品に委ね**、ccs は無人実行の**安全の要**だけを担う。このスキルは機構を再実装しない。
+
+| 層 | 担当 | 実体 |
+|---|---|---|
+| 入口ゲート | ccs | R1 rubric（Phase 0・1つでも NG→停止） |
+| 分解 | 公式 | plan mode |
+| 完了条件宣言 | 公式 | `/goal`（完了条件を設定し複数ターン自動実行・軽量評価器） |
+| 動作実証 | 公式 | `/verify`（R9: ランタイム表面に触れる時） |
+| レビュー | ccs アダプタ→公式 | `/review`（fitness→`/code-review`+REVIEW.md→min()） |
+| 難所裁定 | ccs | R2 閉集合 + R3 敵対検証 |
+| 状態の外部化 | ccs | progress ledger（ADR-0024） |
+| budget 連動 | ccs | THROTTLE 時は fan-out 幅のみ縮退（正しさは削らない） |
 
 ## 前提条件
 
-- **設計・仕様が確定済み** であること（壁打ち・ADR が完了している）
-- 未確定の場合はこのスキルを使わず、対話で設計を固めてから再実行する
-- **全自律にするには `SIDEKICK_AUTO=true` 環境変数での起動が必須**（警告の自動承認）。既定は `false`（対話は H7/H8 どおり確認）なので、未指定だと push / PR で確認待ちになる（ADR-0026）
+- **設計・仕様が確定済み**（Phase 0 の R1 で機械判定する。「だいたい決まってる」は未確定と同じ）。
+- **全自律には `SIDEKICK_AUTO=true` 起動が必須**（ADR-0026・既定 `false`）。未指定だと push/PR で確認待ちになる（H7/H8）。無人起動: `SIDEKICK_AUTO=true claude --dangerouslySkipPermissions -p "/auto-implement #123"`。
 
 ---
 
-## 手順
+## Phase 0: 入口ゲート（R1 rubric）
 
-### Phase 0: 作業内容の確認
+入力（`#123` / 作業指示テキスト / MEMORY.md Backlog）を解析し本文を取得。**全問 YES で開始。1 つでも NO → 停止し、NO の項目を列挙して人間に差し戻す。**
 
-入力を解析し、作業内容を特定する。
-
-**入力パターン:**
-- GitHub Issue 番号: `#123` → `gh issue view 123` で内容取得
-- 作業指示テキスト: そのまま使用
-- MEMORY.md Backlog 項目: 参照して内容取得
-
-**確認事項:**
-- 設計が確定しているか（ADR がある、壁打ち済み、仕様書がある）
-- 未確定の場合 → **ここで停止し、ユーザーに設計確定を依頼する**
-- DB マイグレーションが必要か → 必要なら **ここで停止**（H14: 自動実行禁止）
-
-### Phase 1: 環境準備
+| # | 質問 | 判定方法 |
+|---|---|---|
+| 1 | 実装対象の ADR または Issue 本文が存在するか | 機械（`gh issue view` / `ls docs/decisions`） |
+| 2 | 本文に未決定マーカーが残っていないか | 機械 grep + モデル確認 |
+| 3 | 完了条件が観測可能な形か（実行できるコマンド／通るテスト／確認できる画面のいずれかに言及） | rubric |
+| 4 | 完了条件に曖昧語が含まれていないか | 機械 grep |
+| 5 | 影響範囲（ファイル／ディレクトリ）が本文に列挙されているか | rubric |
+| 6 | DB マイグレーション要否が判定済みか | 機械（本文言及 or schema/migrations パス変更） |
+| 7 | 他の Active Work と影響範囲が重複していないか（重複時 H14 照合） | 機械（パス積集合）+ rubric |
 
 ```bash
-# Worktree 作成（H12）
+BODY="$1"   # Phase 0 で取得した Issue/ADR 本文
+printf '%s' "$BODY" | grep -nE 'A案|B案|どちらでも|後で決める|要検討|TBD|未定' && echo "Q2 NG: 未決定マーカー"
+printf '%s' "$BODY" | grep -nE 'いい感じ|だいたい|適宜|なるはや|よしなに|お任せ' && echo "Q4 NG: 曖昧語"
+printf '%s' "$BODY" | grep -nqE 'schema|migrations?|prisma/migrat' && echo "Q6: migration 言及 → 要否を明示判定（要なら H14 で停止）"
+```
+
+- Q6 で DB マイグレーションが必要 → **ここで停止**（H14: 自動実行禁止）。
+- Q7 でパス積集合が非空、かつ一方がマイグレーション → 停止（H14 並行禁止）。それ以外の同一ファイル競合は「迷ったら順次」。
+
+## Phase 1: 環境準備（H12/H13/H1）
+
+```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
 BRANCH_NAME="feature/auto-$(date +%Y%m%d-%H%M%S)"
 git worktree add "../$(basename $(pwd))-auto" -b "$BRANCH_NAME" "origin/$BASE_BRANCH"
-
-# MEMORY.md Active Work 記録（H13）
-# .env コピー + 接続先確認（H1）
-# 依存インストール
 ```
 
-### Phase 2: 実装
+1. Worktree 作成（H12）→ **MEMORY.md Active Work に記録（H13・この順序）**。
+2. `.env` コピー + 接続先確認（H1）+ 依存インストール（ランタイム不要なら軽量 worktree でスキップ）。
+3. **progress ledger 初期化**（後述）。
 
-Agent ツールで隔離実行する。
+## Phase 2: 計画 + 実装（公式部品）
 
-```
-Agent に渡す指示:
-- Phase 0 で確定した作業内容
-- CLAUDE.md のルール（自動ロードされる）
-- thinking.md の判断原則（自動ロードされる）
+1. **plan mode で分解** — 作業を検証可能な最小単位に割る。1 単位 = テスト緑で都度証明できる粒度。
+2. **`/goal` で完了条件を宣言** — Phase 0 の完了条件（コマンド／テスト／画面）を `/goal` に渡し、複数ターン自動実行させる。`/goal` の評価器が「未達」を判定するので、ccs 側で完了を再判断しない。
+3. **実装は Agent ツールで隔離実行**（CLAUDE.md / brain 自動ロード）。thinking.md Step 1（現状調査）→ 実装 → スコープテスト → 失敗は修正ループ（最大3回）→ コミット（背景/対応/影響・H15）。
+4. **`/verify` で動作実証（R9）** — diff がランタイム表面（`app/` `api/` `src/` UI・hooks 実体）に触れる → `/verify` で end-to-end 実証。docs / rules / テストのみ → 省略。
 
-Agent の作業:
-1. コードの現状を調査（thinking.md Step 1）
-2. 実装
-3. テスト実行（スコープ限定: 変更に関連するテストのみ）
-4. テスト失敗 → 修正 → 再テスト（最大3回ループ）
-5. コミット（背景/対応/影響 付き）
-```
+> 公式部品は**存在チェック**してから使う（ADR-0027 決定3・外部依存は失敗する前提）: `source .claude/hooks/hook-helpers.sh; ccs_official_gate goal; ccs_official_gate verify`。不在なら WARN を surface し、Phase 2 の Agent ループ（テスト緑ゲート）に fallback する（silent 破綻禁止）。
 
-### Phase 3: レビュー + 修正ループ
+## Phase 3: レビュー裁定（難所 = R2 最終 judge）
 
-**Phase 2 の Agent が完了した後、メインコンテキストに戻って /review を実行する。**
-Agent の中から /review を呼ぶと Agent が入れ子（3重）になり、深さ制限に抵触するため。
+Agent 完了後、**メインコンテキストに戻って** `/review` を実行する（Agent 内から呼ぶと入れ子で深さ制限に抵触）。
 
-```
-メインで /review を実行（動的スキップ付き）
+1. `/review` アダプタが fitness → `/code-review`+REVIEW.md → **min() 総合判定**を返す。
+2. **`/review` の verdict をそのまま採用する（再判断しない・診断 #3）。** ccs 側で「全体としては良いので格上げ」しない。
+3. **矛盾 findings**（観点間・仕様と実装・ADR と diff の食い違い）は R2 難所 = **単発判断を禁止**。R3 敵対検証を多視点 judge へ fan-out して裁定する（下記）。
+4. min()=1（BLOCKER）→ **ledger に記録して停止**（ユーザー判断待ち）。min()≧2 は WARN を修正 → 再 `/review`（最大3回）。
 
-結果が「修正後に再レビュー」の場合:
-  → メインで修正を実行（または Phase 2 の Agent を再起動）
-  → 再度 /review
-  → 最大3回ループ
-
-結果が「ブロッカーあり」の場合:
-  → MEMORY.md に記録して停止（ユーザー判断待ち）
-```
-
-### Phase 4: 全テスト + PR 作成
+## Phase 4: 全テスト + PR（ADR-0026）
 
 ```bash
-# 全テスト実行（PR 作成前ゲート）
-$TEST_COMMAND
-$TYPECHECK_COMMAND
-$BUILD_COMMAND
+$TEST_COMMAND && $TYPECHECK_COMMAND && $BUILD_COMMAND   # PR 作成前ゲート
 ```
 
-**push/PR の挙動はモードによって異なる:**
+| モード | git push / gh pr create |
+|---|---|
+| 対話（`SIDEKICK_AUTO` 未設定=既定 `false`） | H7/H8 どおり**確認待ち**（正常動作） |
+| 無人（`SIDEKICK_AUTO=true` + `--dangerouslySkipPermissions`） | 自動実行 |
 
-| モード | git push | gh pr create |
-|-------|----------|-------------|
-| **対話モード** | ユーザーに確認（H7）。hooks が自動ブロックし、承認を求める | ユーザーに確認（H8） |
-| **夜間モード** (`--dangerouslySkipPermissions`) | 自動実行 | 自動実行 |
+保護ブランチ push・PRD DB 等のハードブロックは AUTO_MODE 非依存で常に deny（ADR-0026）。
 
-対話モードでは Phase 4 でユーザーの承認待ちになる。これは正常動作。
+## Phase 5: 知識蓄積 + ledger（/close-chat 相当）
 
-### Phase 5: 知識蓄積（/close-chat 相当）
+無人でも知識をロストしない。
 
-自動実行でも知識をロストしない。対話モードの `/close-chat` と同等の蓄積を自動で行う。
-
-#### 5a. 実行サマリ記録
-
-```
-MEMORY.md Active Work を更新:
-  - ブランチ名、PR番号、実行結果（成功/部分成功/停止）
-  - 停止した場合: 停止理由 + 再開に必要な情報
-```
-
-#### 5b. 知識還流チェック
-
-実装・レビュー中に発見した判断・学びを自動分類:
-
-| 分類 | 基準 | 記録先 |
-|---|---|---|
-| **[ベース昇格]** | 全PJに適用すべき原則 | MEMORY.md 知識還流フラグ |
-| **[固有]** | このPJ特有の落とし穴 | MEMORY.md 知識還流フラグ |
-| **対象外** | 自明な判断、一時的な試行 | 記録しない |
-
-```
-記録基準（自動判定）:
-  - /review で WARN 以上の指摘があった → 原因パターンを feedback 候補に
-  - テスト失敗→修正ループが発生した → 失敗原因を feedback 候補に
-  - 新しいライブラリ/パターンを使った → 判断根拠を ADR 候補に
-  - 上記に該当しない → 記録しない（過剰蓄積の防止）
-```
-
-#### 5c. バックログ追記
-
-自動実行中に検出したが対応しなかった項目を MEMORY.md Backlog に追記:
-
-- `/review` の INFO レベル指摘（今回は対応不要だが将来改善すべきもの）
-- 実装中に気づいた関連タスク（「ここもリファクタした方がいい」等）
-- テストカバレッジが不足している箇所
-
-#### 5d. 外部DB同期（Layer 2 オプション）
-
-外部タスクDB連携がある場合は Status → Done + Completion Note を更新。
-
-#### 5e. 統合レポート出力
-
-朝起きて5秒で「何が起きたか」を判断できるレベルの詳細を含める。
-PR を開かなくても次のアクションが決められることがゴール。
-
-**単一タスクの場合:**
-
-```
-=== /auto-implement 完了レポート ===
-
-[結果] 成功 ✅
-[Issue] #42 — ユーザー認証機能の追加
-[PR] #43 → release/stg（https://github.com/.../pull/43）
-[ブランチ] feature/auto-20260408-auth
-
-── 実装内容 ──
-  変更: 8ファイル（+342, -28）
-  主な変更:
-    - app/api/auth/route.ts（新規: NextAuth エンドポイント）
-    - lib/auth.ts（新規: セッション管理）
-    - prisma/schema.prisma（User に role カラム追加）
-    - components/LoginForm.tsx（新規: ログインUI）
-  アプローチ: NextAuth + Prisma Adapter。ADR-0005 の方針に準拠。
-
-── テスト ──
-  スコープテスト: 12 passed, 0 failed
-  全テスト: 156 passed, 0 failed
-  型チェック: OK
-  ビルド: OK
-
-── レビュー結果 ──
-  [Code]   ✅ OK
-  [Test]   ✅ OK
-  [Ops]    ⚠️ WARN: エラー時のログ出力が不足
-  [Spec]   ✅ OK — Expand-Contract パターン準拠
-  [Design] ── 対象外（API変更のみ）
-
-  修正ループ: 1回（Ops WARN → ログ追加で解消）
-  最終判定: PR作成可
-
-── 知識還流（自動記録済み） ──
-  1. [固有] NextAuth の session callback で role を含める必要あり → feedback候補
-
-── バックログ追加（MEMORY.md に追記済み） ──
-  1. lib/auth.ts の token 生成ロジック共通化（INFO指摘）
-  2. LoginForm の E2E テスト追加（カバレッジ不足）
-
-── 次のアクション ──
-  → PR #43 をレビュー・マージしてください
-==========================================================
-```
-
-**並列実行の場合:**
-
-```
-=== /auto-implement 完了レポート（並列3件） ===
-
-[全体結果] 2件成功 ✅ / 1件停止 🛑
-[所要時間] 約25分
-
-── Issue #10: ユーザー認証機能 ── ✅ 成功
-  [PR] #43 → release/stg
-  変更: 8ファイル（+342, -28）
-  テスト: 156 passed / レビュー: OK（Ops WARN 1件 → 修正済み）
-  知識還流: 1件 / バックログ: 2件
-
-── Issue #11: メール通知テンプレ ── ✅ 成功
-  [PR] #44 → release/stg
-  変更: 4ファイル（+89, -12）
-  テスト: 160 passed / レビュー: OK（指摘なし）
-  知識還流: 0件 / バックログ: 0件
-
-── Issue #12: 管理画面ダッシュボード ── 🛑 停止
-  [停止Phase] Phase 3（レビュー）
-  [停止理由] BLOCKER: N+1クエリ検出（review-code C1）。
-    lib/dashboard.ts L45 で User.findMany 内で Order を個別取得。
-    include による一括取得に設計変更が必要。
-  [進捗] 実装完了 → テストOK → レビューでブロック
-  [ブランチ] feature/auto-20260408-dashboard（push済み、PR未作成）
-  [再開方法] N+1 を修正後、以下で再開:
-    cd ../my-project-auto-dashboard
-    → N+1 修正 → /review → PR作成
-
-── 知識還流（全タスク統合） ──
-  1. [固有] NextAuth session callback で role を含める必要あり
-  2. [固有] ダッシュボードの集計クエリは include で一括取得すべき
-
-── バックログ追加 ──
-  1. lib/auth.ts token 生成共通化
-  2. LoginForm E2E テスト追加
-  3. ダッシュボード N+1 修正（Issue #12 のブロッカー）
-
-── 次のアクション ──
-  → PR #43, #44 をレビュー・マージ
-  → Issue #12 は N+1 修正が必要。対話モードで修正するか、
-    修正方針を決めて再度 /auto-implement #12 で実行
-==========================================================
-```
-
-**全タスク停止の場合:**
-
-```
-=== /auto-implement 完了レポート ===
-
-[結果] 停止 🛑
-[Issue] #15 — 決済フロー実装
-[停止Phase] Phase 0（設計確認）
-[停止理由] 設計未確定。以下が未決定:
-  1. 決済プロバイダの選定（Stripe vs PAY.JP）
-  2. サブスクリプション対応の要否
-  3. 失敗時のリトライ戦略
-
-[実行済み] なし（Phase 0 で停止のため実装未着手）
-[消費リソース] 最小（設計確認のみ）
-
-── 次のアクション ──
-  → 上記3点を壁打ちで確定 → ADR に記録
-  → 確定後に /auto-implement #15 で再実行
-==========================================================
-```
-
-レポートは MEMORY.md Active Work にも要約を記録する（次セッションで即座に状況把握可能にする）。
+- **5a 実行サマリ** → ledger + MEMORY.md Active Work（ブランチ / PR / 結果 / 停止時は理由 + 再開情報）。
+- **5b 知識還流** — 記録トリガ: /review で WARN 以上 / テスト失敗→修正ループ発生 / 新パターン採用。分類は knowledge-map の**還流 3 分類（R7）**に従う（`[OSS 還流候補]` / `[個人 brain 昇格]` / `[PJ 固有]`）→ MEMORY.md 知識還流フラグ。該当なしは記録しない（過剰蓄積防止）。
+- **5c バックログ** — INFO 指摘 / 変更ファイル外 / 再現手順が書ける、の YES で MEMORY.md Backlog へ。
+- **5d 外部DB同期**（Layer 2・任意）。
+- **5e 統合レポート** — フォーマットと few-shot 3 例は `references/report-examples.md` を Read して生成。ゴール: 朝5秒で状況把握・PR を開かず次アクションを決められる。
 
 ---
 
-## 並列実行
+## budget-gate 連動（ADR-0024）
 
-複数タスクを同時に実行する場合:
+Stop hook（`budget-cycle-halt.sh`）の systemMessage で状態を受け取り、指揮者が幅を制御する。**縮退するのは幅であって正しさではない**（決定5・聖域）。
 
-```
-ユーザー: 「Issue #10, #11, #12 を並列で実装して」
+| 状態 | 指揮者の振る舞い |
+|---|---|
+| NORMAL | 通常。 |
+| **THROTTLE**（60–85%） | **fan-out 幅のみ縮退**（並列 worktree 本数を減らす・R3 敵対検証の**票数のみ**減らす・出力簡約）。難所の敵対検証は**発火自体は維持**。縮退した事実（何を何票→何票にしたか）を **ledger に明示**（silent drop 禁止・§7）。 |
+| **PAUSE**（>85%） | 次の Stop 境界で ledger + commit を残して休止。実行中の単一ツールは殺さない。`resets_at` まで新規着手しない。 |
 
-Claude Code:
-  1. 各 Issue の内容を取得
-  2. ファイル競合チェック（同じファイルを触る Issue がないか）
-  3. 競合なし → Agent ツールを3つ並列起動（各 Worktree で独立）
-  4. 競合あり → 順次実行に切り替え + ユーザーに通知
-  5. 全 Agent 完了 → 各結果を統合報告
-```
+## 難所の閉集合（R2）+ 敵対検証（R3）
 
-**ファイル競合の判定:**
-- 各 Issue の影響範囲を推定（ファイルパスレベル）
-- 同じファイルを複数タスクが編集しうる場合は順次実行
-- 判断に迷う場合は順次実行（安全側に倒す）
+閉集合と「判定に迷う場合も難所として扱う（上位既定）」の規約は `.claude/rules/context-economy.md` §8。auto-implement で発火する難所:
 
----
+1. **設計判断**（複数案の裁定 / スキーマ・API 契約変更）　2. **root-cause 分析**（間欠・並行性・環境依存）　3. **矛盾裁定**（Phase 3 の食い違い）　4. **セキュリティ**（認可・信頼境界・ガード変更）　5. **最終 judge**（Phase 3 のマージ可否 / 無人続行可否）
 
-## 推奨ユースケース
+難所では単発判断を禁止し、結論を出す前に R3 のいずれか1つ以上を必ず実行する:
 
-HARD ルール（H1, H12, H13 等）が多いPJでも、DB マイグレーション不要な作業なら大半が自動で走る。
+- **反証プロンプト**: 「この結論を落とす理由を1つ挙げよ。挙がらなければ確認した根拠を1行で示せ」
+- **premise-check**: 「前提にしている事実を3つ列挙し、各々を当該セッションで確認したか YES/NO」
+- **消失テスト**（削除・統合・縮退時）: 「この変更で消える検証が過去に捕まえた問題を挙げよ。挙がらないと確認してから進める」
+
+多視点 judge へ fan-out する場合は Agent を独立に起動し、各エージェントに別レンズ（correctness / security / 再現性）を割り当てる。THROTTLE 時は票数のみ縮退。
+
+## fan-out 発火条件（R8 trivial-gating）
+
+**全て YES なら single-thread**（fan-out・多段検証を発火しない）:
+
+1. 変更ファイル数 ≤ 3　2. diff 合計 ≤ 80 行　3. 全パスが `docs/**` / `*.md` / `.claude/rules/**`（ランタイム非接触）　4. R2 難所の閉集合に非該当
+
+1 つでも NO → 通常ゲート（難所判定 → 必要なら fan-out）。
+
+## progress ledger（ADR-0024 決定1）
+
+自律ループの記憶を会話履歴でなく **disk の ledger** に置き、サイクル境界で context をリセットする（再開は ledger の read だけ）。
+
+- **配置**: auto-memory ディレクトリの `ledger_auto-implement_<branch>.md`（git 非追跡・worktree 削除後も残る・サイクル/会話跨ぎで永続）。索引 1 行を MEMORY.md Active Work に置く。
+- **各サイクル境界で追記**: 決定 + why / 残タスク / 次の一手 / 検証結果 / THROTTLE 縮退記録 / 停止理由。
+- PAUSE の wrap-up turn は必ずこの ledger へ書き、commit してから停止する（budget-cycle-halt が促す）。
+
+## 並列実行（/batch）
+
+複数 Issue は `/batch`（公式・5–30 worktree を自動分割）で並列化。発火前に R8 と競合判定:
+
+- 各 Issue の影響範囲を本文からパス抽出 → **積集合が非空**なら順次（安全側）。マイグレーション同士は H14 で必ず順次。
+- 各 Agent はレポートを返し、**メインが1回だけ** MEMORY.md / ledger に書き込む（並列書き込みコンフリクト回避）。
+- THROTTLE 時は並列本数を縮退（§budget-gate 連動）。
+
+## 停止条件
+
+| 条件 | 対応 |
+|---|---|
+| R1 入口ゲート NG | NO 項目を列挙して差し戻し（Phase 0） |
+| DB マイグレーション必要 | H14: ユーザー確認待ち |
+| テストが3回連続失敗 | ledger 記録 → 停止 |
+| /review が BLOCKER（min()=1） | ledger 記録 → 停止 |
+| ファイル競合（並列時） | 順次実行に切替 |
+| budget PAUSE（>85%） | ledger + commit → reset まで休止 |
+
 「停止する」は正常動作 — ブラックリスト方式（ADR-0002）が正しく機能している証拠。
-
-### すぐ使える（最もリスクが低い順）
-
-| ユースケース | 理由 |
-|---|---|
-| **テスト追加** | 既存コードを壊さない。設計判断が少ない。成否がテスト実行で即判定可能 |
-| **リファクタリング** | テストが既にあれば安全。テスト通過で品質保証 |
-| **設定変更** | タイムアウト値、環境変数、定数の変更等 |
-| **クリーンアップ** | 不要コードの削除、TODO の消化 |
-| **ドキュメント更新** | ADR、README、コメント追加 |
-
-### ADR/仕様確定後に使える
-
-| ユースケース | 条件 |
-|---|---|
-| バグ修正 | 原因特定済み + 修正方針が ADR or Issue に記載 |
-| 新機能（DB不要） | 設計確定済み（壁打ち完了 or ADR あり） |
-
-### 使えない（Phase 0 で正しく停止する）
-
-| ケース | 理由 |
-|---|---|
-| DB マイグレーション必要 | H14: 並行禁止。ユーザー確認必須 |
-| 設計未確定 | 壁打ちが必要。auto-implement の前に対話で固める |
-| 複数テーブルにまたがる大規模変更 | リスクが高い。対話モードで段階的に進める |
-
-### 始め方
-
-```bash
-# 1. テスト追加から試す（最もリスクが低い）
-/auto-implement テスト追加の作業指示
-
-# 2. 慣れたら夜間実行
-SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
-  -p "/auto-implement #123"
-```
-
----
-
-## 停止条件（自動実行を中断するケース）
-
-| 条件 | 理由 | 対応 |
-|---|---|---|
-| 設計未確定 | 壁打ちが必要 | ユーザーに設計確定を依頼 |
-| DB マイグレーション必要 | H14: 並行禁止 | ユーザー確認待ち |
-| テストが3回連続失敗 | 自力解決不能 | MEMORY.md に記録して停止 |
-| /review がブロッカー検出 | 根本的な設計問題 | MEMORY.md に記録して停止 |
-| ファイル競合（並列時） | コンフリクトリスク | 順次実行に切り替え |
-
----
-
-## 実行方法
-
-### 対話モード（通常）
-```
-ユーザー: /auto-implement #123
-```
-
-### 夜間自動モード
-```bash
-SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
-  -p "Issue #123 を /auto-implement で実装して"
-```
-
-### cron 連携（Phase C）
-```bash
-# approved ラベルの Issue を自動実装
-SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
-  -p "/auto-implement $(gh issue list --label approved --json number -q '.[0].number')"
-```
-
----
 
 ## Return Contract
 
-### 返すもの（並列実行時、各 Agent から）
-- 実装内容サマリ（変更ファイル一覧 + 行数 + 主な変更の説明 + アプローチ）
-- テスト結果（スコープテスト + 全テスト + 型チェック + ビルド）
-- レビュー結果（全観点の判定 + 修正ループ回数 + 修正内容）
-- 知識還流フラグ一覧（分類 + 内容）
-- バックログ追加一覧
-- 停止した場合: 停止Phase + 理由 + 進捗 + 再開方法
-
-### 返さないもの
-- 実装コードの全文（PR の diff で確認）
-- テストの全出力ログ（CI で確認）
-- レビューの全チェック項目（レポートには指摘があった観点のみ記載）
-
----
+**返すもの**: 実装サマリ（変更ファイル + 行数 + アプローチ）/ 検証結果（テスト・型・ビルド・/verify）/ レビュー結果（min() + 修正ループ回数）/ 難所裁定の verdict / budget 縮退の有無 / 知識還流フラグ / バックログ / 停止時は Phase + 理由 + 再開方法。
+**返さないもの**: 実装コード全文（PR diff）/ テスト全ログ（CI）/ レビュー全チェック項目（指摘のみ）。
 
 ## Gotchas
 
-- **設計未確定での実行** — 最も危険。「だいたい決まってる」は未確定と同じ。ADR か明示的な承認がない限り Phase 0 で停止する
-- **並列実行のファイル競合** — 推定が外れるケースがある（間接依存）。心配なら「順次で」と指定する
-- **テストが通るが仕様が間違っている** — テスト通過 ≠ 正しい実装。/review で仕様乖離を検出するが、仕様自体が間違っていれば検出不能。設計確定の段階で仕様の正しさを担保する
-- **知識還流の過剰蓄積** — 全ての指摘・修正を feedback に記録すると MEMORY.md が肥大化する。Phase 5b の記録基準（reviewでWARN以上、テスト失敗ループ、新パターン使用）に厳密に従う
-- **並列実行時の MEMORY.md 競合** — 複数 Agent が同時に MEMORY.md を書き込むとコンフリクトする。並列実行時は各 Agent がレポートを返し、メインが統合して1回だけ MEMORY.md に書き込む
+- **設計未確定での実行** — 最も危険。R1 の機械 grep（未決定マーカー・曖昧語）を人力の目視に置き換えない。1 つでも NG なら Phase 0 で停止。
+- **min() を格上げしない** — `/review` の verdict をそのまま採用する。BLOCKER 1 件＝総合 1。無人だと甘い裁定に流れやすいので難所は R3 で敵対検証する。
+- **THROTTLE で正しさを削らない** — 削るのは幅（並列本数・票数・冗長出力）だけ。難所の敵対検証は発火を維持し、縮退は ledger に明示（silent drop 禁止）。
+- **公式部品は失敗する前提** — `/goal` `/verify` `/code-review` は `ccs_official_gate` で存在チェックし、不在なら WARN + fallback（テスト緑ゲート / REVIEW.md 手動レビュー）。
+- **並列実行時の MEMORY.md/ledger 競合** — 各 Agent はレポートを返し、メインが1回だけ書き込む。
