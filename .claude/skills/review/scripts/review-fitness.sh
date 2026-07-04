@@ -50,7 +50,7 @@ _added_lines() {
   else
     git diff -U0 HEAD -- "$@" 2>/dev/null
   fi | awk '
-    /^\+\+\+ / { f=$2; sub(/^b\//, "", f); next }
+    /^\+\+\+ b\// { f=$2; sub(/^b\//, "", f); next }
     /^@@ / { match($0, /\+[0-9]+/); ln = substr($0, RSTART+1, RLENGTH-1) + 0; next }
     /^\+/  { print f ":" ln ":" substr($0, 2); ln++; next }
   '
@@ -70,7 +70,11 @@ add_finding() { FINDINGS="${FINDINGS}[$1] $2 — $3"$'\n'; }
 while IFS= read -r rec; do
   [ -z "$rec" ] && continue
   file="${rec%%:*}"; line="${rec#*:}"; line="${line%%:*}"; body="${rec#*:*:}"
-  if printf '%s' "$body" | grep -qiE '\b(DROP[[:space:]]+(COLUMN|TABLE)|ALTER[[:space:]]+.*[[:space:]]TYPE|RENAME|NOT[[:space:]]+NULL)\b'; then
+  # NOT NULL is intentionally excluded: it false-fires on non-destructive
+  # `CREATE TABLE (... NOT NULL)` and additive columns. Adding NOT NULL to an
+  # existing table is destructive, but grep cannot tell the two apart — that
+  # case is reviewed semantically via REVIEW.md §1c.
+  if printf '%s' "$body" | grep -qiE '\b(DROP[[:space:]]+(COLUMN|TABLE)|ALTER[[:space:]]+.*[[:space:]]TYPE|RENAME)\b'; then
     add_finding WARN "$file:$line" "破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）"
   fi
 done <<EOF
@@ -81,10 +85,14 @@ EOF
 while IFS= read -r rec; do
   [ -z "$rec" ] && continue
   file="${rec%%:*}"; line="${rec#*:}"; line="${line%%:*}"; body="${rec#*:*:}"
-  if printf '%s' "$body" | grep -qiE '<img\b' && ! printf '%s' "$body" | grep -qiE '\balt='; then
+  # Require the tag to open AND close ('>') on the same added line. A bare
+  # multi-line `<img` (prettier-formatted, alt on a later line) has no '>' here,
+  # so it is skipped instead of false-flagged; multi-line tags are reviewed via
+  # REVIEW.md §1e. Same for <input> below.
+  if printf '%s' "$body" | grep -qiE '<img\b[^>]*>' && ! printf '%s' "$body" | grep -qiE '\balt='; then
     add_finding WARN "$file:$line" "<img> に alt 属性がない（a11y）"
   fi
-  if printf '%s' "$body" | grep -qiE '<input\b' \
+  if printf '%s' "$body" | grep -qiE '<input\b[^>]*>' \
      && ! printf '%s' "$body" | grep -qiE '\b(aria-label|aria-labelledby|id)=' \
      && ! printf '%s' "$body" | grep -qiE 'type=("|.)(hidden|submit|button)'; then
     add_finding WARN "$file:$line" "<input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）"
@@ -94,9 +102,11 @@ $(_added_lines '*.tsx' '*.jsx' '*.html' '*.vue' '*.svelte')
 EOF
 
 # --- Check 3: empty catch (error swallowing — brain「外部依存」) ---
-# High-precision: only empty / comment-only catches. The broader "catch without
-# captureException" case is semantic (D-class) and left to the LLM review
-# (REVIEW.md §1d / ops perspective).
+# High-precision, single-line only: empty `catch(){}` / `.catch(()=>{})`. The
+# broader cases — multi-line empty catches and catches that swallow without a
+# reporter — are semantic and reviewed via REVIEW.md §1h. No Python: `except:
+# pass` is a different construct the JS/TS regex cannot match, so *.py is not
+# scanned here (avoids false confidence).
 while IFS= read -r rec; do
   [ -z "$rec" ] && continue
   file="${rec%%:*}"; line="${rec#*:}"; line="${line%%:*}"; body="${rec#*:*:}"
@@ -105,7 +115,7 @@ while IFS= read -r rec; do
     add_finding WARN "$file:$line" "空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）"
   fi
 done <<EOF
-$(_added_lines '*.ts' '*.tsx' '*.js' '*.jsx' '*.py')
+$(_added_lines '*.ts' '*.tsx' '*.js' '*.jsx')
 EOF
 
 # --- Report ------------------------------------------------------------------

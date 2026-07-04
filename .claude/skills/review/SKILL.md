@@ -2,7 +2,7 @@
 name: review
 description: "統合レビュー（アダプタ）。決定的 fitness 前置 → 公式 /code-review（REVIEW.md 注入）→ min() 総合判定。PJ 規範（HARD照合・ADR整合・破壊的変更・PII・a11y）は REVIEW.md に集約。コミット前 / PR 作成前に実行。"
 user-invocable: true
-allowed-tools: "Read Grep Bash(git *) Bash(bash *)"
+allowed-tools: "Read Grep Bash"
 ---
 
 # 統合レビュー（/review）— 公式 /code-review への薄いアダプタ
@@ -22,6 +22,8 @@ allowed-tools: "Read Grep Bash(git *) Bash(bash *)"
 
 ```bash
 BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/@@')
+[ -z "$BASE_BRANCH" ] && git rev-parse -q --verify origin/main >/dev/null && BASE_BRANCH=origin/main
+[ -z "$BASE_BRANCH" ] && BASE_BRANCH=main   # fresh clone with origin/HEAD unset
 git diff "$BASE_BRANCH"...HEAD --name-only
 git diff "$BASE_BRANCH"...HEAD --stat
 git log "$BASE_BRANCH"...HEAD --oneline

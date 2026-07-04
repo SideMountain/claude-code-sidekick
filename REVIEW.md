@@ -13,9 +13,11 @@
 - コミット規約（背景/対応/影響）→ `guard-commit-message.sh` が強制済み
 - PII 混入 → `.claude/githooks/pre-commit` が強制済み
 - 保護ブランチ・.env・PRD DB 操作 → `guard-bash.sh` / `guard-db-operation.sh` が物理ブロック済み
-- 破壊的マイグレーション・a11y 欠落・エラー握りつぶし → `.claude/skills/review/scripts/review-fitness.sh` の検出結果を参照
+- 破壊的マイグレーション・a11y 欠落・空 catch → `.claude/skills/review/scripts/review-fitness.sh` の検出結果を参照
 
 **hook が fail を出している項目は無条件で BLOCKER**（レビューで上書きしない）。fitness の検出は WARN 入力（レビューが §2 の定義で最終 severity を確定する）。
+
+> **PII の守備範囲に注意**: pre-commit（コミット時強制）は**公開ファイルへの PII 混入**のみを走査する。**ランタイム PII**（ログ・API レスポンス・エラーメッセージへの流出）はアプリコードを走査しないため検知されない → §1i でレビューする。「PII は強制済み」で油断しない。
 
 ## 1. PJ 規範の観点（このリポ固有・公式レビューへの追加観点）
 
@@ -34,9 +36,10 @@ diff が触れる領域ごとに、該当 HARD ルールを引用して整合を
 2. 各 ADR の「決定」と diff が矛盾しないか判定する。矛盾があれば「ADR 改訂 or 実装修正」の二択を提示する（黙って通さない）
 3. 仕様書がある場合（`NOTION_ENABLED=true` は Notion 設計書）、受入条件を先に箇条書きにし、各条件の実装該当行を対応付ける
 
-### 1c. 破壊的変更（Expand-Contract）
+### 1c. 破壊的変更（DB + API 契約・Expand-Contract）
 
-fitness が破壊的キーワード（DROP / ALTER TYPE / RENAME / NOT NULL 追加）を検出した場合: 2 段階リリース（先に追加系 → 後に削除系）になっているか。backfill スクリプトに `--dry-run` があるか（rules/deploy-strategy.md）。
+- **DB**: fitness が破壊的キーワード（DROP / ALTER TYPE / RENAME）を検出した場合、2 段階リリース（先に追加系 → 後に削除系）か。backfill に `--dry-run` があるか（rules/deploy-strategy.md）。NOT NULL 追加は default なし or 既存行の埋めなしなら破壊的。
+- **API 契約（非 DDL・fitness では拾えない）**: レスポンス型/フィールドの削除・rename、必須リクエストパラメータの追加、エラー形式の変更は既存クライアントを壊す。移行期間（両対応 → 切替）があるか。
 
 ### 1d. hook / シェルスクリプトの PJ 教訓（CLAUDE.md §3 Lessons）
 
@@ -52,6 +55,28 @@ UI 変更が design-system の token（色・spacing・typography）を使って
 ### 1f. STACK_PACK golden path（`STACK_PACK=nextjs` の PJ のみ・ccs 本体は none で非該当）
 
 stack pack の `ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）との整合。Tier-1 違反は BLOCKER。決定的検査は `run-fitness.js` の結果を参照する。
+
+> **以下 §1g–§1k は「汎用コードレビューが構造的に苦手 / スコープ外」な高価値観点**。公式 `/code-review` は diff の correctness に強いが、並行性推論・diff 外への波及・実データとの突合・実行時の副作用は落としやすい。REVIEW.md がこれらを明示することで標準モデルでも観点が抜けない（過剰蒸留の防止）。
+
+### 1g. 並行性・冪等性（grep で判定不能・レビュー必須）
+
+新規/変更した書き込み経路に競合はないか: 読み取り → 判定 → 書き込みの間に別リクエストが割り込む（read-check-write）/ Webhook・リトライの再送で二重処理 / 冪等キーの欠如。並行実行は diff レビューで最も見落とされる。
+
+### 1h. 外部依存の耐障害性（brain「外部依存は失敗する前提」）
+
+新規の外部呼び出し（fetch / API / SDK / 外部 DB）ごとに: timeout・retry・graceful degradation があるか。失敗が主フローから隔離され監視に通知されるか（catch で握りつぶさず reporter を呼ぶ — fitness は**空** catch のみ機械検出。reporter 欠落・多行 catch は要レビュー）。
+
+### 1i. ランタイム PII（pre-commit の対象外・§0 参照）
+
+アプリコードが PII を実行時に露出しないか: ログへの個人情報出力 / 過剰な API レスポンス（内部 ID・ハッシュ・他人のデータ）/ エラーメッセージへの DB 内部露出 / URL パラメータへの PII。
+
+### 1j. モック忠実性（「テスト green・本番壊れる」の防止）
+
+手書きモック/スタブの戻り値の型・構造が、実際の DB/API の返り値と一致するか。乖離するとテストは通るが本番で undefined 参照・型不整合になる。スキーマ変更を含む diff では必ず突合する。
+
+### 1k. 水平展開（diff 外への波及）
+
+diff が修正した欠陥パターン（認可漏れ・入力検証漏れ等）を抽出し、**変更されていない同種箇所**にも同じ欠陥がないか grep で網羅する。公式 `/code-review` は diff スコープに閉じるため、この横断は REVIEW.md 側の責務。
 
 ## 2. severity の定義（裁量で変えない）
 
