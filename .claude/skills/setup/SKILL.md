@@ -400,6 +400,26 @@ PJ 固有 brain のカスタマイズ用。選択肢から選ぶか、自由記�
 2. Notion MCP が有効か確認（`claude mcp list`）
 3. CLAUDE.md の `NOTION_ENABLED: true` に変更
 
+### Step 5.8: budget-gate 稼働検証（ADR-0025 follow-up・検知のみ）
+
+capturer の配線と正準ファイルの鮮度を検査し、稼働状態を明示する。**休眠でもブロックしない**（Stop hook は fail-open で安全。「効いているつもり」の防止が目的）:
+
+```bash
+RATE_FILE="${CCS_CACHE_DIR:-$HOME/.claude/.cache}/ccs-rate-limits.json"
+WIRED=$(grep -l "ccs-rate-capture" ~/.claude/settings.json .claude/settings.json .claude/settings.local.json 2>/dev/null)
+CAP=$(grep -o '"captured_at":[0-9]*' "$RATE_FILE" 2>/dev/null | grep -o '[0-9]*$')
+AGE=$(( $(date +%s) - ${CAP:-0} ))
+if [ -n "$CAP" ] && [ "$AGE" -ge 0 ] && [ "$AGE" -le "${CCS_BUDGET_STALE_SECS:-1800}" ]; then
+  printf 'budget-gate: 稼働中（正準ファイル fresh、%s 秒前に capture）\n' "$AGE"
+elif [ -z "$WIRED" ]; then
+  printf 'budget-gate: 休眠（capturer 未配線 — statusLine に .claude/statusline/ccs-rate-capture.sh を挟むと有効化）\n'
+elif [ -z "$CAP" ]; then
+  printf 'budget-gate: 休眠（正準ファイル不在 — capturer 配線済だが未 capture。セッション再起動後に生成される）\n'
+else
+  printf 'budget-gate: 休眠（正準ファイル stale: %s 秒前 — capturer が動いていない可能性）\n' "$AGE"
+fi
+```
+
 ### Step 6: 有効ルール確認 + 完了
 
 Project Configuration に基づいて有効な HARD ルールを一覧表示する:

@@ -78,6 +78,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/remind-worktree-memory.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
