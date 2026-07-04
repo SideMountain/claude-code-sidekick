@@ -71,7 +71,7 @@ Claude : → main で直接修正
 Claude : → Worktree 作成（main は触らない）
          → ステージング DB に接続確認
          → 修正 → スコープ限定テスト
-         → /review（コード/テスト/運用/設計/仕様 の 5観点）
+         → /review（fitness → 公式 /code-review + REVIEW.md → min 判定）
          → PR 作成（マージはあなたの判断）
 ```
 
@@ -256,14 +256,14 @@ flowchart LR
     L2["② 強制<br/>Pre-tool Hooks<br/>(物理ブロック)"]
     L2 -->|"危険操作"| DENY(("DENY"))
     L2 --> L3
-    L3["③ 検知<br/>/review<br/>5観点レビュー"] --> SAFE["安全な<br/>変更"]
+    L3["③ 検知<br/>/review<br/>fitness + /code-review"] --> SAFE["安全な<br/>変更"]
 ```
 
 | レイヤー | 仕組み | 例 |
 |---|---|---|
 | **① 認知** | CLAUDE.md のルール（HARD / SOFT / GUIDE） | 「main に push するな」 |
 | **② 強制** | Pre-tool hooks（JSON deny = 実行されない） | `guard-bash.sh` が `rm -rf` をブロック |
-| **③ 検知** | `/review` スキル（5観点） | PR でセキュリティ問題を検出 |
+| **③ 検知** | `/review` アダプタ（fitness + 公式 `/code-review` + REVIEW.md） | PR でセキュリティ問題を検出 |
 
 **ブロックの強さ 4 段階:**
 
@@ -281,7 +281,7 @@ flowchart LR
 | カテゴリ | スキル | 用途 |
 |---|---|---|
 | **アイデア発想** | `/discover` | アイデア → 要件定義（ギャップ分析・タスク分解） |
-| **レビュー** | `/review`, `/review-code`, `/review-test`, `/review-ops`, `/review-design`, `/review-spec` | 変更スコープに応じて必要な観点だけ実行 |
+| **レビュー** | `/review` | アダプタ: 決定的 fitness → 公式 `/code-review`（REVIEW.md 規範注入）→ min() 総合判定 |
 | **ライフサイクル** | `/setup`, `/close-chat`, `/weekly-inventory`, `/news` | セッション・プロジェクト管理 |
 | **健全性** | `/tune`, `/token-audit` | テスト/CI高速化・テスト棚卸し（削除せず統合/補強）・コード共通化・常駐文脈の footprint 計測とトークン肥大検知（read-only 監査→人手ゲート） |
 | **ナレッジ** | `/record-decision`, `/inventory` | ADR 記録、バージョン追跡 |
@@ -299,7 +299,7 @@ flowchart LR
     Idea["💡 アイデア"] --> D["/discover<br/>要件定義<br/>・タスク分解"]
     D --> Design["📋 設計<br/>確定"]
     Design --> AI["/auto-implement<br/>Phase 0-5"]
-    AI --> R["/review<br/>5観点"]
+    AI --> R["/review<br/>fitness + /code-review"]
     R --> PR["📤 PR"]
     PR --> CC["/close-chat<br/>学習ループ記録"]
     CC -.->|"フィードバック"| TH["個人 brain<br/>（原則に昇格）"]

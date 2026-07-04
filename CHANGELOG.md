@@ -26,6 +26,22 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 ### Changed
 
 - **`guard-bash.sh` の `AUTO_MODE` 既定を `true` → `false` に変更**（ADR-0026 Accepted）: 対話セッションは既定で H7/H8 を厳守（feature push / 非保護 merge も確認）。無人稼働は起動コマンドが内包する `SIDEKICK_AUTO=true` で明示 opt-in（隠しトグルにしない導線）。ハードブロック（保護ブランチ・`.env`・`rm -rf`・PRD DB 等）は AUTO_MODE 非依存で不変。既定 `false` により「必ず確認」（HARD 文言）と guard 既定が一致する。実機検証済（3 設定 × 3 コマンド）。
+- **review 系 6 スキルを 1 アダプタに統合**（ADR-0027・モデル非依存化 WS2）: `/review` を「決定的 fitness → 公式 `/code-review`（REVIEW.md 規範注入）→ min() 総合判定」の薄いアダプタに刷新。機構は公式に委ね、ccs は PJ 規範（HARD照合・ADR整合・破壊的変更・a11y・hook教訓）と最終ゲート（min）だけを持つ。`/review` SKILL.md は 203→105 行。
+- `.claude/skills/review/references/scoring-guide.md` を severity→min() モデルに整合（rubric 既在だが未配線だった最終判定の配線を解消）。
+
+### Added
+
+- `REVIEW.md`（リポルート）: 公式 `/code-review` へ PJ 規範を注入するファイル。`/setup` が下流 PJ 向けに配置・調整する（Step 3e / Step 2E）。
+- `.claude/skills/review/scripts/review-fitness.sh`: 破壊的マイグレーションキーワード・a11y（alt/label 欠落）・空 catch を決定的に検出する前置ゲート（破壊的キーワード検出の 4 重定義を 1 本化）。
+- `docs/migrations/`: 下流移行ガイドの標準ディレクトリ（初適用: `review-6to1-adapter.md`）。
+
+### Deprecated
+
+- `/review-code` `/review-test` `/review-ops` `/review-design` `/review-spec`: `/review` アダプタに統合。deprecation スタブ（`/review` への委譲を案内）を 1 リリース残し、次のマイナーで撤去する（移行: `docs/migrations/review-6to1-adapter.md`）。
+
+### Removed
+
+- `.claude/skills/review/agents/review-agent-template.md`: 5 観点 fan-out 廃止に伴い撤去。
 
 ## [0.12.0] - 2026-07-02
 

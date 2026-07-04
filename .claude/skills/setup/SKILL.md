@@ -236,6 +236,18 @@ fi
 
 > **非 Next PJ への配布**: stack pack のファイル（`.claude/stack-packs/`）は配布物に含まれるが、`STACK_PACK: none` の PJ では CLAUDE.md・skills 側がこのレイヤーを参照しない（opt-in gate）。物理的に不要なら削除してよい。
 
+#### 3e. REVIEW.md の調整（レビュー規範・コア・ADR-0027）
+
+`/review` アダプタと公式 `/code-review` が読む PJ 規範ファイル。**opt-in ではなくコア**（全 ccs PJ が恩恵を受ける = 北極星「意識せず恩恵」）。fork / adopt 済みならルートに既在する。
+
+Project Configuration に合わせて条件ブロックを調整する（該当しなければ削除）:
+
+- `STACK_PACK: none` → §1f（golden path）を削除
+- design-system が無い PJ → §1e を削除
+- 仕様書の在り処（`NOTION_ENABLED=true` は Notion 等）→ §1b に反映
+
+> **公式スキル依存は下流が意識不要**: `/review` は公式 `/code-review` を機構に使う。存在チェック + fallback は `hook-helpers.sh`（`ccs_official_available` / `ccs_official_gate`）が担う（ADR-0027 決定 3）。不在の古い CLI でも `/review` は REVIEW.md 準拠の手動レビューに fallback する。
+
 ### Step 3.5: ccs remote 追加（新規PJモード）
 
 下流 PJ が `/adopt-sidekick-update` で sidekick の更新を取り込めるよう、claude-code-sidekick を remote として登録する:
@@ -446,7 +458,7 @@ Tech Stack: {language} + {framework} + {db}
 - {配置したファイル一覧}
 
 使えるスキル:
-  日常:    /review（コード・テスト・運用レビュー）
+  日常:    /review（fitness + 公式 /code-review + REVIEW.md 規範の統合レビュー）
            /close-chat（セッション終了時の引き継ぎ）
            /news（最新変更のサマリ）
   自動化:  /auto-implement（設計確定済みの作業を全自動実行）
@@ -502,6 +514,7 @@ CLAUDE.md が既に存在する場合。既存のファイルを尊重し、opt-
 |------|---------------------------|-----------|
 | CLAUDE.local.md | 「個人の応答設定（言語等）をカスタマイズしたいですか？」 | `.claude/templates/CLAUDE.local.md` → `CLAUDE.local.md` にコピー |
 | .github/ テンプレート | 「GitHub Issue テンプレートを追加しますか？」 | `.claude/templates/github/` → `.github/` にコピー（既存 .github/ がある場合はマージ方法を確認） |
+| REVIEW.md（レビュー規範・コア） | （確認不要・自動配置） | ルートに無ければ `git show ccs/main:REVIEW.md > REVIEW.md` で配置し、Step 3e のロジックで条件ブロックを調整（ccs remote は本モードで追加済み） |
 | .gitignore パターン | 上記で配置したファイルに応じて自動追記 | 新規PJモードの Step 4 と同じロジック |
 | settings.local.json | 「テスト・ビルドコマンドの自動許可設定を追加しますか？」 | 新規PJモードの Step 2b と同じ |
 | additionalDirectories | （確認不要・自動設定） | settings.local.json に親ディレクトリを追加（Step 2b 参照） |

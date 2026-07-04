@@ -15,7 +15,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 - **仕組み化 = 認知 → 強制 → 検知** (Awareness → Enforcement → Detection). Rules alone don't hold, so
   CLAUDE.md HARD/SOFT/GUIDE rules (re-asserted every turn by `prompt-reminder.sh`) are physically backed
   by PreToolUse guards + a `settings.json` deny list + a git-native PII pre-commit hook, and slips are
-  caught by `/review`'s parallel perspectives.
+  caught by `/review` (deterministic fitness + official `/code-review` + REVIEW.md norms).
 - **Knowledge compounding (the moat, ADR-0007/0016):** session feedback → auto-memory → `/close-chat`
   reflux flags → `/weekly-inventory` promotion → PJ brain → personal brain → OSS template → applied next
   session. AGENTS.md-style instruction sharing cannot carry this judgment layer.
@@ -82,8 +82,8 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 | `/record-decision` | Numbered ADR + update decisions index | user / `/close-chat` / `/discover` |
 | `/tune` | Read-only 4-lane PJ health audit → human-gated remediation (never deletes tests) | user |
 | `/token-audit` | Read-only context-economy audit: resident footprint + pollution/bloat/dup detection + official `rate_limits` read | user |
-| `/review` | Orchestrator → 5 perspectives in parallel | user / `/auto-implement` |
-| `/review-code` · `/review-test` · `/review-ops` · `/review-design` · `/review-spec` | Per-perspective pre-PR sub-reviews | via `/review` |
+| `/review` | Adapter → deterministic fitness → official `/code-review` (REVIEW.md norms) → min() verdict | user / `/auto-implement` |
+| `/review-code` · `/review-test` · `/review-ops` · `/review-design` · `/review-spec` | Deprecated → folded into `/review` (removed next release) | via `/review` |
 
 ### Skills — release / adopt
 | Skill | What | Trigger |
