@@ -14,6 +14,9 @@
 #   8. gh pr merge (warning — defers to permission dialog)
 #   9. find bulk deletion (-delete / -exec rm) (warning)
 #  10. shell executor present (bash -c / sh -c / eval / xargs) (warning)
+#  11. STG PR routing — feature->main (H10) / main->stg (H11) (hard block,
+#      STG_ENABLED=true only). Evaluated BEFORE guard 10 so an executor-wrapped
+#      PR is still routed here instead of slipping past guard 10's warning-exit.
 #
 # Guard hardening (red-team): git invocations are normalised first so that
 # `git -C <dir>` / `-c` / `--git-dir` cannot smuggle a subcommand past a guard
@@ -192,12 +195,6 @@ if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '\bfind\b.*-delete\b' \
   allow_with_context "WARNING: bulk deletion via find (-delete / -exec rm) detected. This can remove many files irreversibly. Verify the path and predicate before proceeding."
 fi
 
-# --- Guard 10: shell executor present (warning) [C-2b] ---
-# Reached only when no destructive pattern was found inside the executor.
-if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
-  allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
-fi
-
 # --- Guard 11: STG PR routing — H10/H11 (active ONLY when STG_ENABLED=true) ---
 # H10: feature/* -> main PRs are forbidden (two-stage flow: feature ->
 #      release/stg -> main).
@@ -205,6 +202,12 @@ fi
 # Route interpretation (git-strategy.md route table): release/stg -> main is
 # the legitimate release path and is deliberately NOT denied here; hotfix/* ->
 # main is also allowed. Only the two forbidden routes above are blocked.
+#
+# ORDERING: this deny-only guard runs BEFORE Guard 10's executor warning (which
+# exits), so an executor-wrapped PR (`bash -c "gh pr create --base main ..."`)
+# is still evaluated instead of slipping past on the warning's exit 0. Routes
+# that are not forbidden fall through to Guard 10 unchanged.
+#
 # STG_ENABLED is resolved locally (hook-helpers.sh is frozen for concurrent
 # edits): SIDEKICK_STG_ENABLED env override first (CI / testing), then the
 # CLAUDE.md Project Configuration value. Anything other than a clean "true"
@@ -216,28 +219,68 @@ if [ -z "$STG_ENABLED_VAL" ]; then
     STG_ENABLED_VAL=$(grep -m1 -E '^[[:space:]]*STG_ENABLED[[:space:]]*:' "$_stg_claude_md" 2>/dev/null | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]#].*//')
   fi
 fi
-if [ "$STG_ENABLED_VAL" = "true" ] && printf '%s\n' "$CLEAN_CMD" | grep -qE 'gh\s+pr\s+create\b'; then
-  # Extract --base/-B and --head/-H from the RAW command: the values may be
-  # quoted, and CLEAN_CMD strips quoted strings. `gh pr create` was detected
-  # on CLEAN_CMD above precisely to avoid firing on quoted text (PR bodies).
-  PR_BASE=$(printf '%s\n' "$COMMAND" | grep -oE '(^|[[:space:]])(--base|-B)(=|[[:space:]]+)["'"'"']?[^"'"'"'[:space:]]+' | head -1 | sed -E 's/^[[:space:]]*(--base|-B)(=|[[:space:]]+)["'"'"']?//')
-  PR_HEAD=$(printf '%s\n' "$COMMAND" | grep -oE '(^|[[:space:]])(--head|-H)(=|[[:space:]]+)["'"'"']?[^"'"'"'[:space:]]+' | head -1 | sed -E 's/^[[:space:]]*(--head|-H)(=|[[:space:]]+)["'"'"']?//')
-  if [ -z "$PR_HEAD" ]; then
-    # --head omitted: gh pr create defaults to the current branch
+# Normalise: strip quotes so a quoted YAML value (`STG_ENABLED: "true"`) is
+# recognised instead of silently no-opping the routing guard.
+STG_ENABLED_VAL=$(printf '%s' "$STG_ENABLED_VAL" | sed "s/[\"']//g")
+
+# Deny one `gh pr create` invocation if it takes a forbidden STG route.
+# Extracts --base/-B and --head/-H from the RAW string (values may be quoted),
+# defaults an omitted --head to the current branch (gh's own default), then
+# denies ONLY the two forbidden routes. Deny-only: legit routes return 0.
+_stg_pr_route_deny() {
+  local raw="$1" _base _head
+  _base=$(printf '%s\n' "$raw" | grep -oE '(^|[[:space:]])(--base|-B)(=|[[:space:]]+)["'"'"']?[^"'"'"'[:space:]]+' | head -1 | sed -E 's/^[[:space:]]*(--base|-B)(=|[[:space:]]+)["'"'"']?//')
+  _head=$(printf '%s\n' "$raw" | grep -oE '(^|[[:space:]])(--head|-H)(=|[[:space:]]+)["'"'"']?[^"'"'"'[:space:]]+' | head -1 | sed -E 's/^[[:space:]]*(--head|-H)(=|[[:space:]]+)["'"'"']?//')
+  if [ -z "$_head" ]; then
     if [ -n "$CWD" ]; then
-      PR_HEAD=$(git -C "$CWD" branch --show-current 2>/dev/null)
+      _head=$(git -C "$CWD" branch --show-current 2>/dev/null)
     else
-      PR_HEAD=$(git branch --show-current 2>/dev/null)
+      _head=$(git branch --show-current 2>/dev/null)
     fi
   fi
-  if [ -n "$PR_BASE" ]; then
-    if [ "$PR_BASE" = "main" ] && printf '%s\n' "$PR_HEAD" | grep -qE '^feature/'; then
-      deny "H10: feature/* -> main PRs are forbidden (STG_ENABLED=true). Use the two-stage route: feature -> release/stg -> main (git-strategy.md)."
-    fi
-    if [ "$PR_BASE" = "release/stg" ] && [ "$PR_HEAD" = "main" ]; then
-      deny "H11: main -> release/stg sync PRs are forbidden (STG_ENABLED=true). release/stg receives feature/* and hotfix/* only; the release path is release/stg -> main (git-strategy.md)."
-    fi
+  [ -z "$_base" ] && return 0
+  if [ "$_base" = "main" ] && printf '%s\n' "$_head" | grep -qE '^feature/'; then
+    deny "H10: feature/* -> main PRs are forbidden (STG_ENABLED=true). Use the two-stage route: feature -> release/stg -> main (git-strategy.md)."
   fi
+  if [ "$_base" = "release/stg" ] && [ "$_head" = "main" ]; then
+    deny "H11: main -> release/stg sync PRs are forbidden (STG_ENABLED=true). release/stg receives feature/* and hotfix/* only; the release path is release/stg -> main (git-strategy.md)."
+  fi
+  return 0
+}
+
+if [ "$STG_ENABLED_VAL" = "true" ]; then
+  # Candidate A — the WHOLE command: exactly preserves the prior single-shot
+  # behaviour (gate on CLEAN_CMD so quoted PR bodies never false-fire; extract
+  # from the raw COMMAND so quoted --base values survive). Every route the old
+  # guard denied is still denied here — this branch alone is a strict superset.
+  # The executor clause (raw COMMAND names `gh pr create`) closes the bypass
+  # where the payload hides inside the quotes CLEAN_CMD strips.
+  if printf '%s\n' "$CLEAN_CMD" | grep -qE 'gh\s+pr\s+create\b' \
+     || { [ "$EXECUTOR_PRESENT" -eq 1 ] && printf '%s\n' "$COMMAND" | grep -qE 'gh\s+pr\s+create\b'; }; then
+    _stg_pr_route_deny "$COMMAND"
+  fi
+  # Candidates B.. — each command SEGMENT (split on ; && || newline). The old
+  # head-1 extraction only saw the first --base/--head pair, so a chained
+  # `... --base release/stg ... && gh pr create --base main ...` slipped its
+  # second PR through. Each segment is now evaluated on its own; one forbidden
+  # route is enough to deny. Same gate as A (clean form, or executor + raw).
+  while IFS= read -r _seg; do
+    [ -z "$_seg" ] && continue
+    _seg_clean=$(printf '%s\n' "$_seg" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g")
+    if printf '%s\n' "$_seg_clean" | grep -qE 'gh\s+pr\s+create\b' \
+       || { [ "$EXECUTOR_PRESENT" -eq 1 ] && printf '%s\n' "$_seg" | grep -qE 'gh\s+pr\s+create\b'; }; then
+      _stg_pr_route_deny "$_seg"
+    fi
+  done <<STG_SEG_EOF
+$(printf '%s\n' "$COMMAND" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
+STG_SEG_EOF
+fi
+
+# --- Guard 10: shell executor present (warning) [C-2b] ---
+# Reached only when no destructive pattern was found inside the executor AND the
+# command was not a forbidden STG PR route (Guard 11 above already denied those).
+if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
+  allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
 fi
 
 allow_silent
