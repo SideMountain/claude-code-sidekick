@@ -29,3 +29,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0024 | [自律ループと budget-gate（rate-cap 内の長時間・自律稼働）](0024-autonomous-loop-and-budget-gate.md) | 採用（2026-06-24、設計決定・強制配線は follow-up） |
 | 0025 | [budget-gate の Stop hook 実配線](0025-budget-gate-stop-hook-wiring.md) | Proposed（2026-07-02、論点整理・実配線は実機検証後） |
 | 0026 | [AUTO_MODE 既定値と「physically blocks」表現の整合](0026-auto-mode-default.md) | Proposed（2026-07-02、論点整理・既定変更は承認後） |
+| 0027 | [公式スキル採用とラップ配布（OS 層 + 指揮者への縮約）](0027-official-skill-adoption-and-wrapping.md) | 採用（2026-07-04、方針決定・実装は WS1-WS7 で段階的） |
