@@ -39,7 +39,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 
 ## 機能インベントリ
 
-> `claude-code-sidekick` v0.12.0（main）で実体確認。**配布コア skill 18本** + **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
+> `claude-code-sidekick` main（2026-07-05・v0.12.0 以降）で実体確認。**配布コア skill 13本**（+ 次マイナーで撤去する deprecated `review-*` スタブ 5本）+ **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
 
 ### Skills — session / lifecycle
 | Skill | 何 | トリガ |
@@ -81,7 +81,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `settings.json` deny list | `prisma db push`・`git push --force` を hard block | permission engine |
 | `session-start.sh` | 7段の開始レポート（branch+ff-pull・未コミット・Active Work・worktree・staleness・critical flag・brain） | SessionStart |
 | `prompt-reminder.sh` | 毎プロンプトに CRITICAL RULES を注入 | UserPromptSubmit |
-| `guard-bash.sh` | 8 Bash guard（main で checkout・保護 push・`.env` DATABASE_URL・`rm -rf`・`prisma db push`・migrate 警告・gh 書込・pr merge） | PreToolUse Bash |
+| `guard-bash.sh` | 11 Bash guard（main で checkout・保護 push・`.env` 書込・`rm -rf`・`prisma db push`・migrate 警告・gh api 書込・pr merge・find 一括削除・executor 警告・STG PR 経路 H10/H11） | PreToolUse Bash |
 | `guard-commit-message.sh` | 背景/対応/影響 を欠く commit を block（H15） | PreToolUse Bash |
 | `guard-db-operation.sh` | `PRD_DB_PATTERN` への書込を DENY（ccs では dormant・下流で有効） | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | `.env` DATABASE_URL 編集 + main での全編集を DENY（worktree 強制） | PreToolUse Edit/Write |
