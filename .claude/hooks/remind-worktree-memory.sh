@@ -4,7 +4,7 @@
 #
 # Recognition layer for HARD rule H13: right after a worktree is created, the
 # next step MUST be recording it in auto-memory MEMORY.md (Active Work) —
-# before .env copy / dependency install (git-strategy.md worktree steps,
+# before .env copy / dependency install (worktree-guide.md worktree steps,
 # "do not skip step 2"). PostToolUse cannot block, so this hook only reminds.
 #
 # Fires ONLY when the executed Bash command contains `git worktree add` and
@@ -54,6 +54,6 @@ if command -v jq &>/dev/null; then
   fi
 fi
 
-MSG=$(_json_escape "H13: worktree created — record it in auto-memory MEMORY.md (Active Work: branch, task, impact scope, DB migration Y/N) BEFORE the next step (git-strategy.md step 2, do not skip).")
+MSG=$(_json_escape "H13: worktree created — record it in auto-memory MEMORY.md (Active Work: branch, task, impact scope, DB migration Y/N) BEFORE the next step (worktree-guide.md step 2, do not skip).")
 printf '{"systemMessage":"%s"}\n' "$MSG"
 exit 0

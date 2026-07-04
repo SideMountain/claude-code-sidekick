@@ -1,4 +1,16 @@
+---
+paths:
+  - "prisma/**"
+  - "drizzle/**"
+  - "**/migrations/**"
+  - "**/*.sql"
+  - "**/schema.prisma"
+---
+
 # Database
+
+> path-scoped: DB 関連ファイルに触れる変更でのみロードされる（常駐ダイエット）。
+> HARD ルール H1（DB 操作前の接続先確認）/ H2 / H5 / H6 は CLAUDE.md（常駐）に残り、`guard-db-operation.sh` が物理強制するため、本ファイル非ロード時も本番保護は不変。
 
 ## DB接続先の確認ルール
 
