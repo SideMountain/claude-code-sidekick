@@ -195,4 +195,46 @@ if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
   allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
 fi
 
+# --- Guard 11: STG PR routing — H10/H11 (active ONLY when STG_ENABLED=true) ---
+# H10: feature/* -> main PRs are forbidden (two-stage flow: feature ->
+#      release/stg -> main).
+# H11: main -> release/stg sync PRs are forbidden (reverse-flow sync).
+# Route interpretation (git-strategy.md route table): release/stg -> main is
+# the legitimate release path and is deliberately NOT denied here; hotfix/* ->
+# main is also allowed. Only the two forbidden routes above are blocked.
+# STG_ENABLED is resolved locally (hook-helpers.sh is frozen for concurrent
+# edits): SIDEKICK_STG_ENABLED env override first (CI / testing), then the
+# CLAUDE.md Project Configuration value. Anything other than a clean "true"
+# (unset, false, read failure) -> complete no-op (fail-open, the default).
+STG_ENABLED_VAL="${SIDEKICK_STG_ENABLED:-}"
+if [ -z "$STG_ENABLED_VAL" ]; then
+  _stg_claude_md="$(dirname "$0")/../../CLAUDE.md"
+  if [ -f "$_stg_claude_md" ]; then
+    STG_ENABLED_VAL=$(grep -m1 -E '^[[:space:]]*STG_ENABLED[[:space:]]*:' "$_stg_claude_md" 2>/dev/null | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]#].*//')
+  fi
+fi
+if [ "$STG_ENABLED_VAL" = "true" ] && printf '%s\n' "$CLEAN_CMD" | grep -qE 'gh\s+pr\s+create\b'; then
+  # Extract --base/-B and --head/-H from the RAW command: the values may be
+  # quoted, and CLEAN_CMD strips quoted strings. `gh pr create` was detected
+  # on CLEAN_CMD above precisely to avoid firing on quoted text (PR bodies).
+  PR_BASE=$(printf '%s\n' "$COMMAND" | grep -oE '(^|[[:space:]])(--base|-B)(=|[[:space:]]+)["'"'"']?[^"'"'"'[:space:]]+' | head -1 | sed -E 's/^[[:space:]]*(--base|-B)(=|[[:space:]]+)["'"'"']?//')
+  PR_HEAD=$(printf '%s\n' "$COMMAND" | grep -oE '(^|[[:space:]])(--head|-H)(=|[[:space:]]+)["'"'"']?[^"'"'"'[:space:]]+' | head -1 | sed -E 's/^[[:space:]]*(--head|-H)(=|[[:space:]]+)["'"'"']?//')
+  if [ -z "$PR_HEAD" ]; then
+    # --head omitted: gh pr create defaults to the current branch
+    if [ -n "$CWD" ]; then
+      PR_HEAD=$(git -C "$CWD" branch --show-current 2>/dev/null)
+    else
+      PR_HEAD=$(git branch --show-current 2>/dev/null)
+    fi
+  fi
+  if [ -n "$PR_BASE" ]; then
+    if [ "$PR_BASE" = "main" ] && printf '%s\n' "$PR_HEAD" | grep -qE '^feature/'; then
+      deny "H10: feature/* -> main PRs are forbidden (STG_ENABLED=true). Use the two-stage route: feature -> release/stg -> main (git-strategy.md)."
+    fi
+    if [ "$PR_BASE" = "release/stg" ] && [ "$PR_HEAD" = "main" ]; then
+      deny "H11: main -> release/stg sync PRs are forbidden (STG_ENABLED=true). release/stg receives feature/* and hotfix/* only; the release path is release/stg -> main (git-strategy.md)."
+    fi
+  fi
+fi
+
 allow_silent
