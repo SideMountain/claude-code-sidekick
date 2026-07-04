@@ -24,7 +24,7 @@ brain ファイル群とフィードバックの育ち具合を確認する。
 
 #### 0a. feedback 昇格漏れの検出
 
-feedback_*.md を確認し、3件以上の同趣旨フィードバックが brain（PJ brain / 個人 brain）に未昇格のまま溜まっていないかチェックする。
+feedback_*.md を確認し、3件以上の同趣旨フィードバックが brain（PJ brain / 個人 brain）に未昇格のまま溜まっていないかチェックする（同趣旨判定は `.claude/docs/knowledge-reflux.md` R5 = 2/3 YES）。
 溜まっている場合は Step 3c（昇格候補の検出）で優先的に処理する。
 
 #### 0b. 個人 brain / PJ brain カスタマイズ状態
@@ -169,7 +169,7 @@ brain（PJ brain / 個人 brain / OSS テンプレート還流）に昇格済み
 
 #### 3b. 統合候補の検出
 
-同趣旨のfeedbackが複数ないか確認。統合候補があれば提案:
+同趣旨のfeedbackが複数ないか確認（同趣旨判定は `.claude/docs/knowledge-reflux.md` R5）。統合候補があれば提案:
 ```
 === feedback 統合候補 ===
 1. feedback_A + feedback_B → 「○○」として統合

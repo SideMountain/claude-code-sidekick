@@ -25,6 +25,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Changed
 
+- **知識還流の 4 箇所重複を単一ソースに集約**（モデル非依存化 WS5）: `close-chat/references/knowledge-reflux-guide.md` と `weekly-inventory/references/feedback-compression-rules.md` を skill 固有部分だけに薄型化し、判定 rubric は `.claude/docs/knowledge-reflux.md` を参照。`knowledge-map.md`（致命クラスを 4 カテゴリ閉集合に精緻化）・`auto-implement` Phase 5b・`weekly-inventory` Step 0a/3b も同 doc を指すよう配線。将来の文面乖離バグを構造で防止。
 - **`/auto-implement` を指揮者に刷新**（ADR-0027・モデル非依存化 WS3）: 機構を公式部品（plan mode で分解 → `/goal` で完了条件宣言 → 実装 → `/verify` で動作実証 → `/code-review`+`/review` アダプタで裁定）に委ね、ccs は無人実行の安全の要だけを担う。(1) Phase 0 入口ゲートを **R1 rubric（7 問・1つでも NG→停止）**に置換し、未決定マーカー・曖昧語・migration パスを機械 grep で判定 (2) budget-gate 連動で **THROTTLE 時は fan-out 幅（並列本数・敵対検証の票数）のみ縮退**し、縮退を **progress ledger（ADR-0024）に明示**（silent drop 禁止） (3) **難所の閉集合 R2 + 敵対検証 R3** を配線し、`/review` の verdict をそのまま採用（再判断禁止）・矛盾 findings は多視点 judge へ fan-out。R8 trivial-gating で fan-out 発火を機械判定。SKILL.md はレポート実例を `references/report-examples.md` へ分離。
 - `.claude/rules/context-economy.md` §8 を改訂: 難所の閉集合（R2）+「判定に迷う場合も難所（上位既定）」+ 敵対検証（R3）の定型を明文化（`/auto-implement` 他が参照する単一ソース）。
 - `/setup` に無人稼働の opt-in 導線を追加（ADR-0026 の `/setup` 配線）: `SIDEKICK_AUTO=true` の起動コマンドを案内し、隠しトグル化を回避。
@@ -34,6 +35,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Added
 
+- **知識還流の判定リファレンス（単一ソース）**（モデル非依存化 WS5）: `.claude/docs/knowledge-reflux.md` に R5（同趣旨ペア判定・2/3 YES）+ R6（昇格判定・3/4 YES + 致命クラス 4 カテゴリ閉集合）+ R7（還流 3 分類）+ few-shot コーパス（昇格した/しなかった実例）を集約。`/close-chat`・`/weekly-inventory`・`/auto-implement`・`rules/knowledge-map.md` の 4 箇所に別文面で散っていた昇格・還流判定を単一ソース化（診断: ライフサイクル系横断 DRY #1）。標準モデルでも rubric + few-shot で昇格判定がぶれない。`.claude/docs/` は遅延ロードで常駐しない。
 - **公式スキル鮮度 watch**（ADR-0027 決定4・モデル非依存化 WS7）: `/weekly-inventory` に Step 5d を追加し、公式スキル採用を継続追随プロセスとして常設。`.claude/skills/weekly-inventory/scripts/official-freshness.sh` が稼働 CLI と各ラッパー（`/review`・`/auto-implement`・`/setup`）の参照する公式 feature の version floor（`hook-helpers.sh` の single source of truth）の drift を機械検知（fail-open）。新規公式スキル・挙動変更は news-upstream / 公式リリースノートを一次入力に照合し、gap を `gh issue create`（ラベル `official-adoption`）で逆流ループに載せる。`hook-helpers.sh` に `ccs_official_features`（feature 列挙・floor リストと同期）を追加。
 - `REVIEW.md`（リポルート）: 公式 `/code-review` へ PJ 規範を注入するファイル。`/setup` が下流 PJ 向けに配置・調整する（Step 3e / Step 2E）。
 - `.claude/skills/review/scripts/review-fitness.sh`: 破壊的マイグレーションキーワード・a11y（alt/label 欠落）・空 catch を決定的に検出する前置ゲート（破壊的キーワード検出の 4 重定義を 1 本化）。
