@@ -25,6 +25,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Changed
 
+- **`guard-bash.sh` の `AUTO_MODE` 既定を `true` → `false` に変更**（ADR-0026 Accepted）: 対話セッションは既定で H7/H8 を厳守（feature push / 非保護 merge も確認）。無人稼働は起動コマンドが内包する `SIDEKICK_AUTO=true` で明示 opt-in（隠しトグルにしない導線）。ハードブロック（保護ブランチ・`.env`・`rm -rf`・PRD DB 等）は AUTO_MODE 非依存で不変。既定 `false` により「必ず確認」（HARD 文言）と guard 既定が一致する。実機検証済（3 設定 × 3 コマンド）。
 - **review 系 6 スキルを 1 アダプタに統合**（ADR-0027・モデル非依存化 WS2）: `/review` を「決定的 fitness → 公式 `/code-review`（REVIEW.md 規範注入）→ min() 総合判定」の薄いアダプタに刷新。機構は公式に委ね、ccs は PJ 規範（HARD照合・ADR整合・破壊的変更・a11y・hook教訓）と最終ゲート（min）だけを持つ。`/review` SKILL.md は 203→105 行。
 - `.claude/skills/review/references/scoring-guide.md` を severity→min() モデルに整合（rubric 既在だが未配線だった最終判定の配線を解消）。
 

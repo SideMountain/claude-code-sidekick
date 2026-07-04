@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Proposed（2026-07-02、草案）。既定値の変更はコードの振る舞いと無人運用のストーリーに影響するため、人間の承認と実機検証を経てから確定する。
+Accepted（2026-07-04）。オーナー裁定（既定 `false` + 無人モードの明示 opt-in を導線に組み込む）+ 実機検証済。前提 ADR-0025（budget-gate）。実装は docs/plans/ccs-model-independence.md の WS3。
 
 ## 背景
 
@@ -27,13 +27,17 @@ README は「Physically blocks dangerous ops like `rm -rf` or pushing to main」
 - **B. 文言を実態に合わせる（現状の既定 true を維持）**: HARD ルール文言と README を「物理ブロックは保護ブランチ・`.env`・破壊操作・PRD DB に限る／feature push・非保護 merge は AUTO 既定で自律（`SIDEKICK_AUTO=false` で確認に切替可）」と正直化。H7/H8 に「AUTO_MODE=false 時に適用」の条件を明記。
 - **C. モード別既定（B を基盤に A を無人時へ限定適用）**: 文言は B で正直化しつつ、無人モードは「明示 opt-in（`SIDEKICK_AUTO=true`）でのみ全自律」を規約として固定する。対話モードの既定は運用実績に合わせて選ぶ。
 
-## 推奨
+## 決定
 
-**B を基盤に、無人（`/auto-implement`・cron）時のみ A 相当の明示 opt-in を要求する（= C）**。根拠:
+**A: 既定を `false` にする（`${SIDEKICK_AUTO:-false}`）+ 無人モードの明示 opt-in を「導線」に組み込む。** オーナー原則「わかりやすい初期設定 / 分かりにくいオプションは dead 機能化する」に基づく。
 
-- ハードブロックが不可逆操作（保護ブランチ・`.env`・`rm -rf`・PRD DB）を AUTO_MODE 非依存で常に止めるため、feature push / 非保護 merge の auto-approve は「可逆・低リスク」に限定されている。「PRs while you sleep」の価値はこの既定に依存する。
-- 残る乖離は主に **表現** の問題。H7/H8 と README を実態に合わせれば、認知層と強制層は一致する。
-- 無人運用は既に `SIDEKICK_AUTO=true` を明示する起動例で案内されており、これを規約として固定すれば「意図せぬ全自律」を防げる。
+1. **対話セッションの既定 = 確認**（`SIDEKICK_AUTO` 未設定 → `false`）。feature push / 非保護 merge も H7/H8 どおり確認する。これが利用者にとって最も直感的で安全。
+2. **無人モードは明示 opt-in だが「隠しトグル」にしない** — `/auto-implement` の無人起動コマンド（`SIDEKICK_AUTO=true claude --dangerouslySkipPermissions`）が opt-in を内包する。opt-in は「無人モードに入ること」に結合しており、利用者が別途 env var を探して設定する必要はない（dead 機能化の回避）。
+3. **導線**: `/setup` が「無人稼働を使うか」を提示し、使う場合の起動コマンドを案内する。
+
+ハードブロック（保護ブランチ・`.env`・`rm -rf`・`prisma db push`・PRD DB・保護ブランチ Edit）は AUTO_MODE 非依存で常に deny されるため、既定反転後も不可逆操作の保護は不変。既定 `false` により H7/H8「必ず確認」が既定で真になり、認知層（HARD 文言）と強制層（guard 既定）が一致する。
+
+却下: **B（既定 true 維持 + 文言正直化）** — 表現の齟齬は消せるが、対話ユーザーが「push が無確認で通る」既定を予期しにくく、安全側でない。**C（モード別既定）** — 対話既定を運用実績で選ぶ余地を残すが、既定を 1 つに固定した方が利用者の予測可能性が高い。
 
 ## 検証手順（既定を変える場合の必須ゲート）
 
@@ -41,8 +45,21 @@ README は「Physically blocks dangerous ops like `rm -rf` or pushing to main」
 2. 保護ブランチ push・`.env` 変更・`rm -rf` は `SIDEKICK_AUTO` の値に関わらず deny のままであることを確認（ハードブロックの独立性）。
 3. `/auto-implement` を `SIDEKICK_AUTO` 未指定で起動したとき、feature push が確認待ち（または規約どおり停止）になり、明示 opt-in 時のみ全自律で PR まで進むことを確認。
 
+### 検証結果（2026-07-04・実機）
+
+`guard-bash.sh` に模擬入力を 3 設定で流した結果:
+
+| 入力 | `SIDEKICK_AUTO` 未設定 | `=true` | `=false` |
+|---|---|---|---|
+| `git push origin feature/x`（非保護） | allow + **WARNING（確認）** | allow + AUTO | allow + WARNING |
+| `git push origin main`（保護） | **deny** | **deny** | **deny** |
+| `rm -rf /tmp/x`（ハードブロック） | **deny** | **deny** | **deny** |
+
+既定（未設定）で feature push が WARNING（確認）に変わり H7/H8 が既定で効くこと、保護ブランチ push・`rm -rf` が AUTO_MODE 非依存で deny のままであることを確認した。
+
 ## 影響
 
-- 文言のみ（推奨 B 部分）は低リスクで先行可能: CLAUDE.md H7/H8 に AUTO_MODE 条件を明記、README の防御モデル説明を「物理ブロック対象」と「AUTO 既定で自律」に分離。
-- 既定値の変更（A/C のコード部分）は `guard-bash.sh` の 1 行（`${SIDEKICK_AUTO:-...}`）と `/auto-implement` の opt-in 規約に影響。上記検証を満たし人間が承認した時点で別 ADR で確定する。
-- 本 ADR 段階ではコードは変更しない。
+- `guard-bash.sh`: `${SIDEKICK_AUTO:-true}` → `${SIDEKICK_AUTO:-false}`（1 行）。
+- `/auto-implement`: 全自律には `SIDEKICK_AUTO=true` が必須である旨を前提条件に明記（既定 `false` のため未指定だと push / PR で確認待ちになる）。無人起動例は既にこの形。
+- `/setup`: 「無人稼働を使うか」の導線で opt-in の起動コマンドを案内する（WS3 で配線）。
+- 既定 `false` により H7/H8「必ず確認」が既定で真になり、README の防御モデル説明との齟齬が解消する。
