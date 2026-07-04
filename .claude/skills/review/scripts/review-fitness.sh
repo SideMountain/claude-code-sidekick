@@ -62,6 +62,11 @@ add_finding() { FINDINGS="${FINDINGS}[$1] $2 — $3"$'\n'; }
 # --- Check 1: breaking migration keywords (Expand-Contract, rules/deploy-strategy) ---
 # DROP COLUMN/TABLE, ALTER ... TYPE, RENAME, ADD ... NOT NULL — destructive DDL
 # that needs a 2-phase release. Advisory: the reviewer confirms the sequencing.
+# Scope: actual DDL-bearing files (*.sql / *.prisma) only. A broad "*migrat*"
+# path glob would also scan docs *about* migrations (e.g. docs/migrations/*.md),
+# where prose like "rename" false-matches the RENAME token; and scanning *.ts
+# would false-match "rename" in ordinary code. Keep the keyword grep where DDL
+# is unambiguous. Non-SQL migrations are still covered semantically by REVIEW.md §1c.
 while IFS= read -r rec; do
   [ -z "$rec" ] && continue
   file="${rec%%:*}"; line="${rec#*:}"; line="${line%%:*}"; body="${rec#*:*:}"
@@ -69,7 +74,7 @@ while IFS= read -r rec; do
     add_finding WARN "$file:$line" "破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）"
   fi
 done <<EOF
-$(_added_lines '*migrat*' '*.sql' '*.prisma' 'schema.prisma')
+$(_added_lines '*.sql' '*.prisma')
 EOF
 
 # --- Check 2: a11y (review-design "alt 欠落 / label なし input") ---
