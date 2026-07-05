@@ -8,7 +8,7 @@
 
 sidekick は `NOTION_ENABLED=true` のとき、Notion Tasks DB とタスク状態を双方向同期している（`.claude/rules/task-management.md` 参照）。一方、セッション中に発生する「判断・決定」は現状 `docs/decisions/`（ADR）と auto-memory `feedback_*.md` のみに記録される。
 
-外部発信（SNS運用等）や複数PJの横断ネタ抽出を目的に、Notion 側の「判断ログDB」に判断を集約したいユースケースが浮上した（下流の横山さんの SNS運用ケース、2026-04-25 の設計壁打ちで確定。関連Notion設計書: `SNSコクピット移行設計書`）。
+外部発信（SNS運用等）や複数PJの横断ネタ抽出を目的に、Notion 側の「判断ログDB」に判断を集約したいユースケースがある（下流 PJ の SNS 運用ケース）。
 
 ### ユースケース
 
