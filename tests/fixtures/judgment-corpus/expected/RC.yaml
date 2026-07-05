@@ -1,0 +1,38 @@
+# 凍結判定: 2026-07-05 / claude-fable-5（Mythos-class）
+# 変更禁止（append-only）。被測定モデルには絶対に見せない。
+# holdout: true のケースは REVIEW.md / rubrics の few-shot exemplar に使用禁止（README「held-out 分割」参照）。
+
+- id: RC-01
+  root_cause: "C1"
+  holdout: false
+  must_find:
+    - "direct 形は deny 実績がある = quote 除去・フィールド検査は機能している → C2 なら direct 形も素通りするはずで症状と矛盾"
+    - "COMMAND に全文が入っている観測が C3（空 fail-open）を直接棄却。--amend 不在の明示が C4 を棄却"
+    - "direct と連結の差分は『git commit の前に別コマンドが連結されているか』だけ → 行頭アンカー仮説のみがこの差分を説明する"
+  rationale: |
+    症状の最小対（direct=deny / chained=allow）を説明できる仮説は C1 のみ。
+    「変わった条件だけが変わった結果を説明する」という差分推論で、
+    観測事実による候補の消去ができているかを測る。
+
+- id: RC-02
+  root_cause: "C2"
+  holdout: false
+  must_find:
+    - "blockquote banner 不在の目視確認が C1 を、引数 standard の確認が C3 を棄却（C4 は入れ子 blockquote 自体が存在せず前提を欠く）"
+    - "standard の banner 検査は『banner が存在しないこと』を確かめる否定形検査で、検索範囲を行頭 blockquote に限定しないと本文の **CRITICAL** 強調が偽陽性になる"
+    - "Changes 節の過去リリース再掲の箇条書きという具体的な偽陽性源を特定できている"
+  rationale: |
+    否定形検査（○○が無いことの確認）は、検索範囲を構造（blockquote 行頭）で
+    限定しないと無関係な本文一致で誤 fail する。位置非依存 grep が真因。
+
+- id: RC-03
+  root_cause: "C2"
+  holdout: true
+  must_find:
+    - "走行中 git プロセス不在 + lock mtime が 3 日前 → 現在進行の並行保持（C1）と矛盾"
+    - "mtime と WSL クラッシュ・強制再起動の時期が一致し、決定的再現（毎回同じ lock）とも整合"
+    - "worktree 構成は無変更で従来正常 → C3 は変化点がなく説明にならない"
+  rationale: |
+    時刻証拠（mtime）と否定証拠（プロセス不在・構成無変更）の突合で
+    stale lock 残骸に一意に絞れる。証拠と各仮説の整合を突き合わせる
+    消去法ができているかを測る。
