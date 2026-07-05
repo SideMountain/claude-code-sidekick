@@ -2,6 +2,9 @@
 
 > **これは Phase 0 原案**。WS5 実装時に知識パイプライン系スキルの references/ へ配置する。
 > 実例は実運用履歴から抽出し、固有名詞を除去して一般化した。**新しい実例で「足すより入れ替える」**（既存の昇格/降格基準に従う）。
+>
+> **配線状態**（これは実装のソースであって常設参照先ではない。配線済み項目は各スキルが単一ソース）:
+> §A→.claude/docs/knowledge-reflux.md few-shot / **§B→discover references/task-breakdown-examples.md（配線済み・下流配布向けに題材を汎用化。本節は歴史的記録として保持）** / §C→REVIEW.md §4（findings 契約）/ **§D→record-decision Step 3 のアンカー方式（配線済み）** / §E→運用ルール（この doc 自体の鮮度維持）。
 
 ---
 
