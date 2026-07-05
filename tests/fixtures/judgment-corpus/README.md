@@ -48,3 +48,5 @@
 |---|---|---|---|
 | 2026-07-04 | Opus + harness（force-flag 前） | 13/17（76.5%） | [詳細](results/2026-07-04-baseline.md)。不一致は全て判断較正・事実誤りゼロ |
 | 2026-07-04 | Sonnet + harness（force-flag 前） | 14/17（82.4%） | 同上。REV-01/KRF-03 は両アーム共通の不一致 |
+| 2026-07-05 | Fable 単発（worth-it アーム A・1 パス） | 27/27（100%） | [詳細](results/2026-07-05-worth-it.md)。ladder/force-flag 配線後・27 件版 |
+| 2026-07-05 | Opus + harness（worth-it アーム B・L2 3 票多数決 + R3） | 26/27（96.3%） | 同上。多数決が REV-03 の単票誤りを救済 / REV-05 は 3 票相関誤りで救済不能 |
