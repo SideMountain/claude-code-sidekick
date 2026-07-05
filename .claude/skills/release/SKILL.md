@@ -39,10 +39,12 @@ git fetch origin
 git branch --show-current  # main であること
 git status                 # clean
 git log HEAD..origin/main --oneline  # 未取り込みなし
-head -30 CHANGELOG.md      # [Unreleased] に項目がある
+head -30 CHANGELOG.md      # [Unreleased] に項目がある（目視）
+bash .claude/skills/release/scripts/verify-release-notes.sh unreleased  # 決定的検査
 ```
 
 未取り込みがあれば `git pull --ff-only origin main`。`[Unreleased]` が空ならリリース不要で終了。
+`verify-release-notes.sh unreleased` が **FAIL（`[Unreleased]` が空）を返したらリリースを中止する**（`### Added` 等の小見出しだけで箇条書きが無い場合も空扱い。CHANGELOG を持たない PJ は `[SKIP]` で fail-open）。
 
 ### Step 1: 温度感の判定（対話）
 
@@ -140,8 +142,17 @@ git push origin vX.Y.Z  # 要ユーザー確認
 - Body banner（severity 別の文言）
 - 必須セクション（Highlights、Changes、変更された ADR、変更された rules、変更された skills、Full Changelog）
 
+notes body を書いたら、`gh release create` の**直前**に決定的検査を通す（注意力頼みでなく最終ゲート）。body を一時ファイルに書き出し、severity・title・body-file を渡す:
+
 ```bash
-gh release create vX.Y.Z --repo {owner}/{repo} --title "{title}" --notes "{body}"  # 要ユーザー確認
+# {body} を書き出したファイルを <body-file> とする（severity は critical|standard|enhancement）
+bash .claude/skills/release/scripts/verify-release-notes.sh notes <severity> "{title}" <body-file>
+```
+
+**FAIL（severity マーカー / title prefix / banner の不一致・必須セクション欠落）が 1 件でも出たら `gh release create` を実行せず、format-spec に合わせて修正してから再検査する。** `[OK]` を確認してから:
+
+```bash
+gh release create vX.Y.Z --repo {owner}/{repo} --title "{title}" --notes-file <body-file>  # 要ユーザー確認
 ```
 
 ### Step 7: 完了記録

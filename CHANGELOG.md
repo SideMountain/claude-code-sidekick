@@ -43,6 +43,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 - `REVIEW.md`（リポルート）: 公式 `/code-review` へ PJ 規範を注入するファイル。`/setup` が下流 PJ 向けに配置・調整する（Step 3e / Step 2E）。
 - `.claude/skills/review/scripts/review-fitness.sh`: 破壊的マイグレーションキーワード・a11y（alt/label 欠落）・空 catch を決定的に検出する前置ゲート（破壊的キーワード検出の 4 重定義を 1 本化）。
 - `docs/migrations/`: 下流移行ガイドの標準ディレクトリ（初適用: `review-6to1-adapter.md`）。
+- **release notes の決定的検証スクリプト新設**（診断 v2 hook 化）: `.claude/skills/release/scripts/verify-release-notes.sh` — GitHub Release notes の 3 点一致（severity マーカー / title prefix / banner）+ 必須セクション存在、および CHANGELOG [Unreleased] 非空を機械検証。/release Step 0（unreleased）と Step 6（notes・gh release create 直前）に配線し、severity マーカー不一致で下流検知が壊れる事故を注意力頼みから決定的ゲートに格上げ。
 
 ### Deprecated
 
