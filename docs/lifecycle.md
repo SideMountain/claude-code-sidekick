@@ -110,6 +110,8 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 | `guard-commit-message.sh` | Blocks commit lacking 背景/対応/影響 (H15) | PreToolUse Bash |
 | `guard-db-operation.sh` | DENY writes to `PRD_DB_PATTERN` (dormant in ccs; active downstream) | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | DENY `.env` DATABASE_URL edits + ALL edits on `main` (worktree-forcing) | PreToolUse Edit/Write |
+| `remind-worktree-memory.sh` | Reminds to record a new worktree in auto-memory Active Work (H13, recognition layer) | PostToolUse Bash |
+| `budget-cycle-halt.sh` | Budget gate at the Stop boundary (ADR-0024/0025): <60% silent / 60–85% advisory / >85% one bounded wrap-up turn; fail-open | Stop |
 | `.claude/githooks/pre-commit` | PII scan of staged public blobs; aborts commit (activated by `/setup` `core.hooksPath`) | git pre-commit |
 
 ### Knowledge & judgment

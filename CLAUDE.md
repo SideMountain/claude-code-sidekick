@@ -30,7 +30,7 @@ NOTION_JUDGMENT_DB_URL: ""    # 同期先 Notion 判断ログDB の URL（NOTION
 PACKAGE_MANAGER: npm          # npm | pnpm | yarn | pip
 STG_DB_PATTERN: ""            # STG DB識別パターン（例: "ep-bitter-salad"）
 PRD_DB_PATTERN: ""            # PRD DB識別パターン（例: "ep-weathered-mode"）
-SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（例: "0.4.1"）
+SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（例: "0.12.0"）
                               # 空 or 未設定なら sidekick 本体として扱う（バージョンチェック対象外）
 ```
 
@@ -130,6 +130,8 @@ OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート
 | `rm -rf` / 再帰削除 | guard-bash.sh | — |
 | `prisma db push` | guard-bash.sh | H3 |
 | メインWSでの `git checkout` | guard-bash.sh | H12 |
+| 保護ブランチ checkout 中のファイル編集 | guard-protected-branch-edit.sh | H9, H12 |
+| 背景/対応/影響 を欠くコミット | guard-commit-message.sh | H15 |
 | 公開ファイルへの PII 混入（commit 時） | .claude/githooks/pre-commit | pii-prevention.md (HARD) |
 
 #### 承認必須（不可逆な操作。確認なしで実行しない）

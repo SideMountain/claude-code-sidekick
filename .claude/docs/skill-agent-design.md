@@ -19,7 +19,7 @@ Commands（ユーザー入力）
 |---|---|---|---|
 | Commands | ユーザーが呼ぶエントリーポイント | `/skill-name` | `/review`, `/inventory` |
 | Agents | 実行主体。独自のコンテキスト・権限を持つ | `.claude/agents/` or Agent ツール | reviewer, researcher |
-| Skills | 「何をするか」の知識・手順 | `.claude/skills/` | review-code, scoring-guide |
+| Skills | 「何をするか」の知識・手順 | `.claude/skills/` | release, scoring-guide |
 
 ### 各層の責務
 
