@@ -102,7 +102,7 @@ DAYS=$(( ($(date +%s) - PUB_EPOCH) / 86400 ))
 ```
 
 **`auto-memory/project_skipped_updates.md` の棚卸し**:
-- 永久スキップが PJ 性質変化で不要になった可能性のある項目（例: UI 追加後に `review-design` スキップが残っている）を報告
+- 永久スキップが PJ 性質変化で不要になった可能性のある項目（例: UI 追加後に stack pack 関連更新のスキップが残っている）を報告
 - 後回しで `defer_until` を過ぎているのに未対応の項目を報告
 
 ### Step 1: 現状スナップショット

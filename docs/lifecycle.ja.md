@@ -85,6 +85,8 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `guard-commit-message.sh` | 背景/対応/影響 を欠く commit を block（H15） | PreToolUse Bash |
 | `guard-db-operation.sh` | `PRD_DB_PATTERN` への書込を DENY（ccs では dormant・下流で有効） | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | `.env` DATABASE_URL 編集 + main での全編集を DENY（worktree 強制） | PreToolUse Edit/Write |
+| `remind-worktree-memory.sh` | Worktree 新設を auto-memory Active Work へ記録するようリマインド（H13・認知層） | PostToolUse Bash |
+| `budget-cycle-halt.sh` | Stop 境界の budget-gate（ADR-0024/0025): <60% 無出力 / 60–85% 助言のみ / >85% 1 回だけ wrap-up ターン・fail-open | Stop |
 | `.claude/githooks/pre-commit` | staged 公開 blob の PII scan・commit 中断（`/setup` の `core.hooksPath` で有効化） | git pre-commit |
 
 ### 知識 & 判断
