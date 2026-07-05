@@ -142,13 +142,69 @@ if printf '%s\n' "$COMMAND" | grep -qE '(sed|awk|echo.*>|printf.*>|tee)' && prin
   deny "Modifying DATABASE_URL in .env via shell is forbidden. .env must always point to the staging DB. For production DB operations, use inline env vars: DATABASE_URL=\"prod-string\" node scripts/xxx.js"
 fi
 
-# --- Guard 4.5: Any shell write to .env — redirect / cp / mv (hard block) [M-1] ---
-# The terminator class [^A-Za-z0-9._-] keeps `.env.example` / `.env.local` /
-# `.env-prod` from matching (only the exact `.env` basename is protected).
-if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '>>?[[:space:]]*[^[:space:]|&;>]*\.env([^A-Za-z0-9._-]|$)' \
-   || printf '%s\n' "$DESTRUCT_CMD" | grep -qE '(^|[^[:alnum:]])(cp|mv)[[:space:]].*[[:space:]]\.env[[:space:]]*([;&|"'"'"'`]|$)'; then
-  deny "Writing to .env via shell (redirect / cp / mv) is forbidden. .env is protected and must always point to the staging DB. Edit .env manually, or pass production credentials inline: DATABASE_URL=\"prod-string\" node scripts/xxx.js"
-fi
+# --- Guard 4.5: shell write to .env — redirect / cp / mv (hard block, template-aware) [M-1] ---
+# Blocks shell writes whose DESTINATION is the exact `.env` basename (redirect
+# `>`/`>>`, or a `cp`/`mv` destination). This is the H5 boundary that keeps .env
+# pointed at staging. The terminator class [^A-Za-z0-9._-] keeps `.env.example` /
+# `.env.local` / `.env-prod` from matching as the destination (only bare `.env`).
+#
+# Guard 4.5 is the SOLE enforcement for the "repoint .env by copying a file over
+# it" vector: Guard 4 only inspects the command TEXT for a literal `DATABASE_URL`
+# token, so `cp .env.production .env` / `cat prod.env > .env` / `base64 -d blob >
+# .env` carry a production connection string with no such token and slip past
+# Guard 4 entirely (verified in the L2 adversarial pass). So this guard must stay
+# a HARD block for arbitrary/production sources and for every redirect.
+#
+# NARROW EXCEPTION (warn, not block): a `cp`/`mv` FROM a placeholder template
+# (`.env.example` / `.env.sample` / `.env.template` / `.env.dist`) INTO `.env` —
+# the universal first-time-setup step, which carries no real credentials. A hard
+# block there was pure friction, so it is downgraded to a WARNING. The exception
+# is limited to template SOURCES matched as the copy's source token; it does NOT
+# cover redirects or non-template sources (a prod `.env` from another path stays
+# blocked). The worktree-guide replication form `cp .env ../<wt>/.env` already
+# passes (its dest has a `/` before `.env`, so the destination matcher misses).
+#
+# PER-SEGMENT evaluation (mirrors Guard 2 / Guard 11): each `;`/`&&`/`||`/`|`
+# segment is judged on its own. A whole-command match would let one template copy
+# (`cp .env.example .env`) downgrade a co-located prod repoint in the SAME chain
+# (`... && cp .env.production .env`) to a mere warning — so the exception is
+# scoped to the segment that actually is the template copy; every other .env
+# write in the chain is judged independently and still hard-denied. The `#` in
+# the cp/mv terminator class closes a trailing-comment bypass (`cp x .env #note`).
+#
+# DEFERRED emit (flag, not exit) for the template WARNING: a template segment
+# sets a flag instead of emitting, so a downstream HARD block in a later segment
+# or guard (Guard 5 rm -rf, Guard 6 prisma db push, Guard 7/8 gh, Guard 11 STG)
+# still fires first; the warning is emitted only at the very end. A non-template
+# .env write denies immediately.
+#
+# Known pre-existing gaps (present in the original hard-deny too; NOT introduced
+# here, backlogged for the guard-fix wave): a trailing fd redirect after the dest
+# (`cp x .env 2>/dev/null`), `tee .env`, and `$(...)` command substitution are
+# not seen by the destination matchers, so those forms fall through to silent.
+ENV_WRITE_WARN=0
+while IFS= read -r _eseg; do
+  [ -z "$_eseg" ] && continue
+  # Does this segment write to the exact `.env` basename (redirect / cp|mv dest)?
+  printf '%s\n' "$_eseg" | grep -qE '>>?[[:space:]]*[^[:space:]|&;>]*\.env([^A-Za-z0-9._-]|$)' \
+    || printf '%s\n' "$_eseg" | grep -qE '(^|[^[:alnum:]])(cp|mv)[[:space:]].*[[:space:]]\.env[[:space:]]*([#;&|"'"'"'`]|$)' \
+    || continue
+  # It does. Template-source cp/mv into .env -> warn (deferred); anything else
+  # (redirect, non-template source) -> hard deny for THIS segment, immediately.
+  # ANCHORED to the whole segment (^…$): the segment must be EXACTLY a template
+  # copy and nothing else. A merely-CONTAINED template substring must not
+  # vaccinate a prod write sharing the segment via a comment (`cp .env.production
+  # .env # cp .env.example .env`) or command substitution (`cp .env.production
+  # .env \`cp .env.template .env\``) — those are not a whole-segment template
+  # copy, so they fall through to the hard deny.
+  if printf '%s\n' "$_eseg" | grep -qE '^[[:space:]]*(cp|mv)[[:space:]]+(-[^[:space:]]+[[:space:]]+)*[^[:space:]]*\.env\.(example|sample|template|dist)[[:space:]]+[^[:space:]]*\.env[[:space:]]*$'; then
+    ENV_WRITE_WARN=1
+  else
+    deny "Writing to .env via shell (redirect / cp / mv) is forbidden — .env must keep pointing at the staging DB. First-time setup: copy from a template (cp .env.example .env) is allowed. Worktree: copy the staging .env forward (cp .env ../<wt>/.env). Production DB work: pass credentials inline (DATABASE_URL=\"prod-string\" node scripts/xxx.js), never by rewriting .env."
+  fi
+done <<ENV_SEG_EOF
+$(printf '%s\n' "$DESTRUCT_CMD" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
+ENV_SEG_EOF
 
 # --- Guard 5: rm recursive deletion (hard block) [H-2: -r/-R + combined flags] ---
 if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '\brm\s+(-[a-zA-Z]*[rR]|--recursive)|\brm\s+-[a-zA-Z]*\s+-[a-zA-Z]*[rR]'; then
@@ -281,6 +337,12 @@ fi
 # command was not a forbidden STG PR route (Guard 11 above already denied those).
 if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
   allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
+fi
+
+# --- Guard 4.5 deferred emit: template -> .env setup copy (WARNING — see Guard 4.5) ---
+# Runs last so every HARD block above takes precedence over this advisory.
+if [ "$ENV_WRITE_WARN" -eq 1 ]; then
+  allow_with_context "WARNING: creating .env from a template (cp .env.example .env) detected — allowed as first-time setup. Confirm the resulting .env points at the STAGING DB, not production. For production DB operations, pass credentials inline instead: DATABASE_URL=\"prod-string\" node scripts/xxx.js"
 fi
 
 allow_silent

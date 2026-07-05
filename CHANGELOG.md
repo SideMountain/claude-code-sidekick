@@ -23,6 +23,12 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Fixed
+
+- **Guard 4.5（`.env` 書き込みガード）の過剰ブロックを是正 — 下流 dogfood 由来**: v0.12.0 で導入した Guard 4.5 が、宛先が bare `.env` の cp/mv・全リダイレクトを一律 hard block していたため、**初回セットアップ `cp .env.example .env` と worktree での `.env` 複製**まで巻き込んでいた（deny は AUTO_MODE 非依存のため無人セットアップも停止）。テンプレート起点（`.env.example`/`.env.sample`/`.env.template`/`.env.dist`）から `.env` への cp/mv **のみ**を警告へ降格し、それ以外（本番/任意ファイル起点・全リダイレクト）は hard block を維持。H5（`.env` の DATABASE_URL を本番に付け替えない）の enforcement は不変。
+  - **難所 cat4（ガード機構変更）として L2 多視点検証 + 追加 L1 を実施。実装過程で敵対検証が 3 件の実バグを捕捉**（単発判断なら本番事故の穴を配布していた）: (1) 当初の一律警告化は `cp .env.production .env` 等（コマンド文字列に `DATABASE_URL` トークンが無いため Guard 4 が拾えない本番 repoint 経路）の hard block を喪失 → **テンプレート起点限定**に修正 (2) テンプレ例外をコマンド全体で判定していたため `cp .env.example .env && cp .env.production .env` で本番書き込みが降格 → **セグメント単位評価**（Guard 2/11 と同方式）に修正 (3) セグメント内同居（コメント・`` `…` `` 置換）でも降格 → テンプレ正規表現を**セグメント全体にアンカー**（まるごとテンプレコピーの時のみ警告）。cp/mv 終端クラスに `#` を追加し末尾コメントバイパスも解消。回帰テスト（guard-oracle）に G4.5-01〜16 の 16 ケースを新設（従来 Guard 4.5 はカバレッジ 0）。既知の pre-existing gap（末尾 fd リダイレクト `.env 2>/dev/null` / `tee` / `$()`・旧版から存在）は guard-fix wave へ backlog。
+- **`guard-protected-branch-edit.sh` が gitignored ファイルの保護ブランチ上編集を誤ブロックする問題を是正**: `main` 上で `CLAUDE.local.md`・`.claude/settings.local.json` 等の **git 管理外ファイル**を編集しようとすると deny されていた（gitignored は保護ブランチ履歴を汚染し得ず H12/H9 の趣旨に非該当）。`git check-ignore` ゲートを追加し、gitignored ファイルは保護ブランチでも編集可に。tracked ファイルの編集ブロックと `.env` の DATABASE_URL 編集ブロックは不変（後者はゲートの手前で発火）。
+
 ## [0.13.0] - 2026-07-05
 
 ### Changed
