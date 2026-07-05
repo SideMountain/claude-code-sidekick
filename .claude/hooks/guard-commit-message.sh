@@ -8,6 +8,9 @@
 #   - Affected files (影響): which files/directories changed
 #
 # Skips --amend commits (modifying existing messages).
+# Detects `git commit` across chained commands (git add -A && git commit ...),
+# env/wrapper prefixes (FOO=bar / command / env / nice / git), subshells, and
+# shell executors (bash -c "..."); quoted "git commit" mentions never fire.
 #
 # Output: JSON (hookSpecificOutput) to stdout, human-readable to stderr
 #
@@ -29,13 +32,51 @@ if [ -z "$COMMAND" ] && [ -n "$INPUT" ]; then
   COMMAND=$(printf '%s\n' "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//')
 fi
 
-# Only check git commit commands (match at start, allow cd prefix)
-if ! printf '%s\n' "$COMMAND" | grep -qE '^\s*(cd\s+[^;&]+[;&]+\s*)?git\s+commit'; then
-  allow_silent
+# Detect a field-checkable `git commit` anywhere in the command. The old anchor
+# only saw a line-leading `git commit` (optionally `cd ... && git commit`), so
+# the common `git add -A && git commit -m "..."` chained form skipped the check.
+# Strip quotes/HEREDOCs (so a quoted "git commit" mention never fires) and
+# normalise `git -C <dir> commit`, then split into segments the same way
+# guard-bash.sh does (Guard 2) and inspect each one.
+CLEAN_CMD=$(printf '%s\n' "$COMMAND" | sed "s/'[^']*'//g; s/\"[^\"]*\"//g; s/<<'EOF'.*//; s/<<EOF.*//")
+CLEAN_CMD=$(normalize_git_cmd "$CLEAN_CMD")
+
+# Match `git commit` ANYWHERE in a segment (\b word boundary), not just at the
+# segment start. A leading anchor let any single token before git slip the check
+# — env prefix (`FOO=bar git commit`), a wrapper (`command`/`env`/`nice`/`time`/
+# `\git`), or a subshell (`(git commit)` / `$(git commit)`). guard-bash's push
+# guard is anchor-free for the same reason; mirror it. The leading `\b` still
+# keeps `digit`/`legit commit` from false-firing.
+_COMMIT_RE='\bgit[[:space:]]+commit\b'
+
+HAS_COMMIT=0
+while IFS= read -r _seg; do
+  printf '%s\n' "$_seg" | grep -qE "$_COMMIT_RE" || continue
+  # --amend segments modify an existing message: skip that segment's field check.
+  printf '%s\n' "$_seg" | grep -q '\-\-amend' && continue
+  HAS_COMMIT=1
+done <<SEGMENTS_EOF
+$(printf '%s\n' "$CLEAN_CMD" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
+SEGMENTS_EOF
+
+# Shell executors (bash -c / sh -c / eval / xargs) carry their payload inside
+# the quotes CLEAN_CMD strips, so the segment scan above cannot see a wrapped
+# `git commit`. Mirror guard-bash's C-2 double-haystack: when an executor is
+# present, also scan the RAW command. The field check runs on the raw $COMMAND
+# regardless, so a wrapped commit lacking 背景/対応/影響 is still denied. An
+# `--amend` anywhere in the raw executor payload conservatively skips (allow) to
+# avoid false-denying an amend-only wrapped commit — same quote-weakened limit
+# guard-bash documents for executors.
+if [ "$HAS_COMMIT" -eq 0 ] \
+   && printf '%s\n' "$COMMAND" | grep -qE '\b(bash|sh)[[:space:]]+-c\b|\beval\b|\bxargs\b' \
+   && printf '%s\n' "$COMMAND" | grep -qE "$_COMMIT_RE" \
+   && ! printf '%s\n' "$COMMAND" | grep -q '\-\-amend'; then
+  HAS_COMMIT=1
 fi
 
-# Skip --amend (modifying existing commit)
-if printf '%s\n' "$COMMAND" | grep -q '\-\-amend'; then
+# Nothing field-checkable (non-commit command, --amend only, or a quoted
+# "git commit" mention) → allow silently.
+if [ "$HAS_COMMIT" -eq 0 ]; then
   allow_silent
 fi
 

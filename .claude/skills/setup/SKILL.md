@@ -157,7 +157,7 @@ PARENT_DIR=$(cd .. && pwd)
 #### 2c. スキル設定の調整
 
 PJの特性に応じてスキルの活用方針を案内する:
-- DB を使わないPJでは review-code の DB 観点をスキップ対象とする
+- DB を使わない PJ では /review の DB 観点（REVIEW.md §1c の DB 節・fitness の破壊的 DDL 検査）は対象 diff が無く自動的に沈黙する（設定不要）
 - auto-implement の適用範囲を案内する（「推奨ユースケース」セクション参照）
 
 **無人稼働の opt-in 導線（ADR-0026）**: `/auto-implement` は既定（`SIDEKICK_AUTO` 未設定 → `false`）では push/PR で H7/H8 どおり確認待ちになる。無人で PR まで走らせたいか尋ね、使う場合は起動コマンドを案内する（別途 env var を探させない）:

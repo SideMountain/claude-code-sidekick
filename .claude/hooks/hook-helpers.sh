@@ -111,6 +111,60 @@ get_protected_branches() {
   printf '%s' "$default_branches"
 }
 
+# =============================================================================
+# DB-pattern configuration reader
+#
+# Resolves the STG/PRD DB identification substrings so guard-db-operation.sh
+# reads them from the authoritative config (CLAUDE.md Project Configuration)
+# instead of a hard-coded blank. Without this the enforcement layer (physical
+# deny of PRD writes, H1/H2/H6) stays silent even when the config sets a
+# pattern — the recognition layer (CLAUDE.md) and the enforcement layer drift
+# apart, and editing the script directly is clobbered by /adopt overwrites.
+#
+# Priority (first hit wins):
+#   1. SIDEKICK_<KEY> env var (non-empty) — CI / testing
+#   2. CLAUDE.md Project Configuration: the `<KEY>:` YAML scalar value
+#   3. "" (empty — fail-open, preserves prior behaviour when nothing is set)
+#
+# Args: $1 = path to CLAUDE.md, $2 = KEY (STG_DB_PATTERN | PRD_DB_PATTERN).
+# Output: the pattern string ("" when unset). Uses printf (no echo); 2>/dev/null.
+# =============================================================================
+get_db_pattern() {
+  local claude_md="${1:-}" key="${2:-}" ov=""
+
+  # 1. Env override (highest priority; closed set — no arbitrary env expansion)
+  case "$key" in
+    STG_DB_PATTERN) ov="${SIDEKICK_STG_DB_PATTERN:-}" ;;
+    PRD_DB_PATTERN) ov="${SIDEKICK_PRD_DB_PATTERN:-}" ;;
+  esac
+  if [ -n "$ov" ]; then
+    printf '%s' "$ov"
+    return 0
+  fi
+
+  # 2. Parse the `<key>:` scalar from CLAUDE.md Project Configuration.
+  #    Scan ALL matching lines (not grep -m1): the shipped template carries an
+  #    empty placeholder `<KEY>: ""`, so a first-match read would grab the blank
+  #    and fail-open even when a real value is set elsewhere. Clean each value
+  #    (drop a whitespace-preceded `# comment` per YAML — a bare `a#b` is kept —
+  #    then strip surrounding whitespace and one quote layer), discard empties,
+  #    and take the last non-empty (more-protective for PRD: non-empty = deny).
+  if [ -n "$claude_md" ] && [ -n "$key" ] && [ -f "$claude_md" ]; then
+    local parsed
+    parsed=$(grep -E "^[[:space:]]*${key}[[:space:]]*:" "$claude_md" 2>/dev/null \
+      | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]+#.*//' \
+      | sed -E 's/[[:space:]]*$//; s/^[[:space:]]*//; s/^["'"'"']//; s/["'"'"']$//' \
+      | grep -v '^$' | tail -1)
+    if [ -n "$parsed" ]; then
+      printf '%s' "$parsed"
+      return 0
+    fi
+  fi
+
+  # 3. Fallback (empty — fail-open, unchanged behaviour when unset)
+  printf '%s' ""
+}
+
 # Exact membership test against a space-separated set (slash-safe, unlike grep -w).
 # Usage: _branch_in_set "<branch>" "<space-separated set>"
 _branch_in_set() {
