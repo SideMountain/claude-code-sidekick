@@ -6,7 +6,9 @@
 # DATABASE_URL from .env or inline env vars, and displays environment-aware
 # warnings.
 #
-# Pattern matching for STG/PRD is configurable:
+# Pattern matching for STG/PRD is read from CLAUDE.md Project Configuration
+# (SIDEKICK_STG_DB_PATTERN / SIDEKICK_PRD_DB_PATTERN env override — see
+# hook-helpers.sh get_db_pattern):
 #   - STG_DB_PATTERN: substring to identify staging DB (e.g., "ep-bitter-salad")
 #   - PRD_DB_PATTERN: substring to identify production DB (e.g., "ep-weathered-mode")
 #   - If neither pattern is set, the hook skips environment detection
@@ -36,9 +38,12 @@ if [ -z "$COMMAND" ] && [ -n "$INPUT" ]; then
   COMMAND=$(printf '%s\n' "$INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//')
 fi
 
-# --- Configuration: Set these patterns for your project ---
-STG_DB_PATTERN=""
-PRD_DB_PATTERN=""
+# --- Configuration: STG/PRD identification substrings ---
+# Read from CLAUDE.md Project Configuration (SIDEKICK_STG_DB_PATTERN /
+# SIDEKICK_PRD_DB_PATTERN env override; empty = fail-open). See hook-helpers.sh.
+CLAUDE_MD="$(dirname "$0")/../../CLAUDE.md"
+STG_DB_PATTERN=$(get_db_pattern "$CLAUDE_MD" STG_DB_PATTERN)
+PRD_DB_PATTERN=$(get_db_pattern "$CLAUDE_MD" PRD_DB_PATTERN)
 
 # Check if this is a DB-related command
 IS_DB_CMD=false
