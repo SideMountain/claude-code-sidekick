@@ -2,6 +2,9 @@
 
 > **これは Phase 0 原案**。各 WS 実装時に該当スキル / rules へ配線する（配線先を各節に明記）。
 > 設計原則: 質問は「観測可能な事実」だけを問う。「適切か」「妥当か」を質問文に残さない。閾値は明示し、判定不能は常に安全側（停止・上位・保留）に倒す。
+>
+> **配線状態**（これは実装のソースであって常設参照先ではない。配線済み項目は各スキル / rules が単一ソース）:
+> R1→auto-implement Phase 0 / R2・R3→context-economy.md §8 / R4→CLAUDE.md ゲート2 + auto-implement R4-impl / R5・R6・R7→.claude/docs/knowledge-reflux.md / R8→auto-implement fan-out / R9→review Step 4 / **R10→release-format-spec.md §温度感の判定基準（配線済み）**。
 
 ---
 
@@ -98,7 +101,7 @@ diff がランタイム表面（app/ / api/ / src/ / UI コンポーネント / 
 
 上から順に判定し、最初に該当した severity を採用する:
 
-1. **Critical**（1 つでも YES）: ガード/hook の無効化・迂回可能性の修正か / データ喪失リスクの修正か / 保護機構の既定値変更か / セキュリティ修正か
+1. **Critical**（1 つでも YES）: ガード/hook の無効化・迂回可能性の修正か / データ喪失リスクの修正か / 保護機構の既定値変更か / セキュリティ修正か / セッション停止・可用性喪失を伴うバグ（無限ループ・ハング・stop hook 暴走等）の修正か
 2. **Enhancement**: 全変更が opt-in または新規追加のみか（既存挙動の変更ゼロ）
 3. **Standard**: 上記以外すべて
 

@@ -47,7 +47,7 @@ head -30 CHANGELOG.md      # [Unreleased] に項目がある
 ### Step 1: 温度感の判定（対話）
 
 ユーザーに Critical / Standard / Enhancement のどれかを確認する。
-判定基準は `references/release-format-spec.md` §「温度感の判定基準」を参照。
+`references/release-format-spec.md` §「温度感の判定基準」の**判定手順（決定木）で判定する**（上から順に、最初に該当した severity を採る）。
 
 迷ったら上位（Critical > Standard > Enhancement）を選ぶ。
 
