@@ -64,5 +64,19 @@ if ! _branch_in_set "$BRANCH" "$PROTECTED_BRANCHES"; then
   allow_silent
 fi
 
+# --- Gitignored files never reach the protected branch -> allow ---
+# The H12/H9 rule this guard enforces ("no direct edits on a protected branch")
+# exists so protected-branch history is only touched via PRs. A git-ignored file
+# is never committed, so editing it on a protected branch cannot pollute that
+# history — and blocking it only creates friction for the personal/local files
+# that legitimately live at the repo root and are edited from the main checkout
+# (CLAUDE.local.md, .claude/settings.local.json, etc.). .env is exempt from this
+# relaxation: the DATABASE_URL guard ABOVE already fired for it and is unaffected
+# by ignore status. check-ignore is worktree-aware via `-C` on the file's dir;
+# any error (not a repo, git missing) fails safe to the deny below.
+if git -C "$FILE_DIR" check-ignore -q "$FILE_PATH" 2>/dev/null; then
+  allow_silent
+fi
+
 # --- Protected branch: block all file edits ---
 deny "File editing on protected branch ($BRANCH) is forbidden. File: $FILE_PATH. Create a worktree and work on a feature/* or hotfix/* branch instead."
