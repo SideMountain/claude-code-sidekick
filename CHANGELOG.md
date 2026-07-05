@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-07-06
+
 ### Fixed
 
 - **Guard 4.5（`.env` 書き込みガード）の過剰ブロックを是正 — 下流 dogfood 由来**: v0.12.0 で導入した Guard 4.5 が、宛先が bare `.env` の cp/mv・全リダイレクトを一律 hard block していたため、**初回セットアップ `cp .env.example .env` と worktree での `.env` 複製**まで巻き込んでいた（deny は AUTO_MODE 非依存のため無人セットアップも停止）。テンプレート起点（`.env.example`/`.env.sample`/`.env.template`/`.env.dist`）から `.env` への cp/mv **のみ**を警告へ降格し、それ以外（本番/任意ファイル起点・全リダイレクト）は hard block を維持。H5（`.env` の DATABASE_URL を本番に付け替えない）の enforcement は不変。
