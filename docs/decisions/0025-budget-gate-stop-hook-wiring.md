@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Accepted（2026-07-02）。実装済み（`.claude/hooks/budget-cycle-halt.sh` を `settings.json` の `Stop` に配線）。前提は ADR-0024（自律ループと budget-gate の設計）。
+採用（2026-07-02）。実装済み（`.claude/hooks/budget-cycle-halt.sh` を `settings.json` の `Stop` に配線）。前提は ADR-0024（自律ループと budget-gate の設計）。
 
 ## 背景
 

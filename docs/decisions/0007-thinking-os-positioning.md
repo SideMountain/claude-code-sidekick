@@ -8,7 +8,7 @@
 
 sidekick の差別化要素として「安全フック」が前面に出ているが、本当にユニークなのは **thinking.md による知識の複利効果**（feedback → 原則への昇格 → 思考OSの成長）である。
 
-脳tion（Notion AI 向けの思考OS）との対比で、以下のギャップが明確になった:
+Notion 向けの個人思考OSプロダクト（別リポ）との対比で、以下のギャップが明確になった:
 
 - thinking.md が `rules/` 内にあり、他のルールファイルと同格に見えている
 - CLAUDE.md §1「オーナーの判断軸」が空で、thinking.md へのリンクがない
@@ -48,7 +48,7 @@ sidekick の差別化要素として「安全フック」が前面に出てい�
 
 - §1 に thinking.md への参照を記載（MUST ライン）
 - テンプレート版: 2-3行の参照のみ
-- Private sidekick: 脳tion のエッセンスを注入（PJ固有の判断軸として）
+- 個人利用版: 個人の思考OS（別リポ）のエッセンスを注入（PJ固有の判断軸として）
 
 ### 3. 成長サイクルの認知
 
@@ -71,6 +71,6 @@ sidekick の差別化要素として「安全フック」が前面に出てい�
 
 ## 補足
 
-- 脳tion（Notion AI 思考OS）と sidekick の thinking.md は同じ思想から生まれている
-- 脳tion = 手動で育てる思考OS、sidekick = 自動で育つ思考OS（feedback → 昇格が仕組み化）
-- 将来的に thinking-os-template（スタンドアロン版）を別リポで提供し、sidekick へのファネルとする構想あり
+- Notion 向けの個人思考OSプロダクト（別リポ）と sidekick の thinking.md は同じ思想から生まれている
+- 別リポの思考OS = 手動で育てる思考OS、sidekick = 自動で育つ思考OS（feedback → 昇格が仕組み化）
+- 汎用テンプレート（スタンドアロン版）を別リポで提供する選択肢は将来検討に留める（本 ADR の射程外）

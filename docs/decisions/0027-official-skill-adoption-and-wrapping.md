@@ -2,14 +2,14 @@
 
 ## ステータス
 
-採用（2026-07-04、方針決定・実装は docs/plans/ccs-model-independence.md の WS1-WS7 として段階的に実施）。前提: ADR-0007（思考 OS ポジショニング）、ADR-0018（北極星）、ADR-0023/0024/0025（文脈経済・budget-gate）。
+採用（2026-07-04、方針決定・実装は段階的に実施）。前提: ADR-0007（思考 OS ポジショニング）、ADR-0018（北極星）、ADR-0023/0024/0025（文脈経済・budget-gate）。
 
 ## 背景
 
 ccs の目的は「人間の判断軸（brain）に沿って、AI が自律的かつ安全に動くハーネス」である。この目的に対し、2 つの環境変化が重なった。
 
 1. **公式スキルの成熟**: Claude Code 本体が code-review（effort 段階 + クラウド多エージェント）・verify・simplify・goal（完了条件の複数ターン自動実行）・loop・schedule・batch・plan mode 等を提供するようになった。ccs が自前で維持してきた実行機構（特に review 系 6 スキル）は公式と重複し、二重投資になっている。
-2. **モデル tier 変動への耐性不足**: 全スキル棚卸し（docs/plans/ccs-model-independence-diagnosis.md）で、判断ポイント約 60 箇所が prose 裁量＝モデルの解釈力への暗黙依存と判明した。実行機構を自前で持つほど、モデル交代時に劣化する面積が広がる。
+2. **モデル tier 変動への耐性不足**: 全スキル棚卸しで、判断ポイント約 60 箇所が prose 裁量＝モデルの解釈力への暗黙依存と判明した。実行機構を自前で持つほど、モデル交代時に劣化する面積が広がる。
 
 公式側の拡張点は裏取り済み: REVIEW.md によるレビュー観点の注入（公式サポート・最優先で system prompt に注入）、プロジェクト定義による公式スキルの上書き（優先度: enterprise > personal > project > bundled）、スキル存在のバージョン判定。PJ 規範を注入しながら公式の機構に乗る手段が公式に存在する。
 
@@ -35,11 +35,11 @@ weekly-inventory / news-upstream に「公式スキル差分チェック」を�
 
 ### 決定 5: 残すコアの判断は 4 形態に外部化する
 
-OS 層に残る暗黙判断は few-shot（実例模倣）/ rubric（YES/NO + 閾値）/ 決定的スクリプト / harness 補強（敵対検証・premise-check の明示ステップ化）に外部化し、モデル tier に依存しない品質下限を構造で担保する（ADR-0023 決定 3 の具体化。原案は docs/plans/model-independence-drafts/）。
+OS 層に残る暗黙判断は few-shot（実例模倣）/ rubric（YES/NO + 閾値）/ 決定的スクリプト / harness 補強（敵対検証・premise-check の明示ステップ化）に外部化し、モデル tier に依存しない品質下限を構造で担保する（ADR-0023 決定 3 の具体化）。
 
 ## 影響
 
-- スキルの仕分け（維持 / アダプタ化 / 薄型化 / 刷新）と実装順は docs/plans/ccs-model-independence.md に従う
+- スキルの仕分け（維持 / アダプタ化 / 薄型化 / 刷新）と実装順は決定 1・決定 2 の方針に沿って段階的に実施する
 - 下流 PJ: /setup が REVIEW.md 生成と公式スキルのブートストラップを担い、下流は構成を意識せず恩恵を受ける（ADR-0018 北極星と整合）
 - Claude Code のバージョン下限の明示が必要になる（境界層の feature gate で緩和）
 - 旧 review 系スキルは deprecation 期間（1 リリース）を挟んで撤去し、下流移行ガイドを添付する（ADR-0009 の取り込み設計に従う）
