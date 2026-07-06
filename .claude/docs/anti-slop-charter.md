@@ -31,7 +31,7 @@ slop は「禁止リスト」だけでは消えない — 無難の回避は無�
 | 系 | 発火条件 | 不在時 |
 |---|---|---|
 | U 系（UI） | `design-system.md` が存在する PJ の UI 拡張子（`*.tsx *.jsx *.vue *.svelte *.css *.scss *.html`）。`tokens_files:`・`assets_dirs:` に列挙されたトークン定義・配布アセットは除外 | **発火しない**（token が無い PJ に token 準拠は要求できない。UI なし PJ 無コストの ADR-0019 原則） |
-| W 系（文書） | `writing-charter.md` の `scope_files:` に列挙された glob（例: `README* docs/*.md`）のみ | **発火しない**（U 系と同型）。内部設計ドラフト（`docs/plans/` 等）を scope に含めない運用を既定とし、検知パターンのリテラルを含む文書の自己発火を構造的に回避する |
+| W 系（文書） | `writing-charter.md` の `scope_files:` に列挙された glob（例: `README* docs/*.md`）のみ | **発火しない**（U 系と同型）。内部設計ドラフト（`.claude/docs/` 等）を scope に含めない運用を既定とし、検知パターンのリテラルを含む文書の自己発火を構造的に回避する |
 
 > **ADR 整合の明示**: 文書系（W）は ADR-0019 の決定範囲（UI/UX・UI あり PJ のみ）の**外**にある。実装時は
 > **姉妹 ADR（文書 anti-slop・writing-charter opt-in）を起こす**ことを推奨する — ADR-0019 の「UI なし PJ 無コスト」
