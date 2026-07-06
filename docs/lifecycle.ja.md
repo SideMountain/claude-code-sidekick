@@ -17,16 +17,16 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | 1 | **Session**（日次・3動詞） | `session-start.sh`（ff-pull + Active Work/staleness/critical/brain を surface）→ `/news` → 作業（worktree + guard）→ `/review` → PR → `/close-chat` → 週次 `/weekly-inventory` → `/news` へ | ✅ |
 | 2 | **知識複利** | feedback → auto-memory `feedback_*.md` → `/close-chat` 還流フラグ → `/weekly-inventory`（3件ルール）→ PJ brain → 個人 brain → OSS テンプレ → 翌セッション | ✅ |
 | 3 | **Dev パイプライン** | `/discover`（調査 + Issue 作成可）→ `/record-decision`（ADR）→ `/auto-implement`（`gh issue view` → worktree → 実装+テスト → `/review` → PR）→ `/review` → PR | ✅ |
-| 4 | **Release → Adopt** | `/release`（GitHub Release に severity マーカー）→ `/inventory`（下流: 版/severity 差検知）→ `session-start.sh` が critical flag を surface → `/adopt-sidekick-update`（バッチ適用・`SIDEKICK_VERSION` 更新・個人 brain は上書きしない） | ✅ |
+| 4 | **Release → Adopt** | `/release`（`verify-release-notes.sh` ゲート → GitHub Release に severity マーカー・移行ガイドは `docs/migrations/`）→ `/inventory`（下流: 版/severity 差検知）→ `session-start.sh` が critical flag を surface → `/adopt-sidekick-update`（バッチ適用・`SIDEKICK_VERSION` 更新・個人 brain は上書きしない） | ✅ |
 | 5 | **強制 ×3**（認知→強制→検知） | worktree 規律（H9/H12 → `prompt-reminder` → `guard-bash`/`guard-protected-branch-edit` DENY）・PII（`pii-prevention` → `/review`/`/close-chat` scan → `githooks/pre-commit` block）・commit 本文（H15 → `guard-commit-message` block） | ✅ |
 | 6 | **逆流**（下流 → 保守者） | GitHub Issue（`.github/ISSUE_TEMPLATE/`）→ `/inventory` Step 3（`gh issue list`）→ `/discover`/`/auto-implement` → `/release` | ✅（README では一方通行に見える＝doc gap・輪は切れてない） |
 | 7 | **stack-pack アプリ構築**（opt-in Next.js） | `STACK_PACK=nextjs` → `ARCHITECTURE.md`（認知）→ `scaffold.js`（強制/生成）→ `fitness-functions`/`test:arch`（検知）→ `system-map`（可視化） | ⚠️ **開**（下記） |
-| 8 | **上流ウォッチ**（Claude Code 公式 → ccs） | `news-upstream`（週次ウォッチ）→ gap 分析 → backlog → `/weekly-inventory` → ADR / skill / OSS テンプレ | ⚠️ **配布リポでは開**（下記） |
+| 8 | **上流ウォッチ**（Claude Code 公式 → ccs） | `official-freshness.sh`（リポ内で floor drift を機械検知 → `gh issue create`・official-adoption ラベル）+ `news-upstream`（保守者専用の週次読み）→ gap 分析 → backlog → `/weekly-inventory` → ADR / skill / OSS テンプレ | ⚠️ **部分的に閉**（下記） |
 
 ## 開いている輪（輪が閉じ切らない箇所）
 
 - **7. stack-pack の再実行は `/review` ゲート依存で、完全自動配線ではない。** 背景 hook / PostToolUse / `.github/workflows` のどれも単独では `test:arch`/`system-map` を回さない（下流 PJ が自前 CI を配線）。ただしループ内では `/review`（ユーザー起動）が `STACK_PACK: nextjs` 時に fitness fast-gate と `system-map` drift nudge（canonical-counts `--drift`）を回し（v0.11.0）、硬層 adapter（route/authz/links/schema/indexes）は出荷済みで `fitness` と canonical な `route-enumerator.js` を共有する。残る開放点: 地図の**再生成**は on-demand（`/system-map`・意図的に自動再生成しない）、軟層 **enrich** は実行時 LLM 依存（機械化されていない）、`uncertainties`（golden-path 非準拠）は手動レポートとして届くだけで `fitness`/`ARCHITECTURE.md` に**還流しない**。**半分は設計**（下流が CI を持つ・地図はゲートでなく可視化物）— 正直な明記は README の stack-pack 節に置く。
-- **8. 上流ウォッチは保守者のマシンでのみ回る。** `news-upstream` は意図的に**非配布**（`~/.claude/skills/` に退避・ADR-0017/0006）。リポ内 `/news` は*コードベース*の変化を見るもので軸が違う。配布物を読む人には上流→backlog→brain の流入が不可視。意図的だが、欠落段に見えないよう README に1行注記すべき。
+- **8. 上流ウォッチはリポ内で部分的に閉じた。** `official-freshness.sh`（weekly-inventory Step 5d・v0.13.0 / ADR-0027 決定4）が、稼働中の Claude Code CLI と ccs がラップする各公式 feature の version floor の drift を機械検知し、`gh issue create`（official-adoption ラベル）で逆流ループ（6）に載せて `/discover` / `/auto-implement` へ戻す。**設計上、手動で残る部分**: 上流リリースノートの読み込みと広義の `news-upstream` ウォッチは保守者のマシン（`~/.claude/skills/`・ADR-0017/0006）でのみ回る — 新しい公式 feature が重要かの判断・挙動変更の察知は機械化できない。リポ内 `/news` は依然*コードベース*の変化を見るもので上流を見ないため、配布物を読む人には floor-drift の Issue 経路は見えるが保守者の読み込みは不可視 — README に1行注記して欠落段に見えないようにする。
 
 ## 保守者専用 vs 配布
 
@@ -39,7 +39,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 
 ## 機能インベントリ
 
-> `claude-code-sidekick` main（2026-07-05・v0.12.0 以降）で実体確認。**配布コア skill 13本**（+ 次マイナーで撤去する deprecated `review-*` スタブ 5本）+ **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
+> `claude-code-sidekick` main（2026-07-06・v0.14.0 以降）で実体確認。**配布コア skill 13本** + **opt-in stack-pack skill 1本**（`system-map`・Next.js）。
 
 ### Skills — session / lifecycle
 | Skill | 何 | トリガ |
@@ -48,7 +48,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `/news` | main を ff-pull + 前回 HEAD 以降の変更を分類要約 | user（動詞①） |
 | `/inventory` | 横断棚卸し（Notion + `gh issue list` + Backlog）+ 版/severity チェック・critical flag 書き出し | user |
 | `/close-chat` | セッション末の回収: backlog + 還流フラグ + PII/CHANGELOG チェック | user（動詞③）/ `/auto-implement` |
-| `/weekly-inventory` | 圧縮: brain 健康度・MEMORY 整理・feedback 3件昇格・還流フラグ処理・drift | user（週次） |
+| `/weekly-inventory` | 圧縮: brain 健康度・MEMORY 整理・feedback 3件昇格・還流フラグ処理・drift・`official-freshness.sh`（Step 5d: ラップ対象公式 feature の version floor drift 機械検知） | user（週次） |
 
 ### Skills — dev パイプライン & review
 | Skill | 何 | トリガ |
@@ -58,13 +58,12 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `/record-decision` | 採番 ADR 作成 + decisions index 更新 | user / `/close-chat` / `/discover` |
 | `/tune` | read-only 4レーン PJ 健全性監査 → 人手ゲート修正（テスト削除はしない） | user |
 | `/token-audit` | read-only 文脈経済監査: 常駐 footprint + 汚染/肥大/重複検知 + 公式 `rate_limits` 読取り | user |
-| `/review` | アダプタ → 決定的 fitness → 公式 `/code-review`（REVIEW.md 規範）→ min() 総合判定 | user / `/auto-implement` |
-| `/review-code`・`/review-test`・`/review-ops`・`/review-design`・`/review-spec` | 非推奨 → `/review` に統合（次リリースで撤去） | `/review` 経由 |
+| `/review` | アダプタ: 決定的前置ゲート（`review-fitness.sh`）→ 公式 `/code-review`（REVIEW.md 規範）→ min() 総合判定 | user / `/auto-implement` |
 
 ### Skills — release / adopt
 | Skill | 何 | トリガ |
 |---|---|---|
-| `/release` | ccs リリース切り: severity 判定 + CHANGELOG bump + tag + GitHub Release マーカー | user（保守者） |
+| `/release` | ccs リリース切り: `verify-release-notes.sh` ゲート（severity マーカー/title/banner の3点一致 + `[Unreleased]` 非空を機械検証）→ severity 判定 + CHANGELOG bump + tag + GitHub Release マーカー | user（保守者） |
 | `/adopt-sidekick-update` | 下流が release を取込: カテゴリ別バッチ適用・`SIDEKICK_VERSION` 更新・critical flag 解除 | user（下流） |
 
 ### Stack pack — Next.js（opt-in・`.claude/stack-packs/nextjs/`）
@@ -78,16 +77,27 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 ### 強制 — hooks / guards
 | Hook | 何 | トリガ |
 |---|---|---|
-| `settings.json` deny list | `prisma db push`・`git push --force` を hard block | permission engine |
+| `settings.json` deny list | `prisma db push`（2形: `npx` + 素）と force push（3形: `--force` / `--force-with-lease` / `-f`）を hard block | permission engine |
 | `session-start.sh` | 7段の開始レポート（branch+ff-pull・未コミット・Active Work・worktree・staleness・critical flag・brain） | SessionStart |
 | `prompt-reminder.sh` | 毎プロンプトに CRITICAL RULES を注入 | UserPromptSubmit |
-| `guard-bash.sh` | 11 Bash guard（main で checkout・保護 push・`.env` 書込・`rm -rf`・`prisma db push`・migrate 警告・gh api 書込・pr merge・find 一括削除・executor 警告・STG PR 経路 H10/H11） | PreToolUse Bash |
+| `guard-bash.sh` | 11 Bash guard（main で checkout・保護 push・`.env` 書込・`rm -rf`・`prisma db push`・migrate 警告・gh api 書込・pr merge・find 一括削除・executor 警告・STG PR 経路 H10/H11）+ 副ガード 4.5（`.env` への全 shell 書込/コピー）& 6.5（prisma migrate 警告） | PreToolUse Bash |
 | `guard-commit-message.sh` | 背景/対応/影響 を欠く commit を block（H15） | PreToolUse Bash |
 | `guard-db-operation.sh` | `PRD_DB_PATTERN` への書込を DENY（ccs では dormant・下流で有効） | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | `.env` DATABASE_URL 編集 + main での全編集を DENY（worktree 強制） | PreToolUse Edit/Write |
 | `remind-worktree-memory.sh` | Worktree 新設を auto-memory Active Work へ記録するようリマインド（H13・認知層） | PostToolUse Bash |
 | `budget-cycle-halt.sh` | Stop 境界の budget-gate（ADR-0024/0025): <60% 無出力 / 60–85% 助言のみ / >85% 1 回だけ wrap-up ターン・fail-open | Stop |
+| `ccs-rate-capture.sh` | statusLine capturer: 公式 `rate_limits`（5h/7d %）を正準キャッシュファイルへ抜き出し、Stop 境界の budget-gate が読めるようにする — `budget-cycle-halt.sh` のデータ面（ADR-0024） | statusLine |
 | `.claude/githooks/pre-commit` | staged 公開 blob の PII scan・commit 中断（`/setup` の `core.hooksPath` で有効化） | git pre-commit |
+
+### 決定的検査 & 回帰 fixture
+| 構成物 | 何であるか + どのループ/目的に効くか |
+|---|---|
+| `.claude/scripts/detect-hard-spot.sh` | R2 難所の決定的 force-flag（ADR-0028 決定3）。`/auto-implement` & `/adopt-sidekick-update` が共有参照するゲートで、設計/セキュリティ/root-cause の変更が L1–L4 検証 ladder をスキップできないようにする |
+| `review-fitness.sh` | `/review` の決定的前置ゲート（破壊的マイグレーション語・a11y・空 catch）。WARN 検出が min() 総合判定に入る単一ソース — ループ 1/3 |
+| `verify-release-notes.sh` | `/release` notes の決定的ゲート: severity マーカー/title/banner の3点一致 + `[Unreleased]` 非空。下流 `/inventory`/`/adopt` の severity 読取りが壊れるのを防ぐ — ループ 4 |
+| `official-freshness.sh` | weekly-inventory Step 5d: ラップ対象公式 feature の version floor drift 検知 → `gh issue create` — ループ 8 |
+| `tests/fixtures/judgment-corpus/` | 凍結判定 27 件（append-only・`cases/` と holdout の `expected/`・`results/` に worth-it 実測）= モデル世代交代を跨ぐ判定品質の恒久基準器（ADR-0028 決定2） |
+| `tests/fixtures/guard-oracle/` | guard 回帰オラクル 42 件 + `replay.sh`: `guard-bash.sh` の経路/env ガードの deny/allow を実走で確定した基準（読み判定の期待値なし） |
 
 ### 知識 & 判断
 | 面 | 何 |
@@ -95,6 +105,9 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | auto-memory（`feedback`/`reference`/`project`/`user` + `MEMORY.md`） | Claude 記述の学習記録 + 索引 + Active Work/Backlog |
 | `knowledge-map.md` | 背骨メタルール: 各知識型の格納先 + 昇格/圧縮ルール |
 | brain（2層: 個人 + PJ + OSS テンプレ） | 判断軸・feedback が上方昇格・OSS 還流（同一リポ） |
+| `.claude/docs/`（遅延ロード・非常駐） | 呼び出し時のみロードする深掘り docs: `reasoning-playbook.md`（9 推論ムーブ・ADR-0029 二経路配布）・`knowledge-reflux.md`（R5/R6/R7 昇格 rubric・単一ソース）・`worktree-guide.md`・`task-db-layer2.md`・`skill-agent-design.md`・`anti-slop-charter.md`（ADR-0019 P1 実装素材） |
+| `REVIEW.md`（リポルート） | 公式 `/code-review` への PJ 規範注入（HARD 照合・ADR 整合・破壊的変更・PII・a11y）・`/setup` が配置/調整 |
+| `context-economy.md` §8 | 難所閉集合（R2）+ 検証量 ladder L1–L4 + R3 敵対検証（ADR-0028） |
 | ADR（`docs/decisions/` + 索引） | 設計判断台帳（なぜ）・0011 予約・0017 不在（保守者専用） |
 
 ## 掃除済み / ガード済み cruft（2026-06）
