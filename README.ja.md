@@ -9,7 +9,7 @@
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 Claude Code を「安全に・あなたの判断軸で・自動化する」ためのリポジトリテンプレートです。
-上から順に読めます: 何か → 回すループ → 仕組み。
+上から順に読めます: 何か → 回すループ → 何が良くなるか → 始め方 → 仕組み。
 
 ---
 
@@ -19,7 +19,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 
 | 🛡️ 安全ガード | 🧰 再利用ワークフロー | 🧠 思考OS |
 |---|---|---|
-| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**13スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる**。難所の判断は検証 ladder に乗せ、単発では決めない |
+| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**13スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる**。難所（設計・原因究明・セキュリティ・リリース判断）は検証 ladder（多段検証）に乗せ、1 発で決めない |
 
 最後の「思考OS」が sidekick の一番の差別化です。
 
@@ -71,7 +71,7 @@ Claude : → main で直接修正
 Claude : → Worktree 作成（main は触らない）
          → ステージング DB に接続確認
          → 修正 → スコープ限定テスト
-         → /review（fitness → 公式 /code-review + REVIEW.md → min 判定）
+         → /review（決定的検査 + 公式 /code-review でセルフレビュー）
          → PR 作成（マージはあなたの判断）
 ```
 
@@ -99,7 +99,7 @@ Claude : → Worktree 作成（main は触らない）
 | 危険操作の物理ブロック | ❌ | △（ルール記述のみ） | ✅ hooks で強制 |
 | 再利用スキル | ❌ | △ | ✅ 13 種類 |
 | **あなたの判断軸を学習** | ❌ | ❌ | ✅ **思考OS** |
-| 難所の検証 ladder（凍結判定 corpus で計測） | ❌ | ❌ | ✅ |
+| 難所の検証 ladder（リスクの高い判断の多段検証。凍結判定 corpus＝凍結テスト集合で計測） | ❌ | ❌ | ✅ |
 | 完全自動実装（寝てる間に PR） | ❌ | ❌ | ✅ `/auto-implement` |
 | ADR で設計判断を追跡可能 | ❌ | △ | ✅ |
 
@@ -172,6 +172,10 @@ Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 �
 アプリが **Next.js（App Router）+ Prisma** なら、**stack pack** に opt-in すると、規定アーキ
 （golden path・一貫した構造）で開発を始め、規約準拠のアプリ骨格を生成し、逸脱を CI で止められます。
 非 Next.js の PJ はここを丸ごとスキップ — `STACK_PACK: none` のままで無コストです。
+契約と詳細は [stack pack README](.claude/stack-packs/nextjs/README.md) にあります。
+
+<details>
+<summary><b>8 ステップの手順 — 有効化 → scaffold → fitness ゲート → 可視化</b></summary>
 
 1. **有効化する。** `/setup` は `package.json` に `next` を検知すると案内します。**生成直後のリポは
    まだ `package.json` が無く自動検知が滑る**ので、その場合は `CLAUDE.md` で手動設定:
@@ -209,6 +213,8 @@ Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 �
 詳細: [stack pack README](.claude/stack-packs/nextjs/README.md) ·
 [scaffold](.claude/stack-packs/nextjs/scaffold/README.md) ·
 [fitness-functions](.claude/stack-packs/nextjs/fitness-functions/README.md)。
+
+</details>
 
 ---
 
@@ -248,11 +254,11 @@ sidekick は判断軸を2つのファイルに分け、個人の原則は**あ�
 | `rules/*.md` | **プロジェクト**固有ルール（コーディング規約、DB、Git） | プロジェクトが変わったとき |
 | `CLAUDE.md` | プロジェクト設定 + HARD/SOFT/GUIDE ルール | プロジェクトが変わったとき |
 
-#### 思考ハーネス — 難所は単発で決めない
+### ⚖️ 思考ハーネス — 難所は単発で決めない
 
 学習は Claude が*何を*決めるかを直す。ハーネスは*どれだけ慎重に*決めるかを司る。**難所** — 設計判断・root-cause 分析・矛盾裁定・セキュリティ変更・最終のマージ/リリース判断からなる閉集合 — は、決定的な機械検査（[`detect-hard-spot.sh`](.claude/scripts/detect-hard-spot.sh)・パス/キーワードの grep）と Claude 自身の判断の**両方**で検知する。どちらか一方でも十分で、難所と判定されたら単発では確定させない。
 
-難所と判定されると、カテゴリに応じた**検証量 ladder** が発火する（[ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)）:
+難所と判定されると、カテゴリに応じた**検証量 ladder**（上記の「検証 ladder」）が発火する（[ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)）:
 
 | レベル | 対象 | 動作 |
 |---|---|---|
@@ -261,11 +267,13 @@ sidekick は判断軸を2つのファイルに分け、個人の原則は**あ�
 | **L3** | root-cause・「動くか」 | 実行を arbiter に（実走 / テスト / fixture） |
 | **L4** | マージ・リリース | 多エージェント裁定 + `min()` 集計 |
 
-**主張でなく実測。** 全 **27 件の凍結判定 corpus** をブラインド走行したところ、*標準*モデル + L2 3 票ハーネスは **26/27（96.3%）** で、退役前の最上位モデルの単発判定 **27/27** に対し、トークンは約 **3.1 倍**（[worth-it 実測](./tests/fixtures/judgment-corpus/results/2026-07-05-worth-it.md)）。読み方: 検証の*構造*が最上位モデルの単発判断のほとんどを代替する — これは 27 件・単一走行であり、統計的断定ではない。
+**主張でなく実測。** 全 **27 件の凍結判定 corpus** をブラインド走行したところ、*標準*モデル + L2 3 票ハーネスは **26/27（96.3%）** で、現在は退役した最上位モデルの単発判定 **27/27** に対し、トークンは約 **3.1 倍**（[worth-it 実測](./tests/fixtures/judgment-corpus/results/2026-07-05-worth-it.md)）。読み方: 検証の*構造*が最上位モデルの単発判断のほとんどを代替する — これは 27 件・単一走行であり、統計的断定ではない。
 
 各票の中の思考は **9 ムーブの推論プレイブック**に従う。配布は二経路（[ADR-0029](./docs/decisions/0029-reasoning-playbook-two-path-distribution.md)）: 個人 brain（§0）に常駐する概要と、[`.claude/docs/reasoning-playbook.md`](.claude/docs/reasoning-playbook.md) の全文（難所でのみ遅延ロード）。個人 brain を育てていなくても、どちらかの経路で届く。
 
 ### 🛡️ 3層防御 — 安全は絶対に壊さない
+
+ここでの「3層」は、冒頭「30秒で言うと」の 🛡️ 安全ガード層の**内部構造**（認知 → 強制 → 検知）です — 安全ガード / スキル / 思考OS の3つ組のことではありません。
 
 ```mermaid
 flowchart LR
@@ -302,7 +310,7 @@ flowchart LR
 
 ### 📏 品質は回帰テストされる
 
-テンプレート自身の品質主張は、主張でなく凍結 fixture に対して計測できる。**判定品質**は [判定 corpus](./tests/fixtures/judgment-corpus/README.md) に対して検査する — append-only の 27 件で、few-shot 例を自分自身で測らないよう held-out 分割している。**ガード挙動**は [guard オラクル](./tests/fixtures/guard-oracle/README.md) で固定する — deny / allow の結果を実 hook 走行から採取した 42 ケースで、`replay.sh` でリプレイ可能。hook や rubric が変わると、両者は同一ベースラインで再計測される。
+テンプレート自身の品質主張は、主張でなく凍結 fixture に対して計測できる。**判定品質**は [判定 corpus](./tests/fixtures/judgment-corpus/README.md) に対して検査する — 上の思考ハーネス節で worth-it を測ったのと同一の 27 件凍結 fixture で、append-only・held-out 分割により few-shot 例を自分自身で測らない。**ガード挙動**は [guard オラクル](./tests/fixtures/guard-oracle/README.md) で固定する — deny / allow の結果を実 hook 走行から採取した 42 ケースで、`replay.sh` でリプレイ可能。hook や rubric が変わると、両者は同一ベースラインで再計測される。
 
 ### 🧰 13 スキル
 

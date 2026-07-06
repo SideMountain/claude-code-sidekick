@@ -46,7 +46,7 @@ Repeated feedback is promoted to a principle — **with your approval** — so t
 
 Learning fixes *what* Claude decides; the harness governs *how carefully*. A closed set of **hard calls** — design decisions, root-cause analysis, contradiction arbitration, security changes, final merge/release judgments — is flagged by a deterministic machine check (`detect-hard-spot.sh`, a force-flag the model can add to but not veto) plus the model's own judgment, then must clear a verification-volume ladder before it resolves — never single-shot. Judgment quality is regression-tested against a **frozen judgment corpus** (append-only, held-out split), so the harness re-measures on the same baseline whenever it changes.
 
-> **Ladder** — L1: ≥1 adversarial pass (every hard call) · L2: 3 independent votes (design / arbitration) · L3: execution is the arbiter (root-cause) · L4: multi-agent + `min()` (merge / release).
+> **ladder** — L1: ≥1 adversarial pass (every hard call) · L2: 3 independent votes (design / arbitration) · L3: execution is the arbiter (root-cause) · L4: multi-agent + `min()` (merge / release).
 
 ## Context economy — long runs on a fixed cap
 

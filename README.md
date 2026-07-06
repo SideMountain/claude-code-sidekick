@@ -9,7 +9,7 @@
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 A repository template that makes Claude Code **safe, personalized, and autonomous**.
-Read it top to bottom: what it is → the loop you run → how it works under the hood.
+Read it top to bottom: what it is → the loop you run → what gets better → how to start → how it works under the hood.
 
 ---
 
@@ -19,7 +19,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 
 | 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
 |---|---|---|
-| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **13 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time**; hard calls run a verification ladder, never single-shot |
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **13 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time**; hard calls (design / root-cause / security / release decisions) run a verification ladder, never single-shot |
 
 The "Thinking OS" is what sets sidekick apart from other templates.
 
@@ -71,7 +71,7 @@ You   : "Fix the login bug"
 Claude: → Creates worktree (main untouched)
         → Confirms staging DB connection
         → Fixes → Runs scoped tests
-        → /review (fitness → official /code-review + REVIEW.md → min verdict)
+        → /review (deterministic checks + official /code-review)
         → Creates PR (merging is your call)
 ```
 
@@ -99,7 +99,7 @@ In other words, **you stop repeating yourself.**
 | Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
 | Reusable skills | ❌ | △ | ✅ 13 skills |
 | **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
-| Hard-call verification ladder (measured against a frozen judgment corpus) | ❌ | ❌ | ✅ |
+| Hard-call verification ladder (multi-pass verification of risky judgments, measured against a frozen judgment corpus) | ❌ | ❌ | ✅ |
 | Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
 | Tracks design decisions (ADR) | ❌ | △ | ✅ |
 
@@ -172,6 +172,10 @@ Claude will automatically: create a worktree (main stays safe) → fix the typo 
 If your app is **Next.js (App Router) + Prisma**, opt into the **stack pack** to start on a
 prescriptive *golden path* (consistent architecture), generate a conforming app skeleton, and gate
 deviations in CI. Non-Next.js projects skip this entirely — leave `STACK_PACK: none` (zero cost).
+The contract and details live in the [stack pack README](.claude/stack-packs/nextjs/README.md).
+
+<details>
+<summary><b>The 8-step walkthrough — enable → scaffold → fitness gate → visualize</b></summary>
 
 1. **Enable it.** `/setup` offers this when it detects `next` in `package.json`. On a brand-new repo
    (no `package.json` yet) auto-detect can't fire, so set it manually in `CLAUDE.md`:
@@ -211,6 +215,8 @@ Full details: [stack pack README](.claude/stack-packs/nextjs/README.md) ·
 [scaffold](.claude/stack-packs/nextjs/scaffold/README.md) ·
 [fitness-functions](.claude/stack-packs/nextjs/fitness-functions/README.md).
 
+</details>
+
 ---
 
 <details>
@@ -249,11 +255,11 @@ The shipped `brain/thinking.md` at the repo root is a **template only (not loade
 | `rules/*.md` | **Project** rules (coding standards, DB, Git strategy) | The project changes |
 | `CLAUDE.md` | Project config + HARD/SOFT/GUIDE rules | The project changes |
 
-#### The thinking harness — hard calls are never single-shot
+### ⚖️ The thinking harness — hard calls are never single-shot
 
 Learning fixes *what* Claude decides; the harness governs *how carefully* it decides. **Hard calls** — a closed set of design decisions, root-cause analysis, contradiction arbitration, security changes, and final merge/release judgments — are flagged both by a deterministic machine check ([`detect-hard-spot.sh`](.claude/scripts/detect-hard-spot.sh), a path/keyword grep) and by Claude's own judgment. Either one is enough, and a flagged call may not be settled single-shot.
 
-A flagged hard call fires a **verification-volume ladder** sized to the category ([ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)):
+A flagged hard call fires a **verification-volume ladder** (the "verification ladder" above) sized to the category ([ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)):
 
 | Level | Applies to | Action |
 |---|---|---|
@@ -267,6 +273,8 @@ A flagged hard call fires a **verification-volume ladder** sized to the category
 The reasoning inside each vote follows a **9-move reasoning playbook**, distributed on two paths ([ADR-0029](./docs/decisions/0029-reasoning-playbook-two-path-distribution.md)): a resident summary in the personal brain (§0), and the full text in [`.claude/docs/reasoning-playbook.md`](.claude/docs/reasoning-playbook.md), lazy-loaded only at a hard call. Either path reaches you even if you never grew a personal brain.
 
 ### 🛡️ Three-layer defense — safety is non-negotiable
+
+The "three layers" here are the internal anatomy of the 🛡️ Safety Guards layer from "In 30 seconds" (awareness → enforcement → detection) — not the Safety / Skills / Thinking OS trio itself.
 
 ```mermaid
 flowchart LR
@@ -303,7 +311,7 @@ A fixed Claude Max cap is a budget, so sidekick treats **resident context as a l
 
 ### 📏 Quality is regression-tested
 
-The template's own quality claims are measurable against frozen fixtures, not just asserted. **Judgment quality** is checked against the [judgment corpus](./tests/fixtures/judgment-corpus/README.md) — 27 append-only cases with a held-out split, so few-shot examples are never measured against themselves. **Guard behavior** is pinned by the [guard oracle](./tests/fixtures/guard-oracle/README.md) — 42 cases whose deny / allow outcomes were captured from real hook runs and are replayable via `replay.sh`. When a hook or rubric changes, both re-measure on the same baseline.
+The template's own quality claims are measurable against frozen fixtures, not just asserted. **Judgment quality** is checked against the [judgment corpus](./tests/fixtures/judgment-corpus/README.md) — the same 27-case frozen fixture the worth-it run in the thinking-harness section was measured on — append-only, with a held-out split so few-shot examples are never measured against themselves. **Guard behavior** is pinned by the [guard oracle](./tests/fixtures/guard-oracle/README.md) — 42 cases whose deny / allow outcomes were captured from real hook runs and are replayable via `replay.sh`. When a hook or rubric changes, both re-measure on the same baseline.
 
 ### 🧰 The 13 skills
 
