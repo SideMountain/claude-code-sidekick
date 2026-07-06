@@ -59,7 +59,7 @@ scan_pii() {
     && { echo "=== email ==="; echo "$hits"; found=1; } || true
 
   # 個人 PJ 名は PJ ごとにカスタマイズ。例:
-  # hits=$(grep -inE 'arc-ats|shift-craft' "${files[@]}" 2>/dev/null) \
+  # hits=$(grep -inE 'legacy-app|internal-batch' "${files[@]}" 2>/dev/null) \
   #   && { echo "=== PJ name ==="; echo "$hits"; found=1; } || true
 
   return 0
