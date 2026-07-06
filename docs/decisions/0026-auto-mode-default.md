@@ -2,7 +2,7 @@
 
 ## ステータス
 
-Accepted（2026-07-04）。オーナー裁定（既定 `false` + 無人モードの明示 opt-in を導線に組み込む）+ 実機検証済。前提 ADR-0025（budget-gate）。実装は docs/plans/ccs-model-independence.md の WS3。
+採用（2026-07-04）。オーナー裁定（既定 `false` + 無人モードの明示 opt-in を導線に組み込む）+ 実機検証済。前提 ADR-0025（budget-gate）。
 
 ## 背景
 
@@ -61,5 +61,5 @@ README は「Physically blocks dangerous ops like `rm -rf` or pushing to main」
 
 - `guard-bash.sh`: `${SIDEKICK_AUTO:-true}` → `${SIDEKICK_AUTO:-false}`（1 行）。
 - `/auto-implement`: 全自律には `SIDEKICK_AUTO=true` が必須である旨を前提条件に明記（既定 `false` のため未指定だと push / PR で確認待ちになる）。無人起動例は既にこの形。
-- `/setup`: 「無人稼働を使うか」の導線で opt-in の起動コマンドを案内する（WS3 で配線）。
+- `/setup`: 「無人稼働を使うか」の導線で opt-in の起動コマンドを案内する。
 - 既定 `false` により H7/H8「必ず確認」が既定で真になり、README の防御モデル説明との齟齬が解消する。

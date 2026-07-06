@@ -15,7 +15,7 @@ sidekick はプロジェクトルートに `/MEMORY.md`（gitignored）を配置
 - `MEMORY.md` が索引として生成される
 - システムプロンプトで明示的にサポート
 
-実下流 PJ（arc-ats-web）を調査した結果、**auto-memory MEMORY.md が Active Work / Backlog の実運用場所**になっており、project-root MEMORY.md は静的情報（Project Overview / Milestones 等）のみに使われていた。
+実下流 PJ を調査した結果、**auto-memory MEMORY.md が Active Work / Backlog の実運用場所**になっており、project-root MEMORY.md は静的情報（Project Overview / Milestones 等）のみに使われていた。
 
 この 2系統並列は以下の問題を起こしていた:
 
@@ -51,13 +51,13 @@ sidekick はプロジェクトルートに `/MEMORY.md`（gitignored）を配置
 
 ### `SIDEKICK_VERSION` の置き場所決定
 
-当初は `CLAUDE.local.md`（project-root gitignored）に配置を検討。しかし:
+`CLAUDE.local.md`（project-root gitignored）に配置する案は却下した。技術的理由:
 
 - `SIDEKICK_VERSION` は本来チーム共有情報（同じプロジェクトは同じバージョンを使う）
 - `CLAUDE.local.md` 置きだと個人ごとに異なる値を持ちうる（不整合の温床）
 - CLAUDE.md 冒頭の Project Configuration には既に類似の設定値（`PROJECT_NAME`, `STG_ENABLED` 等）が並んでいる
 
-→ **`CLAUDE.md` の Project Configuration に `SIDEKICK_VERSION` を追加**（B案）で決定。
+→ **`CLAUDE.md` の Project Configuration に `SIDEKICK_VERSION` を追加**する。
 
 ## 理由
 
@@ -92,4 +92,4 @@ sidekick はプロジェクトルートに `/MEMORY.md`（gitignored）を配置
 ## 参考
 
 - Claude Code auto-memory システム（`~/.claude/projects/<slug>/memory/`）
-- 実下流 PJ arc-ats-web の運用実態（2系統並列からの気づき）
+- 実下流 PJ の運用実態（2系統並列からの気づき）

@@ -2,7 +2,7 @@
 
 ## ステータス
 
-提案中（2026-04-25）
+採用（2026-04-25）
 
 ## 背景
 
@@ -56,7 +56,7 @@ NOTION_JUDGMENT_DB_URL: ""         # 同期先 Notion 判断ログDB の URL
 
 `NOTION_JUDGMENT_SYNC=true` のときのみ実行されるステップを追加する:
 
-> **実装時の注記**: 本 ADR 初稿では「Step 5.5」と記載していたが、実ファイルの Step 5.5 が既に「CHANGELOG 整合性チェック」で占有されていたため、実装では **Step 6.5** として挿入した（外部タスクDB同期の Step 6 の直後、同じ Layer 2 オプション層）。
+> **配置**: `/close-chat` の **Step 6.5**（外部タスクDB同期の Step 6 の直後、同じ Layer 2 オプション層）に挿入する。Step 5.5 は「CHANGELOG 整合性チェック」で占有されているため使わない。
 
 - セッション中に出た判断（ADR化されなかった軽微な判断を含む）を Notion判断ログDB に同期
 - 記録項目（Notion側 `⚖️ 判断ログ` スキーマに準拠）:
@@ -77,7 +77,7 @@ NOTION_JUDGMENT_DB_URL: ""         # 同期先 Notion 判断ログDB の URL
 ## 理由
 
 - **既存 `NOTION_ENABLED` パターンと整合**: `task-management.md` で既に確立している「Notion連携オプション」の延長
-- **下流PJ全体で汎用的**: 脳tion / SNS運用に限らず、「複数PJの判断を横断集約したい」全ユースケースに適用可能
+- **下流PJ全体で汎用的**: 個人の思考OS運用 / SNS運用に限らず、「複数PJの判断を横断集約したい」全ユースケースに適用可能
 - **Push型が最も低コスト**: セッション文脈を最も正確に把握しているのは Claude Code 自身。`/close-chat` の延長として同期するのが運用負荷ゼロ
 - **フラグ分離**: Tasks DB 連携と用途が違うため、`NOTION_ENABLED` を汎用化するより独立フラグで疎結合に保つ
 
@@ -86,7 +86,7 @@ NOTION_JUDGMENT_DB_URL: ""         # 同期先 Notion 判断ログDB の URL
 ### sidekick 本体
 
 - `CLAUDE.md` Project Configuration: 設定追加（デフォルト false）
-- `.claude/skills/close-chat/SKILL.md`: Step 5.5 追加
+- `.claude/skills/close-chat/SKILL.md`: Step 6.5 追加
 - `.claude/rules/task-management.md`: 判断ログ同期プロトコル追記
 - `CHANGELOG.md`: 次バージョンとして記載（v0.7.0 想定）
 
