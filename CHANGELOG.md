@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-06
+
 ### Added
 
 - 推論プレイブックを二経路で配布（ADR-0029）: テンプレート brain §0「推論プロトコル」（大原則5＋9ムーブ概要表・`/setup`・`/adopt` 経由）＋ `.claude/docs/reasoning-playbook.md`（指示テンプレ付き全文・遅延ロード・context-economy §8 から参照）。難所 ladder（ADR-0028＝検証の量）を「思考の質」で補完する
