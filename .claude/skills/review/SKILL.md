@@ -104,4 +104,4 @@ diff が**ランタイム表面**（`app/` `api/` `src/` UI コンポーネン�
 - **fitness を重くしない** — `review-fitness.sh` / `run-fitness.js` は決定的スクリプト。LLM 観点を増やさない。scope 外・`STACK_PACK=none` では沈黙通過（ADR-0022 軽さドクトリン）。重いと回すのが億劫になりサイクルが死ぬ。
 - **min() を格上げしない** — 平均・多数決・情状酌量で総合を上げない。BLOCKER 1 件＝総合 1。これが診断の最重要発見（rubric 既在なのに未配線だと標準モデルは甘い判定に流れる）。
 - **外部依存は失敗する前提** — `/code-review` の REVIEW.md 注入に依存しきらず、このスキルでも REVIEW.md を Read して二重適用する（Step 3-2）。注入が no-op / コマンド不在でも PJ 規範を落とさない。
-- **旧 6 スキルは deprecation スタブ化済み（次マイナーで撤去）** — `/review-code` 等 5 本は `/review` への委譲を促すスタブとして現存し、移行ガイド（`docs/migrations/review-6to1-adapter.md`）と併せて 1 リリース残す。次のマイナーで撤去する。観点別の深掘りは公式 `/code-review` の effort と `/security-review` に委譲する。
+- **旧 review-* 5 スキルは撤去済み**（`/review` に統合。移行: `docs/migrations/review-6to1-adapter.md`） — 観点別の深掘りは公式 `/code-review` の effort と `/security-review` に委譲する。

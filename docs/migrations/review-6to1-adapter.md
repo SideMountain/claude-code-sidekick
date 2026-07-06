@@ -23,15 +23,15 @@ review 系 6 スキル（`/review` + `/review-code` `/review-test` `/review-ops`
 1. **取り込み**: `/adopt-sidekick-update` でこのリリースを取り込む。以下が入る:
    - `REVIEW.md`（リポルート）
    - `.claude/skills/review/`（アダプタ SKILL.md + `scripts/review-fitness.sh` + `references/`）
-   - `.claude/skills/review-*`（deprecation スタブ・**次リリースで撤去**）
+   - 旧 `.claude/skills/review-*` スタブは撤去済み（下流に残っていれば取り込みで削除される）
 2. **REVIEW.md の調整**: `/setup` を再実行するか、`REVIEW.md` の PJ 固有部分を手で調整する。該当しない条件ブロック（§1e design-system / §1f STACK_PACK）は削除してよい。仕様書の在り処（Notion 等）を §1b に反映する。
 3. **参照の更新**: `/review-code` 等を直接指名している独自 rules / CLAUDE.md があれば `/review` に置換する。
 4. **動作確認**: 変更のあるブランチで `/review` を実行し、fitness → `/code-review` → min() 判定が出ることを確認する。
 
-## 撤去スケジュール
+## 撤去状況
 
-- **このリリース**: `/review-*` は deprecation スタブ（呼ぶと `/review` への委譲を案内）。既存のワークフローは壊れない。
-- **次のマイナーリリース**: `/review-*` スタブを撤去。`/review` に一本化。
+- `/review-*` スタブは撤去済み。`/review` に一本化された。下流 PJ にスタブが残っている場合、このリリースの取り込みで削除される。
+- スタブを直接指名していた独自 rules / CLAUDE.md は `/review` へ置換する（上記「下流 PJ の移行手順」3）。
 
 ## FAQ
 
