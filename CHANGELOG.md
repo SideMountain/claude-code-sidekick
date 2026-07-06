@@ -23,6 +23,32 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+
+- **ADR-0030「内部計画文書の非配布ポリシー（docs/plans 廃止）」を新設**: 作業中の計画・診断は git 追跡ツリーに置かず（auto-memory / Issue / 非追跡領域へ）、消化済み計画は削除（決定は ADR・残タスクは backlog/Issue が正位置）、耐久素材は寿命に応じた正位置へ移設する方針を記録。
+- **README（両言語）に v0.12〜0.14 の中核 3 節を追加**: 「⚖️ The thinking harness」（難所の閉集合 + force-flag + 検証量 ladder L1-L4 + worth-it 実測 = 標準モデル + harness 26/27〔96.3%〕 vs 退役前最上位モデル単発 27/27・トークン約 3.1 倍・単一走行の注記付き + 推論プレイブック二経路配布）/「💰 Runs long on a fixed cap」（文脈経済ドクトリン・常駐 979→788 行 −19.5%・/token-audit・budget-gate 60/85% fail-open）/「📏 Quality is regression-tested」（凍結判定 corpus 27 件 + guard オラクル 42 件で品質主張を回帰測定可能）。比較表・In 30 seconds・Design Principles（#6「難所は単発で決めない」）にも反映。`docs/design.md`（両言語）にも同 2 節 + 原則 2 行を追加。
+- **docs/lifecycle.md（両言語）に「Deterministic checks & regression fixtures」表を新設**: detect-hard-spot.sh（難所 force-flag）/ review-fitness.sh / verify-release-notes.sh / official-freshness.sh / judgment-corpus（27 件）/ guard-oracle（42 件）を機能インベントリに正式収録。
+
+### Changed
+
+- **docs/lifecycle.md（両言語）を v0.14.0 実体に鮮度更新**: 検証スタンプを post-v0.14.0 に / ccs-rate-capture.sh（budget-gate のデータ面）・REVIEW.md・`.claude/docs/` 遅延 doc 群（reasoning-playbook / knowledge-reflux / worktree-guide / task-db-layer2 / skill-agent-design / anti-slop-charter）・context-economy §8 ladder を capability inventory に反映 / Loop 8（上流 watch）を「official-freshness.sh の機械検知 + gh issue 逆流で部分閉・上流ノート読みのみ保守者手動」に更新 / Loop 4 に verify-release-notes.sh ゲートと docs/migrations/ を明記。
+- **ADR 群を整備**: ADR-0016（brain 2 層）・ADR-0029（推論プレイブック）の Status を出荷済み実態に合わせ「採用」へ更新 / 索引の状態語彙を「採用」に統一し 0017 の欠番注記を追加 / ADR 本文に残存していた個人プロダクト名・実下流 PJ 名を汎用表現に置換（pii-prevention 準拠・計 17 箇所）/ 経緯の時系列描写・事業戦略記述を完成形の設計記述に整理（oss-doc-authoring 準拠）/ ADR-0026/0027/0028 の docs/plans 参照を耐久先（ADR 自身の決定・judgment-corpus README）へ付替。
+- **耐久素材を正位置へ移設**: worth-it 測定プロトコル → `tests/fixtures/judgment-corpus/README.md`「worth-it 測定プロトコル」節（凍結 results はリンク 1 箇所のみ更新・数値 byte 不変）/ 判定 rubric・few-shot（rubrics.md / exemplars.md）→ `tests/fixtures/judgment-corpus/harness/`（凍結測定のハーネス入力）/ anti-slop-charter.md → `.claude/docs/`（ADR-0019 P1 実装素材・遅延ロード）。
+- **README（両言語）の Quick Start・Configuration を整理**: Next.js stack pack の 8 ステップ手順を折りたたみ化し本流（clone → /setup → Try it）を一本道に / Configuration 表に `PROTECTED_BRANCHES` を追加・`LANGUAGE` に `gas` を補完・「全 17 キーは CLAUDE.md §0」の導線を追加 / `SIDEKICK_VERSION` 例を 0.14.0 に更新。
+
+### Fixed
+
+- **three-layers SVG（両言語）のスキル数を 18 → 13 に是正**（review 6→1 統合後の画像側の取り残し。本文は 13 で正だった）。
+- **tests/fixtures/guard-oracle/README.md の件数を実体に整合**: 26 → 42 ケース（Guard 11 STG 経路 26 + Guard 4.5 `.env` 書き込み 16）。`replay.sh` 実走 42/42 PASS を確認した上で更新。
+- `docs/playwright-setup-guide.md` の Lane 概念の出典誤りを修正（ADR-0003 → ADR-0002）し、`docs/cron-setup-guide.md` から参照導線を追加（孤児ドキュメント解消）。
+- `pii-prevention.md` のスキャン例示と `/adopt-sidekick-update` の skip-record 例示を、実在 PJ 名・撤去済みパスから架空名・現存パスに差し替え。
+
+### Removed
+
+- **deprecated review-* スタブ 5 本を撤去**（review-code / review-design / review-ops / review-spec / review-test）: 予告どおり `/review` アダプタへ統合済みのため（移行ガイド: `docs/migrations/review-6to1-adapter.md`）。
+- **docs/plans/（内部ワーキング文書 6 本）を撤去**（ADR-0030): 消化済み計画（全量診断 v2・モデル非依存化 計画/診断・corpus 拡充計画・REVIEW.md ドラフト）を削除。決定は ADR-0026/0027/0028 に、測定プロトコル・harness 入力・実装素材は上記の正位置に保存済み。
+- 迷子ファイル `.rules/scripts.md` を削除（`deploy-strategy.md` の path-scope が同内容を被覆済み・参照ゼロ確認済み）。
+
 ## [0.14.0] - 2026-07-06
 
 ### Added
