@@ -1,11 +1,14 @@
-# guard 回帰オラクル — STG ルーティングガードの凍結期待値
+# guard 回帰オラクル — STG ルーティング・.env 書き込みガードの凍結期待値
 
-guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警告）フォールスルーの
-回帰ベースライン。`cases.jsonl` の 26 ケース（ルーティングマトリクス 18 + 敵対 8）は、
-**hook への stdin JSON → deny/allow の観測結果を実走で確定**したもの（読み判断による期待値は 1 件もない）。
+guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警告）フォールスルー、
+および **Guard 4.5**（`.env` 書き込み = H5）の回帰ベースライン。`cases.jsonl` は計 42 ケース
+= Guard 11 STG 経路 26（ルーティングマトリクス 18 + 敵対 8）+ Guard 4.5 `.env` 書き込み 16
+（v0.13.1 追加）。いずれも **hook への stdin JSON → deny/allow の観測結果を実走で確定**したもの
+（読み判断による期待値は 1 件もない）。
 
-- 凍結日: 2026-07-05 / 検証対象: `.claude/hooks/guard-bash.sh`（main c6f2163 時点）
-- 全 26 ケースを `replay.sh` で実走し 26/26 一致を確認してから凍結
+- 凍結日: 2026-07-05（Guard 11 26 ケース）/ 2026-07-06 追加（Guard 4.5 16 ケース）
+  / 検証対象: `.claude/hooks/guard-bash.sh`
+- 全 42 ケースを `replay.sh` で実走し 42/42 一致を確認してから凍結
 
 ## 形式（cases.jsonl・1 行 1 ケース）
 
@@ -23,10 +26,10 @@ guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警
 ## 検証（リプレイ）
 
 ```bash
-bash tests/fixtures/guard-oracle/replay.sh <リポルート>   # 26/26 PASS で exit 0
+bash tests/fixtures/guard-oracle/replay.sh <リポルート>   # 42/42 PASS で exit 0
 ```
 
-CI への配線・他 guard（push / .env / rm 系）への拡張は別ステップ（実装 wave）。
+CI への配線・他 guard（push / rm 系）への拡張は別ステップ（実装 wave）。
 
 ## 更新ポリシー（回帰ベースラインとしての意味）
 
