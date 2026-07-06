@@ -108,7 +108,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 | `settings.json` deny list | Hard-blocks `prisma db push` (2 forms: `npx` + bare) and force push (3 forms: `--force` / `--force-with-lease` / `-f`) | permission engine |
 | `session-start.sh` | 7-step open report (branch+ff-pull, uncommitted, Active Work, worktrees, staleness, critical flag, brain) | SessionStart |
 | `prompt-reminder.sh` | Injects CRITICAL RULES every prompt | UserPromptSubmit |
-| `guard-bash.sh` | 11 Bash guards (checkout-on-main, protected push, `.env` writes, `rm -rf`, `prisma db push`, migrate warn, gh api writes, pr merge, find bulk-delete, shell-executor warn, STG PR routing H10/H11) + sub-guards 4.5 (any shell write/copy to `.env`) & 6.5 (prisma migrate warn) | PreToolUse Bash |
+| `guard-bash.sh` | 11 Bash guards (checkout-on-main, protected push, `.env` writes, `rm -rf`, `prisma db push`, migrate warn, gh api writes, pr merge, find bulk-delete, shell-executor warn, STG PR routing H10/H11; the numbered set includes sub-guards 4.5 = the `.env` write/copy check and 6.5 = the migrate warn) | PreToolUse Bash |
 | `guard-commit-message.sh` | Blocks commit lacking 背景/対応/影響 (H15) | PreToolUse Bash |
 | `guard-db-operation.sh` | DENY writes to `PRD_DB_PATTERN` (dormant in ccs; active downstream) | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | DENY `.env` DATABASE_URL edits + ALL edits on `main` (worktree-forcing) | PreToolUse Edit/Write |
@@ -124,7 +124,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./des
 | `review-fitness.sh` | Deterministic pre-gate for `/review` (breaking-migration keyword, a11y, empty-catch); single source of truth whose WARN findings feed the min() verdict — Loops 1/3 |
 | `verify-release-notes.sh` | Deterministic gate for `/release` notes: severity marker/title/banner 3-way match + non-empty `[Unreleased]`; keeps the downstream `/inventory`/`/adopt` severity read from breaking — Loop 4 |
 | `official-freshness.sh` | weekly-inventory Step 5d: version-floor drift check of wrapped official features → `gh issue create` — Loop 8 |
-| `tests/fixtures/judgment-corpus/` | 27 frozen judgments (append-only; `cases/` vs held-out `expected/`; `results/` incl. worth-it measurement) = permanent benchmark of judgment quality across model generations (ADR-0028 決定2) |
+| `tests/fixtures/judgment-corpus/` | 27 frozen judgments (append-only; `expected/` hidden from measured models; train/held-out case split; `results/` incl. worth-it measurement) = permanent benchmark of judgment quality across model generations (ADR-0028 決定2) |
 | `tests/fixtures/guard-oracle/` | 42-case guard regression oracle + `replay.sh`: real-run deny/allow baseline for `guard-bash.sh` routing/env guards (no read-judged expectations) |
 
 ### Knowledge & judgment

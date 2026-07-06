@@ -80,7 +80,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `settings.json` deny list | `prisma db push`（2形: `npx` + 素）と force push（3形: `--force` / `--force-with-lease` / `-f`）を hard block | permission engine |
 | `session-start.sh` | 7段の開始レポート（branch+ff-pull・未コミット・Active Work・worktree・staleness・critical flag・brain） | SessionStart |
 | `prompt-reminder.sh` | 毎プロンプトに CRITICAL RULES を注入 | UserPromptSubmit |
-| `guard-bash.sh` | 11 Bash guard（main で checkout・保護 push・`.env` 書込・`rm -rf`・`prisma db push`・migrate 警告・gh api 書込・pr merge・find 一括削除・executor 警告・STG PR 経路 H10/H11）+ 副ガード 4.5（`.env` への全 shell 書込/コピー）& 6.5（prisma migrate 警告） | PreToolUse Bash |
+| `guard-bash.sh` | 11 Bash guard（main で checkout・保護 push・`.env` 書込・`rm -rf`・`prisma db push`・migrate 警告・gh api 書込・pr merge・find 一括削除・executor 警告・STG PR 経路 H10/H11。この 11 本には副ガード 4.5 = `.env` 書込/コピー検査、6.5 = migrate 警告を含む） | PreToolUse Bash |
 | `guard-commit-message.sh` | 背景/対応/影響 を欠く commit を block（H15） | PreToolUse Bash |
 | `guard-db-operation.sh` | `PRD_DB_PATTERN` への書込を DENY（ccs では dormant・下流で有効） | PreToolUse Bash |
 | `guard-protected-branch-edit.sh` | `.env` DATABASE_URL 編集 + main での全編集を DENY（worktree 強制） | PreToolUse Edit/Write |
@@ -96,7 +96,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](.
 | `review-fitness.sh` | `/review` の決定的前置ゲート（破壊的マイグレーション語・a11y・空 catch）。WARN 検出が min() 総合判定に入る単一ソース — ループ 1/3 |
 | `verify-release-notes.sh` | `/release` notes の決定的ゲート: severity マーカー/title/banner の3点一致 + `[Unreleased]` 非空。下流 `/inventory`/`/adopt` の severity 読取りが壊れるのを防ぐ — ループ 4 |
 | `official-freshness.sh` | weekly-inventory Step 5d: ラップ対象公式 feature の version floor drift 検知 → `gh issue create` — ループ 8 |
-| `tests/fixtures/judgment-corpus/` | 凍結判定 27 件（append-only・`cases/` と holdout の `expected/`・`results/` に worth-it 実測）= モデル世代交代を跨ぐ判定品質の恒久基準器（ADR-0028 決定2） |
+| `tests/fixtures/judgment-corpus/` | 凍結判定 27 件（append-only・`expected/` は被測定モデルに非公開・train/holdout のケース分割・`results/` に worth-it 実測）= モデル世代交代を跨ぐ判定品質の恒久基準器（ADR-0028 決定2） |
 | `tests/fixtures/guard-oracle/` | guard 回帰オラクル 42 件 + `replay.sh`: `guard-bash.sh` の経路/env ガードの deny/allow を実走で確定した基準（読み判定の期待値なし） |
 
 ### 知識 & 判断
