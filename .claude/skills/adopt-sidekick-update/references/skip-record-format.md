@@ -21,8 +21,8 @@ git 管理外（ADR-0005「既存PJ非侵襲」原則に従う）。
 
 ## 永久スキップ
 
-- path: `.claude/skills/review-design/SKILL.md`
-  reason: UI を持たない PJ のため不要
+- path: `.claude/rules/deploy-strategy.md`
+  reason: デプロイ対象を持たない PJ（ローカルツールのみ）のため不要
   since: 2026-04-18
   skipped_version: v0.5.0
 
