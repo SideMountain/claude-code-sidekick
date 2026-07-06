@@ -160,3 +160,4 @@ SIDEKICK_AUTO=true claude --dangerouslySkipPermissions -p "..."
 - Slack 通知は Slack App またはシンプルな webhook で実装
 - 夜間バッチの並列数は最大 3 件を推奨（PC リソースに依存）
 - 1 PJ につき同時実行は 1 タスクまで（ロックファイルで制御。バッチはClaude Code内で並列化）
+- STG デプロイ後の自動 E2E テスト（PR 作成後の下流工程）は [playwright-setup-guide.md](playwright-setup-guide.md) を参照

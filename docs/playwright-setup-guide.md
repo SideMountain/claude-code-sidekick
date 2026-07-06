@@ -1,7 +1,7 @@
 # Playwright E2E テストセットアップガイド
 
 sidekick テンプレートのPJで Playwright を導入する際のガイド。
-ADR-0003 の Lane 1（Issue 駆動）で、STG デプロイ後の自動 E2E テストに使用する。
+ADR-0002 の Lane 1（Issue 駆動）で、STG デプロイ後の自動 E2E テストに使用する。
 
 ## ディレクトリ構造
 
