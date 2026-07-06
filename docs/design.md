@@ -42,6 +42,16 @@ A two-layer brain:
 
 Repeated feedback is promoted to a principle — **with your approval** — so the AI stops needing the same correction twice.
 
+## Thinking harness — hard calls are never single-shot
+
+Learning fixes *what* Claude decides; the harness governs *how carefully*. A closed set of **hard calls** — design decisions, root-cause analysis, contradiction arbitration, security changes, final merge/release judgments — is flagged by a deterministic machine check (`detect-hard-spot.sh`, a force-flag the model can add to but not veto) plus the model's own judgment, then must clear a verification-volume ladder before it resolves — never single-shot. Judgment quality is regression-tested against a **frozen judgment corpus** (append-only, held-out split), so the harness re-measures on the same baseline whenever it changes.
+
+> **Ladder** — L1: ≥1 adversarial pass (every hard call) · L2: 3 independent votes (design / arbitration) · L3: execution is the arbiter (root-cause) · L4: multi-agent + `min()` (merge / release).
+
+## Context economy — long runs on a fixed cap
+
+A fixed Claude Max cap is a budget, so **resident context is a liability, not an asset**: the default is *retrieve > resident*, deep references live in lazy-load docs, and each model/subagent gets only what its task needs. A budget-gate reads the live rate-limit and stages down at 60% / 85% — advisory first, then one bounded wrap-up turn — and is **fail-open**: missing or stale data falls back to normal, and safety guards run independently of budget state, so a hot cap never weakens a hard block.
+
 ## One repo, enforced boundary
 
 Development and distribution live in a **single repository**, so what ships is what the maintainer actually uses — dogfooding is structural, not nominal. Personal information is kept out of public files by a local layer (gitignored) plus a **pre-commit enforcement hook**, not by a manual filter.
@@ -63,6 +73,8 @@ For projects on a known stack, an **opt-in stack pack** layers a prescriptive ar
 | **Git is the source of truth** | no external DB required; Notion is optional |
 | **Fixed cost** | runs on Claude Max; no per-project API charges |
 | **Knowledge compounds** | feedback → principle → applied automatically |
+| **Hard calls are never single-shot** | escalation ladder + frozen judgment corpus |
+| **Context is a liability, not an asset** | retrieve > resident; lazy-load; fail-open budget-gate |
 
 ---
 
