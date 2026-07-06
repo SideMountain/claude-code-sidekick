@@ -9,7 +9,7 @@
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 Claude Code を「安全に・あなたの判断軸で・自動化する」ためのリポジトリテンプレートです。
-上から順に読めます: 何か → 回すループ → 仕組み。
+上から順に読めます: 何か → 回すループ → 何が良くなるか → 始め方 → 仕組み。
 
 ---
 
@@ -19,7 +19,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 
 | 🛡️ 安全ガード | 🧰 再利用ワークフロー | 🧠 思考OS |
 |---|---|---|
-| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**13スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる** |
+| `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**13スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる**。難所（設計・原因究明・セキュリティ・リリース判断）は検証 ladder（多段検証）に乗せ、1 発で決めない |
 
 最後の「思考OS」が sidekick の一番の差別化です。
 
@@ -71,7 +71,7 @@ Claude : → main で直接修正
 Claude : → Worktree 作成（main は触らない）
          → ステージング DB に接続確認
          → 修正 → スコープ限定テスト
-         → /review（fitness → 公式 /code-review + REVIEW.md → min 判定）
+         → /review（決定的検査 + 公式 /code-review でセルフレビュー）
          → PR 作成（マージはあなたの判断）
 ```
 
@@ -99,6 +99,7 @@ Claude : → Worktree 作成（main は触らない）
 | 危険操作の物理ブロック | ❌ | △（ルール記述のみ） | ✅ hooks で強制 |
 | 再利用スキル | ❌ | △ | ✅ 13 種類 |
 | **あなたの判断軸を学習** | ❌ | ❌ | ✅ **思考OS** |
+| 難所の検証 ladder（リスクの高い判断の多段検証。凍結判定 corpus＝凍結テスト集合で計測） | ❌ | ❌ | ✅ |
 | 完全自動実装（寝てる間に PR） | ❌ | ❌ | ✅ `/auto-implement` |
 | ADR で設計判断を追跡可能 | ❌ | △ | ✅ |
 
@@ -171,6 +172,10 @@ Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 �
 アプリが **Next.js（App Router）+ Prisma** なら、**stack pack** に opt-in すると、規定アーキ
 （golden path・一貫した構造）で開発を始め、規約準拠のアプリ骨格を生成し、逸脱を CI で止められます。
 非 Next.js の PJ はここを丸ごとスキップ — `STACK_PACK: none` のままで無コストです。
+契約と詳細は [stack pack README](.claude/stack-packs/nextjs/README.md) にあります。
+
+<details>
+<summary><b>8 ステップの手順 — 有効化 → scaffold → fitness ゲート → 可視化</b></summary>
 
 1. **有効化する。** `/setup` は `package.json` に `next` を検知すると案内します。**生成直後のリポは
    まだ `package.json` が無く自動検知が滑る**ので、その場合は `CLAUDE.md` で手動設定:
@@ -208,6 +213,8 @@ Claude は自動で: Worktree を作る（main は守る）→ 誤字を修正 �
 詳細: [stack pack README](.claude/stack-packs/nextjs/README.md) ·
 [scaffold](.claude/stack-packs/nextjs/scaffold/README.md) ·
 [fitness-functions](.claude/stack-packs/nextjs/fitness-functions/README.md)。
+
+</details>
 
 ---
 
@@ -247,7 +254,26 @@ sidekick は判断軸を2つのファイルに分け、個人の原則は**あ�
 | `rules/*.md` | **プロジェクト**固有ルール（コーディング規約、DB、Git） | プロジェクトが変わったとき |
 | `CLAUDE.md` | プロジェクト設定 + HARD/SOFT/GUIDE ルール | プロジェクトが変わったとき |
 
+### ⚖️ 思考ハーネス — 難所は単発で決めない
+
+学習は Claude が*何を*決めるかを直す。ハーネスは*どれだけ慎重に*決めるかを司る。**難所** — 設計判断・root-cause 分析・矛盾裁定・セキュリティ変更・最終のマージ/リリース判断からなる閉集合 — は、決定的な機械検査（[`detect-hard-spot.sh`](.claude/scripts/detect-hard-spot.sh)・パス/キーワードの grep）と Claude 自身の判断の**両方**で検知する。どちらか一方でも十分で、難所と判定されたら単発では確定させない。
+
+難所と判定されると、カテゴリに応じた**検証量 ladder**（上記の「検証 ladder」）が発火する（[ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)）:
+
+| レベル | 対象 | 動作 |
+|---|---|---|
+| **L1**（最低線） | 全難所 | 敵対（反証）検証を 1 本以上 |
+| **L2** | 設計判断・矛盾裁定 | 独立 3 票（correctness / 安全・セキュリティ / 再現性） |
+| **L3** | root-cause・「動くか」 | 実行を arbiter に（実走 / テスト / fixture） |
+| **L4** | マージ・リリース | 多エージェント裁定 + `min()` 集計 |
+
+**主張でなく実測。** 全 **27 件の凍結判定 corpus** をブラインド走行したところ、*標準*モデル + L2 3 票ハーネスは **26/27（96.3%）** で、現在は退役した最上位モデルの単発判定 **27/27** に対し、トークンは約 **3.1 倍**（[worth-it 実測](./tests/fixtures/judgment-corpus/results/2026-07-05-worth-it.md)）。読み方: 検証の*構造*が最上位モデルの単発判断のほとんどを代替する — これは 27 件・単一走行であり、統計的断定ではない。
+
+各票の中の思考は **9 ムーブの推論プレイブック**に従う。配布は二経路（[ADR-0029](./docs/decisions/0029-reasoning-playbook-two-path-distribution.md)）: 個人 brain（§0）に常駐する概要と、[`.claude/docs/reasoning-playbook.md`](.claude/docs/reasoning-playbook.md) の全文（難所でのみ遅延ロード）。個人 brain を育てていなくても、どちらかの経路で届く。
+
 ### 🛡️ 3層防御 — 安全は絶対に壊さない
+
+ここでの「3層」は、冒頭「30秒で言うと」の 🛡️ 安全ガード層の**内部構造**（認知 → 強制 → 検知）です — 安全ガード / スキル / 思考OS の3つ組のことではありません。
 
 ```mermaid
 flowchart LR
@@ -273,6 +299,18 @@ flowchart LR
 4. **それ以外** — `Bash(*)` で自動承認（ダイアログなし）
 
 **勝手に発火する hooks**（全インベントリ → [docs/lifecycle.ja.md](./docs/lifecycle.ja.md#強制--hooks--guards)）: `session-start.sh`（自動 ff-pull + Active Work / staleness / 未取込 critical を surface）、`prompt-reminder.sh`（毎ターン ルール再提示）、`guard-commit-message.sh`（commit 本文に 背景/対応/影響 必須）、`guard-protected-branch-edit.sh`（main での編集禁止 → worktree 強制）、そして公開ファイルへの secret/PII コミットを物理ブロックする git-native **PII pre-commit hook**。
+
+### 💰 固定 cap で長く走る — 文脈経済
+
+固定の Claude Max cap は予算なので、sidekick は**常駐文脈を資産でなく負債**として扱う（[ADR-0023](./docs/decisions/0023-context-economy.md)）: 既定は *retrieve > resident*、深い参照は遅延ロード doc に置き、各モデル / subagent にはそのタスクに必要な分だけ渡す（per-call hygiene）。
+
+- **実測フットプリント:** 既定 PJ の常駐ルールは v0.13.0 で **979 → 788 行（−19.5%）** に減少 — **何も削除していない**。重い節を retrieve-on-demand の doc に移しただけ（[CHANGELOG](./CHANGELOG.md)）。
+- **検知:** `/token-audit` が常駐フットプリント（行数 / 文字数 / 推定トークン）を計測し、肥大・重複・path-scope 余地を検出する。
+- **budget-gate**（[ADR-0024](./docs/decisions/0024-autonomous-loop-and-budget-gate.md) / [ADR-0025](./docs/decisions/0025-budget-gate-stop-hook-wiring.md)）: statusLine capturer が実 rate-limit を記録し（データ面）、**Stop hook** が段階制御をかける（強制面）— 60% 未満は silent、60〜85% は助言 throttle、85% 超で 1 ターンの締め処理。**fail-open**（データ欠損 / 陳腐化 → NORMAL）で、**安全ガードは budget 状態に依存せず**動くため、cap が逼迫してもハードブロックは弱まらない。
+
+### 📏 品質は回帰テストされる
+
+テンプレート自身の品質主張は、主張でなく凍結 fixture に対して計測できる。**判定品質**は [判定 corpus](./tests/fixtures/judgment-corpus/README.md) に対して検査する — 上の思考ハーネス節で worth-it を測ったのと同一の 27 件凍結 fixture で、append-only・held-out 分割により few-shot 例を自分自身で測らない。**ガード挙動**は [guard オラクル](./tests/fixtures/guard-oracle/README.md) で固定する — deny / allow の結果を実 hook 走行から採取した 42 ケースで、`replay.sh` でリプレイ可能。hook や rubric が変わると、両者は同一ベースラインで再計測される。
 
 ### 🧰 13 スキル
 
@@ -374,12 +412,15 @@ your-project/
 |---|---|---|
 | `PROJECT_NAME` | プロジェクト名 | `""` |
 | `STG_ENABLED` | ステージング環境の有無 | `false` |
+| `PROTECTED_BRANCHES` | 直接コミット / push を禁止するブランチ（guards + hooks が読む） | `[main]` |
 | `ORM_TYPE` | `prisma` / `drizzle` / `none` | `none` |
-| `LANGUAGE` | `typescript` / `python` | `typescript` |
+| `LANGUAGE` | `typescript` / `python` / `gas` | `typescript` |
 | `STACK_PACK` | opt-in な Next.js golden path: `none` / `nextjs`。scaffold + アーキ fitness + `system-map` を有効化（[stack pack](.claude/stack-packs/nextjs/README.md)） | `none` |
 | `NOTION_ENABLED` | 外部タスク DB 連携 | `false` |
 | `TEST_COMMAND` | テストコマンド | `""` |
 | `BUILD_COMMAND` | ビルドコマンド | `""` |
+
+> 全 17 キーと既定値は **`CLAUDE.md` §0 Project Configuration** にあります — 上の表は最も設定頻度が高いサブセットです。
 
 ---
 
@@ -390,6 +431,7 @@ your-project/
 3. **ブラックリスト方式**: 危険なものだけリスト化。残りは全自動。（[ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md)）
 4. **固定費、PJ 比例しない**: Claude Max 上で動く。API 従量課金なし。10 PJ でも $100/月。（[ADR-0003](./docs/decisions/0003-slack-cron-architecture.md)）
 5. **Git が Source of Truth**: 外部 DB 不要。CLAUDE.md + ADR + GitHub Issues + auto-memory で完結。Notion はオプション。（[ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md)）
+6. **難所は単発で決めない**: 設計 / root-cause / セキュリティ / マージ判断はエスカレーション ladder を発火し、凍結判定 corpus に対して回帰テストする。（[ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)）
 
 > 📐 設計思想の全体像は **[`docs/design.ja.md`](./docs/design.ja.md)** に1枚でまとまっています（現行の設計を一望できるダイジェスト）。
 
@@ -400,7 +442,7 @@ your-project/
 sidekick は **git tag + GitHub Releases** でバージョン管理します。各プロジェクトは取り込み済みバージョンを `CLAUDE.md` に記録:
 
 ```yaml
-SIDEKICK_VERSION: "0.12.0"
+SIDEKICK_VERSION: "0.14.0"
 ```
 
 `/inventory` で最新の GitHub Release と比較し、更新を確認できます。設計判断の全台帳（なぜそうなっているか）は [ADR 索引](./docs/decisions/README.md)。

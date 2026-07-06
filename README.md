@@ -9,7 +9,7 @@
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 
 A repository template that makes Claude Code **safe, personalized, and autonomous**.
-Read it top to bottom: what it is → the loop you run → how it works under the hood.
+Read it top to bottom: what it is → the loop you run → what gets better → how to start → how it works under the hood.
 
 ---
 
@@ -19,7 +19,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 
 | 🛡️ Safety Guards | 🧰 Reusable Workflows | 🧠 Thinking OS |
 |---|---|---|
-| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **13 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time** |
+| **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **13 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time**; hard calls (design / root-cause / security / release decisions) run a verification ladder, never single-shot |
 
 The "Thinking OS" is what sets sidekick apart from other templates.
 
@@ -71,7 +71,7 @@ You   : "Fix the login bug"
 Claude: → Creates worktree (main untouched)
         → Confirms staging DB connection
         → Fixes → Runs scoped tests
-        → /review (fitness → official /code-review + REVIEW.md → min verdict)
+        → /review (deterministic checks + official /code-review)
         → Creates PR (merging is your call)
 ```
 
@@ -99,6 +99,7 @@ In other words, **you stop repeating yourself.**
 | Physically blocks dangerous ops | ❌ | △ (rules only) | ✅ hooks enforce |
 | Reusable skills | ❌ | △ | ✅ 13 skills |
 | **Learns your judgment** | ❌ | ❌ | ✅ **Thinking OS** |
+| Hard-call verification ladder (multi-pass verification of risky judgments, measured against a frozen judgment corpus) | ❌ | ❌ | ✅ |
 | Fully autonomous implementation | ❌ | ❌ | ✅ `/auto-implement` |
 | Tracks design decisions (ADR) | ❌ | △ | ✅ |
 
@@ -171,6 +172,10 @@ Claude will automatically: create a worktree (main stays safe) → fix the typo 
 If your app is **Next.js (App Router) + Prisma**, opt into the **stack pack** to start on a
 prescriptive *golden path* (consistent architecture), generate a conforming app skeleton, and gate
 deviations in CI. Non-Next.js projects skip this entirely — leave `STACK_PACK: none` (zero cost).
+The contract and details live in the [stack pack README](.claude/stack-packs/nextjs/README.md).
+
+<details>
+<summary><b>The 8-step walkthrough — enable → scaffold → fitness gate → visualize</b></summary>
 
 1. **Enable it.** `/setup` offers this when it detects `next` in `package.json`. On a brand-new repo
    (no `package.json` yet) auto-detect can't fire, so set it manually in `CLAUDE.md`:
@@ -210,6 +215,8 @@ Full details: [stack pack README](.claude/stack-packs/nextjs/README.md) ·
 [scaffold](.claude/stack-packs/nextjs/scaffold/README.md) ·
 [fitness-functions](.claude/stack-packs/nextjs/fitness-functions/README.md).
 
+</details>
+
 ---
 
 <details>
@@ -248,7 +255,26 @@ The shipped `brain/thinking.md` at the repo root is a **template only (not loade
 | `rules/*.md` | **Project** rules (coding standards, DB, Git strategy) | The project changes |
 | `CLAUDE.md` | Project config + HARD/SOFT/GUIDE rules | The project changes |
 
+### ⚖️ The thinking harness — hard calls are never single-shot
+
+Learning fixes *what* Claude decides; the harness governs *how carefully* it decides. **Hard calls** — a closed set of design decisions, root-cause analysis, contradiction arbitration, security changes, and final merge/release judgments — are flagged both by a deterministic machine check ([`detect-hard-spot.sh`](.claude/scripts/detect-hard-spot.sh), a path/keyword grep) and by Claude's own judgment. Either one is enough, and a flagged call may not be settled single-shot.
+
+A flagged hard call fires a **verification-volume ladder** (the "verification ladder" above) sized to the category ([ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)):
+
+| Level | Applies to | Action |
+|---|---|---|
+| **L1** (floor) | every hard call | ≥ 1 adversarial (refutation) pass |
+| **L2** | design decisions · contradiction arbitration | 3 independent votes (correctness / safety-security / reproducibility) |
+| **L3** | root-cause · "does it work" | execution is the arbiter (real run / test / fixture) |
+| **L4** | merge · release | multi-agent adjudication + `min()` aggregation |
+
+**Measured, not asserted.** On a blind run of the full **27-case frozen judgment corpus**, a *standard* model + the L2 3-vote harness scored **26/27 (96.3%)** against a now-retired top-tier model judging single-shot at **27/27**, for roughly **3.1× the tokens** ([worth-it run](./tests/fixtures/judgment-corpus/results/2026-07-05-worth-it.md)). Read it as: the *structure* of verification substitutes for most of a top-tier single-shot judgment — this is one 27-case run, not a statistical claim.
+
+The reasoning inside each vote follows a **9-move reasoning playbook**, distributed on two paths ([ADR-0029](./docs/decisions/0029-reasoning-playbook-two-path-distribution.md)): a resident summary in the personal brain (§0), and the full text in [`.claude/docs/reasoning-playbook.md`](.claude/docs/reasoning-playbook.md), lazy-loaded only at a hard call. Either path reaches you even if you never grew a personal brain.
+
 ### 🛡️ Three-layer defense — safety is non-negotiable
+
+The "three layers" here are the internal anatomy of the 🛡️ Safety Guards layer from "In 30 seconds" (awareness → enforcement → detection) — not the Safety / Skills / Thinking OS trio itself.
 
 ```mermaid
 flowchart LR
@@ -274,6 +300,18 @@ flowchart LR
 4. **Everything else** — auto-approved via `Bash(*)` (no dialogs)
 
 **Hooks that fire on their own** (full inventory → [docs/lifecycle.md](./docs/lifecycle.md#enforcement--hooks--guards)): `session-start.sh` (auto ff-pull + surfaces Active Work / staleness / pending critical updates), `prompt-reminder.sh` (re-asserts the rules every turn), `guard-commit-message.sh` (every commit body must carry 背景/対応/影響), `guard-protected-branch-edit.sh` (no edits on `main` → forces a worktree), and a git-native **PII pre-commit hook** that physically blocks committing secrets / PII to public files.
+
+### 💰 Runs long on a fixed cap — context economy
+
+A fixed Claude Max cap is a budget, so sidekick treats **resident context as a liability, not an asset** ([ADR-0023](./docs/decisions/0023-context-economy.md)): default to *retrieve > resident*, keep deep references in lazy-load docs, and hand each model / subagent only what its task needs (per-call hygiene).
+
+- **Measured footprint:** the default project's resident rules dropped **979 → 788 lines (−19.5%)** in v0.13.0 — **nothing was deleted**; heavy sections just moved to retrieve-on-demand docs ([CHANGELOG](./CHANGELOG.md)).
+- **Detection:** `/token-audit` measures the resident footprint (lines / chars / est. tokens) and flags bloat, duplication, and path-scope opportunities.
+- **Budget-gate** ([ADR-0024](./docs/decisions/0024-autonomous-loop-and-budget-gate.md) / [ADR-0025](./docs/decisions/0025-budget-gate-stop-hook-wiring.md)): a statusLine capturer records the live rate-limit (data side); a **Stop hook** applies staged control (enforcement side) — silent below 60%, an advisory throttle at 60–85%, and one bounded wrap-up turn above 85%. It is **fail-open** (missing / stale data → NORMAL), and **safety guards run independently of budget state**, so a hot cap never weakens a hard block.
+
+### 📏 Quality is regression-tested
+
+The template's own quality claims are measurable against frozen fixtures, not just asserted. **Judgment quality** is checked against the [judgment corpus](./tests/fixtures/judgment-corpus/README.md) — the same 27-case frozen fixture the worth-it run in the thinking-harness section was measured on — append-only, with a held-out split so few-shot examples are never measured against themselves. **Guard behavior** is pinned by the [guard oracle](./tests/fixtures/guard-oracle/README.md) — 42 cases whose deny / allow outcomes were captured from real hook runs and are replayable via `replay.sh`. When a hook or rubric changes, both re-measure on the same baseline.
 
 ### 🧰 The 13 skills
 
@@ -375,12 +413,15 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 |---|---|---|
 | `PROJECT_NAME` | Project name | `""` |
 | `STG_ENABLED` | Staging environment | `false` |
+| `PROTECTED_BRANCHES` | Branches with no direct commit / push (read by guards + hooks) | `[main]` |
 | `ORM_TYPE` | `prisma` / `drizzle` / `none` | `none` |
-| `LANGUAGE` | `typescript` / `python` | `typescript` |
+| `LANGUAGE` | `typescript` / `python` / `gas` | `typescript` |
 | `STACK_PACK` | Opt-in Next.js golden path: `none` / `nextjs`. Enables scaffold + architecture fitness + `system-map` ([stack pack](.claude/stack-packs/nextjs/README.md)) | `none` |
 | `NOTION_ENABLED` | External task DB integration | `false` |
 | `TEST_COMMAND` | Test runner command | `""` |
 | `BUILD_COMMAND` | Build command | `""` |
+
+> All 17 keys and their defaults live in **`CLAUDE.md` §0 Project Configuration** — the table above is the subset you set most often.
 
 ---
 
@@ -391,6 +432,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 3. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md))
 4. **Fixed cost, not per-project**: Runs on Claude Max. No API charges. 10 projects for the same $100/month. ([ADR-0003](./docs/decisions/0003-slack-cron-architecture.md))
 5. **Git is the source of truth**: No external DB required. CLAUDE.md + ADR + GitHub Issues + auto-memory. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
+6. **Hard calls are never single-shot**: design / root-cause / security / merge judgments fire an escalation ladder and regression-test against a frozen judgment corpus. ([ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md))
 
 > 📐 For the full design philosophy at a glance, see **[`docs/design.md`](./docs/design.md)** — a one-page digest of how sidekick is designed today.
 
@@ -401,7 +443,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 sidekick uses **git tags + GitHub Releases** for version management. Each project tracks its adopted version in `CLAUDE.md`:
 
 ```yaml
-SIDEKICK_VERSION: "0.12.0"
+SIDEKICK_VERSION: "0.14.0"
 ```
 
 Run `/inventory` to check for updates against the latest GitHub Release. The full decision ledger (why things are the way they are) is the [ADR index](./docs/decisions/README.md).
