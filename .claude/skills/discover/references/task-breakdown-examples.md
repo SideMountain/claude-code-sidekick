@@ -1,7 +1,7 @@
 # タスク分解の few-shot（OK / NG 例）
 
 `/discover` Step 5・`/auto-implement` から参照する、タスク分解の few-shot 実例集。
-出自: `docs/plans/model-independence-drafts/exemplars.md` §B を下流配布向けに汎用化（PJ 非依存の題材に置換）。
+出自: `tests/fixtures/judgment-corpus/harness/exemplars.md` §B を下流配布向けに汎用化（PJ 非依存の題材に置換）。
 狙いは題材ではなく**分解の粒度**を示すこと — 完了条件が実行可能 / 影響範囲が列挙済み / 1 タスク = 1 検証可能単位。
 
 ---

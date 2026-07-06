@@ -1,7 +1,7 @@
 # 凍結判定 corpus — 判定一致率の恒久基準器
 
 モデル世代交代後もハーネスの判定品質を計測し続けるための、**凍結されたリファレンス判定集**（ADR-0028 決定2）。
-`docs/plans/ccs-model-independence.md` §5① の判定一致率 A/B は、本 corpus を基準に実施する。
+判定一致率 A/B（下記「計測プロトコル」）は、本 corpus を基準に実施する。
 
 ## 構造
 
@@ -9,6 +9,7 @@
 |---|---|---|
 | `cases/` | ケース入力 + 質問のみ | 被測定モデルに与えてよい |
 | `expected/` | 凍結判定（verdict + must_find + 根拠） | **被測定モデルに絶対に見せない**（採点者のみ参照） |
+| `harness/` | 判定基準の集約スナップショット（`rubrics.md` = R1-R10 の rubric 集 / `exemplars.md` = 昇格・分解・findings の few-shot） | `rubrics.md` は判定基準として両アームに渡す。`exemplars.md`（few-shot 蒸留）は harness 構成（後述 worth-it の B アーム）のみに渡す |
 
 | カテゴリ | 測るもの | 件数 | verdict 形式 |
 |---|---|---|---|
@@ -21,7 +22,7 @@
 | RC | root-cause 分析（§8 難所 cat2） | 3 | `root_cause: C1..C4` |
 | CON | 矛盾裁定（§8 難所 cat3） | 3 | `resolution: R1\|R2\|R3` |
 
-計 **27 件**。HS が「難所か否か」の入口判定であるのに対し、DES/RC/CON は「難所と判定した後、実際にどう裁定するか」を測る（設計は [corpus-expansion-v2-plan](../../../docs/plans/corpus-expansion-v2-plan.md)）。DES/RC/CON は「判断原則（brain §1）・rules に照らせば一意に決まる」題材のみ収録する（複数正解の題材は凍結の意味が消えるため不採用）。
+計 **27 件**。HS が「難所か否か」の入口判定であるのに対し、DES/RC/CON は「難所と判定した後、実際にどう裁定するか」を測る（カテゴリ設計は上表・下記「held-out 分割」）。DES/RC/CON は「判断原則（brain §1）・rules に照らせば一意に決まる」題材のみ収録する（複数正解の題材は凍結の意味が消えるため不採用）。
 
 ## 凍結ルール（append-only）
 
@@ -41,6 +42,17 @@
 2. **一次指標**: `verdict` 列挙値の完全一致率（27 件・カテゴリ別 + train/holdout 別に集計）
 3. **二次指標**: `must_find` の再現率（各項目について意味的に同等の指摘があるか。採点は人間 or 別セッションの採点モデル。plausible-but-wrong な水増し findings は §5① では減点しない — verdict がズレる形で現れる）
 4. 結果は `results/` に `YYYY-MM-DD-<構成名>.md` で記録する（構成・モデル・一致率・ケース別正誤）
+
+## worth-it 測定プロトコル（§5②）
+
+§5① が「素モデル vs harness」の一致率を測るのに対し、worth-it は「**可用最上位モデル単発 vs 標準モデル + harness（ladder）**」の判定品質・トークン差を測る。ladder（context-economy §8）が上位 tier の単発判断を代替できるか（ADR-0028 の tier 非依存化）の実測裏づけ。**最上位モデル退役前にしか (A) アームを取れない**ため、退役前に取得する。
+
+1. **アーム**: (A) 可用最上位モデル**単発**（harness なし・1 パス判定） (B) 標準モデル + harness = §8 ladder L1-L4 + R3 敵対検証（設計判断・矛盾裁定は独立 3 票の多視点検証 → 多数決集計。3 票は並列・相互不可視）
+2. **対象**: 本 corpus 全 27 件の verdict 一致率（`expected/` 基準）+ トークン消費（`/token-audit` or usage 報告値）
+3. **一次指標**: verdict 一致率の差。**二次指標**: トークン / 1 判定・wall-clock
+4. **ブラインド**: 「計測プロトコル（§5①）」と同一の遮断（`expected/`・`results/`・実装ファイル `.claude/hooks/`・`.claude/skills/`・git 履歴・内部設計ドラフト）を両アームに適用し、判定基準（CLAUDE.md・brain・rules・REVIEW.md・knowledge-reflux.md・`harness/rubrics.md`）を渡す。few-shot 蒸留（`harness/exemplars.md`）は harness 構成の一部として **(B) のみ**許可する（train ケースのみ・holdout 汚染なし）。読了ファイル申告で汚染なしを確認する
+5. **worth-it 判定**: (B) の一致率が (A) にどれだけ肉薄／超過するか × (B) のトークン増。ladder が最上位単発を代替できる証拠が出れば ADR-0028（tier 非依存化）の実測裏づけになる
+6. 結果は `results/YYYY-MM-DD-worth-it.md` に記録する
 
 ## 測定済みベースライン
 
