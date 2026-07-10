@@ -126,7 +126,7 @@ scope_files:      — W 系の検査対象 glob（README* docs/*.md 等）。W �
    - U1 の行単位 AND は複数行 CSS・clsx 分割 JSX・大文字 hex を見逃す → **ファイル単位 AND + 大文字不問 + fuchsia hex 追加 + radial/conic 追加**
    - U2 の 6 桁限定は `#fff` / alpha 付き 8 桁を見逃す → **3–8 桁化**。配布アセット（トークン定義同居の自己完結 HTML）が大量ヒット → **`assets_dirs:` 除外を新設**
    - 検知パターンのリテラルを含む文書（本憲章等）が W 系に自己発火 → **`scope_files:` 従属化で構造解決**
-   - ccs の `README*` が W1 に該当（絵文字見出し 6 件・真陽性）→ **実装時の裁定事項として起票**（修正 or 理由付き opt-out。dogfood の第 1 号）
+   - ccs の `README*` が W1 に該当（絵文字見出し・真陽性）→ **裁定済み（2026-07-10・オーナー承認）: 理由付き opt-out で維持**。§2.3 形式の記録（writing-charter.md 実装時〔ADR-0019 P1〕にそのまま移記する）: `- W1: paths: ["README.md", "README.ja.md"] reason: deep-dive 節の絵文字見出しは en/ja 共通のカテゴリ標識（節の種別を示す情報要素）として一貫使用しており、W1 が対象とする無差別装飾と異なる`
    - W3 がリポ内の既存 ADR 1 件で真陽性を検出（検知層として機能）
 3. 実装時は detect-slop.sh に fixture（正例・負例）を同梱し、パターン変更のたびに再走できる形にする（guard-oracle と同じ「実走が期待値」の規律）
 
