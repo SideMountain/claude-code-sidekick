@@ -1,10 +1,12 @@
 # sidekick — Design Philosophy
 
+> Audience: OSS users & ccs maintainers (human) · Role: philosophy — the single source for sidekick's backbone (ADR-0033) · Load: not loaded at runtime.
+
 A one-glance digest of how sidekick is designed **today**. It carries no decision history or numbering — for the reasoning and trade-offs behind each choice, see the Architecture Decision Records in [`docs/decisions/`](./decisions/).
 
 ---
 
-## North Star
+## Purpose
 
 > **Downstream doesn't feel the harness's complexity. Default-safe, nothing to assemble.**
 
@@ -62,7 +64,7 @@ UI quality (design system, tokens, accessibility, visual regression) is introduc
 
 ## Stack pack — opt-in, prescriptive architecture
 
-For projects on a known stack, an **opt-in stack pack** layers a prescriptive architecture (a "golden path") plus a system visualizer on top of the agnostic core. The bet: when downstream follows a fixed architecture, a parser reads *that* convention and the system map draws itself **deterministically** — "generic" and "deterministic" stop being mutually exclusive. The core (hooks, brain, north star, skills) stays stack-independent; the pack is an upper layer, never the baseline. The *method* (prescribe architecture → determinism → enforce) is stack-agnostic; Next.js is the first reference instance. Opt-in is wired through a single config flag (`STACK_PACK`: `none` / `nextjs`) set during setup — a project that does not opt in pays nothing. The Next.js pack ships three layers: the golden-path contract (`.claude/stack-packs/nextjs/ARCHITECTURE.md`), a **scaffold** that generates a conforming app skeleton, and **architecture fitness functions** (`npm run test:arch`) that fail CI on golden-path deviations — recognize → enforce → detect.
+For projects on a known stack, an **opt-in stack pack** layers a prescriptive architecture (a "golden path") plus a system visualizer on top of the agnostic core. The bet: when downstream follows a fixed architecture, a parser reads *that* convention and the system map draws itself **deterministically** — "generic" and "deterministic" stop being mutually exclusive. The core (hooks, brain, purpose, skills) stays stack-independent; the pack is an upper layer, never the baseline. The *method* (prescribe architecture → determinism → enforce) is stack-agnostic; Next.js is the first reference instance. Opt-in is wired through a single config flag (`STACK_PACK`: `none` / `nextjs`) set during setup — a project that does not opt in pays nothing. The Next.js pack ships three layers: the golden-path contract (`.claude/stack-packs/nextjs/ARCHITECTURE.md`), a **scaffold** that generates a conforming app skeleton, and **architecture fitness functions** (`npm run test:arch`) that fail CI on golden-path deviations — recognize → enforce → detect.
 
 ## Principles that cut across everything
 

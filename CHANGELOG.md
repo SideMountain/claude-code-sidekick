@@ -26,6 +26,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 ### Added
 
 - **文書ガバナンス（ADR-0033）**: `.claude/rules/oss-doc-authoring.md` に文体標準（README = 敬体・規範/仕様/手順 = 常体・口語の禁止）、表記統一表、全 doc 冒頭の読者宣言標準（読者/役割/ロード条件）、逐語再掲の禁止（単一ソース原則）を追加し、path スコープを `.claude/docs/**`・`README.ja.md`・`REVIEW.md`・`brain/**` に拡張。思想の背骨の正 = design doc（`design-philosophy.md` へ改名予定）、用語「北極星」→「目的」、既存 ADR は遡及適用外（詳細は ADR-0033。導線索引・改名・是正は後続リリース）。
+- **docs/ 導線の整備（ADR-0033 実装）**: ①`docs/README.md` 索引を新設（読者別入口・置かないもの・執筆規約への導線） ②`docs/design.md` / `design.ja.md` を **`design-philosophy.md` / `design-philosophy.ja.md` に改名**（git mv・リンク参照は README×2 / lifecycle×2 / oss-doc-authoring を更新。CHANGELOG・ADR 内の過去言及は記録として不変） ③用語「北極星（North Star）」→「目的（Purpose）」を非 ADR 15 箇所（9 ファイル）で置換（ADR タイトルの引用は不変・ADR-0018 は索引注記で対応） ④冒頭ヘッダ（読者/役割/ロード条件）を design-philosophy×2・cron-setup-guide・migrations/README・skill-agent-design に敷設。
 
 ### Fixed
 

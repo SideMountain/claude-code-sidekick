@@ -5,7 +5,7 @@ ccs の **opt-in な参照 stack pack**。Next.js（App Router）+ Prisma + 認�
 ## これは何で、何でないか
 
 - **opt-in**: Next.js を使わない PJ は何も受け取らない（無コスト）。`/setup` で「Next.js stack pack を使う」と申告した PJ にのみ配置される。
-- **参照 pack ≠ ccs core**: ccs の core（hooks / brain / 北極星 / skills / 安全層）は **stack 非依存のまま一次**。本 pack はその上に載る opt-in レイヤー。**ccs は Next 専用にはならない**（ADR-0021）。
+- **参照 pack ≠ ccs core**: ccs の core（hooks / brain / 目的原則 / skills / 安全層）は **stack 非依存のまま一次**。本 pack はその上に載る opt-in レイヤー。**ccs は Next 専用にはならない**（ADR-0021）。
 - **方法は stack 非依存・Next.js は第一インスタンス**: 「**アーキを規定する → 地図が自分で描ける → 強制で守らせる**」という方法自体は stack に依存しない。Spring pack でも Python pack でも同じ方法で別ルールを書くだけ。Next.js はその最初の参照実装。
 
 ## なぜ規定するのか（descriptive → prescriptive）
@@ -24,7 +24,7 @@ ccs の **opt-in な参照 stack pack**。Next.js（App Router）+ Prisma + 認�
 | `scaffold/` | 新規 PJ を規約へ scaffold（`posts` 縦スライス = 手本・出力 ≡ fitness の conforming fixture） | ✅ |
 | `/setup` 連携 | `STACK_PACK` フラグで opt-in（Next.js 検知時に案内・非 Next PJ は無コスト・`/adopt-sidekick-update` も opt-in aware 配布） | ✅ |
 
-> **段階導入の規律**: 一度に全部作らない（北極星「組み立て不要」/ 70%で動く）。`ARCHITECTURE.md`（契約）→ system-map（決定的に描く）→ fitness 関数（守らせる）→ scaffold（最初から規約に乗せる）の順。fitness と scaffold は**契約と生成器の関係**で、scaffold 出力が fitness の conforming fixture を兼ねるため互いの受け入れテストになる（ドリフト不能）。
+> **段階導入の規律**: 一度に全部作らない（目的原則「組み立て不要」/ 70%で動く）。`ARCHITECTURE.md`（契約）→ system-map（決定的に描く）→ fitness 関数（守らせる）→ scaffold（最初から規約に乗せる）の順。fitness と scaffold は**契約と生成器の関係**で、scaffold 出力が fitness の conforming fixture を兼ねるため互いの受け入れテストになる（ドリフト不能）。
 
 ## golden path の出自（裏取り済み・2026 時点）
 

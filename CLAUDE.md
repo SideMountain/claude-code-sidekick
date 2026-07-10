@@ -35,7 +35,7 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 
 ### Stack Pack（opt-in・ADR-0021）
 
-`STACK_PACK: nextjs` の場合、この PJ は **Next.js stack pack の規定アーキ（golden path）に従う** — 実装・レビュー時は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）を実装規約として読み、`system-map` スキルでコードベースを可視化できる。stack pack は ccs core（hooks / brain / 北極星 / skills = stack 非依存）の上に載る **opt-in な上物**。有効化は `/setup` で対話的に行い、`none`（既定）ならこのレイヤー全体を無視してよい（**非 Next PJ は無コスト**）。
+`STACK_PACK: nextjs` の場合、この PJ は **Next.js stack pack の規定アーキ（golden path）に従う** — 実装・レビュー時は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）を実装規約として読み、`system-map` スキルでコードベースを可視化できる。stack pack は ccs core（hooks / brain / 目的原則 / skills = stack 非依存）の上に載る **opt-in な上物**。有効化は `/setup` で対話的に行い、`none`（既定）ならこのレイヤー全体を無視してよい（**非 Next PJ は無コスト**）。
 
 ---
 

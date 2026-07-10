@@ -3,13 +3,13 @@
 *The whole of ccs as a set of closed loops — not a pile of features.* This is the maintainer-facing
 map: every capability, which lifecycle loop it sits on, and whether that loop is **closed** (its
 output is consumed by a next step) or **open** (a stage has no tool, or an output has no consumer).
-North star: an unused feature is worthless — features must form loops that run with no gaps and no waste.
+Purpose: an unused feature is worthless — features must form loops that run with no gaps and no waste.
 
-JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design.md](./design.md) · Decisions: [decisions/README.md](./decisions/README.md)
+JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design-philosophy.md](./design-philosophy.md) · Decisions: [decisions/README.md](./decisions/README.md)
 
 ## Spine (the through-line)
 
-- **North star (ADR-0018):** the downstream developer feels the benefit without feeling the harness.
+- **Purpose (ADR-0018):** the downstream developer feels the benefit without feeling the harness.
   Default-safe; nothing to assemble; only **three verbs by hand** — `/news` → your work → `/close-chat`
   (plus weekly `/weekly-inventory`). Everything else is plumbing that fires on its own.
 - **仕組み化 = 認知 → 強制 → 検知** (Awareness → Enforcement → Detection). Rules alone don't hold, so

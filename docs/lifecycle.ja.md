@@ -1,12 +1,12 @@
 # ccs ライフサイクル地図
 
-*ccs の全体を「閉じた輪の集合」として捉える地図* — 機能の山ではない。保守者向けに、**全機能・各機能が乗るライフサイクル輪・その輪が閉じているか（出力を次段が消費するか）/ 開いているか（段に道具が無い、または出力に消費者が無い）**を一望する。北極星: 使われない機能は無価値。機能は漏れなく無駄なく回る輪を成すべき。
+*ccs の全体を「閉じた輪の集合」として捉える地図* — 機能の山ではない。保守者向けに、**全機能・各機能が乗るライフサイクル輪・その輪が閉じているか（出力を次段が消費するか）/ 開いているか（段に道具が無い、または出力に消費者が無い）**を一望する。目的: 使われない機能は無価値。機能は漏れなく無駄なく回る輪を成すべき。
 
-EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design.ja.md](./design.ja.md) · 設計判断: [decisions/README.md](./decisions/README.md)
+EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design-philosophy.ja.md](./design-philosophy.ja.md) · 設計判断: [decisions/README.md](./decisions/README.md)
 
 ## 背骨（一本の筋）
 
-- **北極星（ADR-0018）**: 下流開発者はハーネスを意識せず恩恵だけ感じる。既定で安全・組み立て不要・**手で打つのは3動詞だけ**（`/news` → 作業 → `/close-chat`、＋週次 `/weekly-inventory`）。他は全部勝手に発火する配管。
+- **目的（ADR-0018）**: 下流開発者はハーネスを意識せず恩恵だけ感じる。既定で安全・組み立て不要・**手で打つのは3動詞だけ**（`/news` → 作業 → `/close-chat`、＋週次 `/weekly-inventory`）。他は全て自動で発火する配管。
 - **仕組み化 = 認知 → 強制 → 検知**。ルールだけでは守れないので、CLAUDE.md の HARD/SOFT/GUIDE ルール（`prompt-reminder.sh` が毎ターン再提示＝認知）を PreToolUse guard + `settings.json` deny list + git-native PII pre-commit hook（強制）で物理的に裏打ちし、すり抜けは `/review`（決定的 fitness + 公式 `/code-review` + REVIEW.md 規範・検知）が捕まえる。
 - **知識複利（moat・ADR-0007/0016）**: feedback → auto-memory → `/close-chat` 還流フラグ → `/weekly-inventory` 昇格 → PJ brain → 個人 brain → OSS テンプレ → 翌セッション自動適用。AGENTS.md 的な instruction 共有では運べない判断層。
 
