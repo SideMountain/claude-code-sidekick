@@ -25,6 +25,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Added
 
+- **現在状態オラクル原則（ADR-0031）**: `context-economy.md` §1 に受信側 contract（subagent の load-bearing な報告は伝聞扱い・不可逆操作前に親が一次確認）、§5 に機械判定クラス（現存・有効性は LLM に判定させず現在状態オラクルで確定。追記型履歴では時点根拠 ≠ 現在の真。migration / DDL 前の参照先現存確認は無条件必須）を追記。`.claude/docs/current-state-oracle.md`（遅延ロード）を新設し、オラクル対応表・変更クラス別トリガ表・生成型チェーン・下流 PJ 向け実装パターン（CI ephemeral replay 等）を収録。
+
 - **ADR-0030「内部計画文書の非配布ポリシー（docs/plans 廃止）」を新設**: 作業中の計画・診断は git 追跡ツリーに置かず（auto-memory / Issue / 非追跡領域へ）、消化済み計画は削除（決定は ADR・残タスクは backlog/Issue が正位置）、耐久素材は寿命に応じた正位置へ移設する方針を記録。
 - **README（両言語）に v0.12〜0.14 の中核 3 節を追加**: 「⚖️ The thinking harness」（難所の閉集合 + force-flag + 検証量 ladder L1-L4 + worth-it 実測 = 標準モデル + harness 26/27〔96.3%〕 vs 退役前最上位モデル単発 27/27・トークン約 3.1 倍・単一走行の注記付き + 推論プレイブック二経路配布）/「💰 Runs long on a fixed cap」（文脈経済ドクトリン・常駐 979→788 行 −19.5%・/token-audit・budget-gate 60/85% fail-open）/「📏 Quality is regression-tested」（凍結判定 corpus 27 件 + guard オラクル 42 件で品質主張を回帰測定可能）。比較表・In 30 seconds・Design Principles（#6「難所は単発で決めない」）にも反映。`docs/design.md`（両言語）にも同 2 節 + 原則 2 行を追加。
 - **docs/lifecycle.md（両言語）に「Deterministic checks & regression fixtures」表を新設**: detect-hard-spot.sh（難所 force-flag）/ review-fitness.sh / verify-release-notes.sh / official-freshness.sh / judgment-corpus（27 件）/ guard-oracle（42 件）を機能インベントリに正式収録。

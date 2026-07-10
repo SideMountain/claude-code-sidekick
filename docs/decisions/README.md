@@ -34,3 +34,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0028 | [モデル退役後の能力エスカレーション再定義（検証量 ladder + 凍結判定 corpus）](0028-capability-escalation-after-model-retirement.md) | 採用（2026-07-04） |
 | 0029 | [推論プレイブックの二経路配布と意思決定3閾値](0029-reasoning-playbook-two-path-distribution.md) | 採用（2026-07-06） |
 | 0030 | [内部計画文書の非配布ポリシー（docs/plans 廃止）](0030-internal-plans-not-distributed.md) | 採用（2026-07-06） |
+| 0031 | [現在状態オラクル原則（時点根拠 ≠ 現在の真）](0031-current-state-oracle.md) | 採用（2026-07-10） |
