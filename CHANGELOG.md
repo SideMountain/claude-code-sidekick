@@ -32,6 +32,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 - **budget パースを `hook-helpers-budget.sh` に分離（ADR-0032）**: `prompt-reminder.sh` と `budget-cycle-halt.sh` の rate-cap 読み取り重複 ~60 行を集約。高 churn な budget コードを fail-closed の enforcement core から切り離し、事故的な全 Bash/Edit ロックアウトを防ぐ。両 hook の観測可能な挙動は不変（分離前と byte-exact 一致を検証）。
 - **`session-start.sh` に enforcement 健全性チェック `[8/8]` を追加（ADR-0032）**: helper lib の load 失敗（= 全 Bash/Edit が deny される状態）と PRD DB-pattern の drift を毎セッション可視化する検知層。
 - **CLAUDE.md を 200 行以内に圧縮（237→196 行）**: 常駐 footprint の削減（`context-management.md` の行数目標に整合）。§1 brain 説明の表→prose 化（正の表は `knowledge-map.md`）、判断ゲート・ブロック通知・Stack Pack 節の prose 圧縮、セクション内区切り線の削除。機械パース対象（§0 YAML）・セクション番号 0〜3・ゲート名・HARD ルール一覧とブラックリスト表は不変（guard oracle 42/42 + bootstrap-test 25/25 で検証）。
+- **README.ja.md の文体・書式を整備**: 口語表現を OSS ドキュメントとして適切な文体に統一（見出し「ぶっちゃけ、何が良くなるの？」→「導入すると何が変わるか」等）、段落・リスト項目内の文中改行を解消（stack pack 8 ステップほか）、表記ゆれを統一（テンプレ→テンプレート、session→セッション、PJ→プロジェクト、worktree→Worktree）、深掘り節の地の文を敬体に統一、`--force` 説明のコードコメントとの逐語重複を統合。`three-layers-ja.svg` の表示文言も同基準で是正。事実主張・手順・数値は不変。
 
 ## [0.15.0] - 2026-07-10
 
