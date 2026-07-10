@@ -21,7 +21,7 @@ sidekick の設計判断とその根拠を記録する。
 | 0015 | [下流 PJ の ccs 不意識運用原則](0015-downstream-ccs-unaware-operation.md) | 採用 |
 | 0016 | [brain の 2 層モデル化と上書き禁止運用](0016-brain-two-layer-model.md) | 採用（2026-07-06） |
 | 0017 | （欠番: 保守者ローカル運用の判断のため本リポに未収録） | — |
-| 0018 | [北極星と最小ループ（3 動詞）](0018-north-star-and-minimal-loop.md) | 採用（2026-06-13） |
+| 0018 | [北極星と最小ループ（3 動詞）](0018-north-star-and-minimal-loop.md) | 採用（2026-06-13。用語「北極星」は ADR-0033 で「目的」に改称） |
 | 0019 | [UI/UX ハーネスの段階導入（3 層）](0019-uiux-harness-three-layer.md) | 採用（2026-06-13、v0.8.x で P1 着手） |
 | 0020 | [Spine-Driven の棚卸しと構想の凍結（ledger 型）](0020-spine-driven-ledger.md) | 採用（2026-06-17、ledger 型・新機能なし） |
 | 0021 | [stack pack 方式の確立と Next.js 参照インスタンス](0021-stack-pack-and-nextjs-instance.md) | 採用（2026-06-17） |
@@ -35,3 +35,5 @@ sidekick の設計判断とその根拠を記録する。
 | 0029 | [推論プレイブックの二経路配布と意思決定3閾値](0029-reasoning-playbook-two-path-distribution.md) | 採用（2026-07-06） |
 | 0030 | [内部計画文書の非配布ポリシー（docs/plans 廃止）](0030-internal-plans-not-distributed.md) | 採用（2026-07-06） |
 | 0031 | [現在状態オラクル原則（時点根拠 ≠ 現在の真）](0031-current-state-oracle.md) | 採用（2026-07-10） |
+| 0032 | [enforcement 層は fail-closed、advisory 層は fail-open + 検知](0032-enforcement-guards-fail-closed.md) | 採用（2026-07-10） |
+| 0033 | [文書ガバナンス（文体標準・読者宣言・単一ソース原則）](0033-doc-governance-style-and-single-source.md) | 採用（2026-07-10） |
