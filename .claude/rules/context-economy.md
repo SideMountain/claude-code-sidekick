@@ -3,7 +3,7 @@
 トークン上限（rate-cap）の中で**精度を落とさず長く稼働**するための運用規律。
 背景・原則の根拠は ADR-0023。抽象原則（DRY 等）は brain、行数予算・compact 閾値は `context-management.md` を参照。本ファイルは「呼び出しごとの文脈衛生」に絞る。
 
-> グレード: **GUIDE**（§6 の聖域のみ HARD = 既存 HARD 規則に従う）。
+> グレード: **GUIDE**。例外 = **HARD**: §6 の聖域（既存 HARD 規則に従う）、および §5 の「migration / DDL / スキーマ変更前の参照先現存確認」（不可逆操作の土台。ADR-0031）。
 
 ## 1. per-call context hygiene — 不要な文脈を渡さない（最優先）
 
@@ -12,6 +12,7 @@
 - subagent には「対象ファイル・差分・タスク」だけを scoped に渡す。リポ全体を読ませない。
 - 読み取り専用の探索は `Explore` / `Plan`（CLAUDE.md を読み込まない軽量型）を選ぶ。`general-purpose` は重い前提を背負うので必要時のみ。
 - 子の生探索（全文・全ログ・思考過程）を親に戻さない。**Return Contract** で `verdict + 該当行 + 1行根拠` に圧縮して返す（出力側 contract）。
+- **受信側 contract**: Return Contract は圧縮の契約であって**確証の契約ではない**。子が報告する load-bearing な事実（現存・仕様・「動く」）は伝聞として扱い、不可逆操作（DDL・スキーマ変更・削除・push）の土台にする前に親が一次確認する。オラクルは主張のクラスに従う — 現存・有効性は現在状態オラクル（§5）、**「動く」は実行**（§8 L3。静的オラクルでは確定しない）。詳細は `.claude/docs/current-state-oracle.md`。
 - コードは全文再掲しない。load-bearing な断片のみ（snippet-on-demand）。
 - 出力は結論ファースト・diff 主体。冗長な前置き・全文ダンプを避ける（出力は高単価）。
 
@@ -37,6 +38,7 @@
 
 - trivial / doc-only / 小変更は single-thread で処理。多エージェント fan-out を発火させない。
 - 決定的検査（typecheck / lint / fitness）を LLM の前に置き、機械で分かることは LLM に判定させない。
+- **現存・有効性は機械判定クラス**: テーブル / カラム / ポリシー / シンボルの「存在するか・生きているか」は LLM（自分・subagent とも）に判定させず、**現在状態オラクル**（working tree への grep / typecheck / 生成 schema・型 / 履歴を機械 replay した結果）で確定する。**追記型履歴（migration・CHANGELOG・ADR 系列）では時点根拠 ≠ 現在の真** — 履歴のどの 1 点の引用も現状の証明にならない。migration / DDL / スキーマ変更を書く前は、参照する全オブジェクトの現存確認を無条件で行う（load-bearing かの判断を挟まない）。変更クラス別の発火トリガと実装パターンは `.claude/docs/current-state-oracle.md`（遅延ロード）。
 - ただし**縮退の根拠**であって観点の無条件 skip ではない（§6・決定的に判定できない設計/仕様観点は残す）。
 
 ## 6. 削らない核（聖域・HARD）
