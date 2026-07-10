@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-10
+
 ### Added
 
 - **現在状態オラクル原則（ADR-0031）**: `context-economy.md` §1 に受信側 contract（subagent の load-bearing な報告は伝聞扱い・不可逆操作前に親が一次確認）、§5 に機械判定クラス（現存・有効性は LLM に判定させず現在状態オラクルで確定。追記型履歴では時点根拠 ≠ 現在の真。migration / DDL 前の参照先現存確認は無条件必須）を追記。`.claude/docs/current-state-oracle.md`（遅延ロード）を新設し、オラクル対応表・変更クラス別トリガ表・生成型チェーン・下流 PJ 向け実装パターン（CI ephemeral replay 等）を収録。
