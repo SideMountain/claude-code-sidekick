@@ -23,6 +23,10 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+
+- **文書ガバナンス（ADR-0033）**: `.claude/rules/oss-doc-authoring.md` に文体標準（README = 敬体・規範/仕様/手順 = 常体・口語の禁止）、表記統一表、全 doc 冒頭の読者宣言標準（読者/役割/ロード条件）、逐語再掲の禁止（単一ソース原則）を追加し、path スコープを `.claude/docs/**`・`README.ja.md`・`REVIEW.md`・`brain/**` に拡張。思想の背骨の正 = design doc（`design-philosophy.md` へ改名予定）、用語「北極星」→「目的」、既存 ADR は遡及適用外（詳細は ADR-0033。導線索引・改名・是正は後続リリース）。
+
 ### Fixed
 
 - **enforcement guard の fail-open 穴を封じる（Issue #103 / ADR-0032）**: `hook-helpers.sh` の source 失敗（ファイル欠落・破損）時、`deny` 未定義により enforcement guard が無言で fail-open（何も止まらない）に倒れていた。4 guard（`guard-bash` / `guard-db-operation` / `guard-commit-message` / `guard-protected-branch-edit`）に fail-closed ブートストラップ（EOF sentinel + subshell probe）を追加し、helper lib を完全に読み込めなければ deny する。`Bash(*)` 自動承認下で guard が唯一の防壁になる運用で load-bearing。
