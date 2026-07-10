@@ -434,7 +434,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 5. **Git is the source of truth**: No external DB required. CLAUDE.md + ADR + GitHub Issues + auto-memory. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
 6. **Hard calls are never single-shot**: design / root-cause / security / merge judgments fire an escalation ladder and regression-test against a frozen judgment corpus. ([ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md))
 
-> 📐 For the full design philosophy at a glance, see **[`docs/design.md`](./docs/design.md)** — a one-page digest of how sidekick is designed today.
+> 📐 For the full design philosophy at a glance, see **[`docs/design-philosophy.md`](./docs/design-philosophy.md)** — a one-page digest of how sidekick is designed today. The doc index lives at [`docs/README.md`](./docs/README.md) (Japanese; the linked docs include English versions).
 
 ---
 

@@ -418,7 +418,7 @@ your-project/
 5. **Git が Source of Truth**: 外部 DB 不要。CLAUDE.md + ADR + GitHub Issues + auto-memory で完結。Notion はオプション。（[ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md)）
 6. **難所は単発で決めない**: 設計 / root-cause / セキュリティ / マージ判断はエスカレーション ladder を発火し、凍結判定 corpus に対して回帰テストする。（[ADR-0028](./docs/decisions/0028-capability-escalation-after-model-retirement.md)）
 
-> 📐 設計思想の全体像は **[`docs/design.ja.md`](./docs/design.ja.md)** に1枚でまとまっています（現行の設計を一望できるダイジェスト）。
+> 📐 設計思想の全体像は **[`docs/design-philosophy.ja.md`](./docs/design-philosophy.ja.md)** に1枚でまとまっています（現行の設計を一望できるダイジェスト）。ドキュメント全体の索引は [`docs/README.md`](./docs/README.md) にあります。
 
 ---
 

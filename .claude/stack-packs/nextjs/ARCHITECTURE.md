@@ -24,7 +24,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 | **② 主流** | 業界で広く支持されるが「公式の既定」より一歩強い。本 pack では決定性のため MUST/SHOULD に**格上げ**（出自を明記） |
 | **③ ccs 独自** | Next 標準には無い。`system-map` の決定性のための規約 |
 
-> **格上げの誠実性**: ②③ を MUST に焼く箇所は必ず「公式は recommend 止まり / 標準に無い」+「ccs 決定性のため」を併記する。過剰規約（北極星「組み立て不要」違反）を自己抑制するため、load-bearing でない規約は SHOULD に留める。
+> **格上げの誠実性**: ②③ を MUST に焼く箇所は必ず「公式は recommend 止まり / 標準に無い」+「ccs 決定性のため」を併記する。過剰規約（目的原則「組み立て不要」違反）を自己抑制するため、load-bearing でない規約は SHOULD に留める。
 >
 > **逸脱（escape hatch）**: golden path は既定であって牢獄ではない。逸脱する場合は**理由をコードコメント or PR に明記**する（fitness 関数が検出する）。黙って外さない。
 
@@ -172,4 +172,4 @@ node .claude/stack-packs/nextjs/fitness-functions/run-fitness.js .   # = npm run
 
 vitest 統合が要れば `fitness-functions/templates/architecture.test.ts` を `__tests__/architecture/` にコピーする（1 ルール = 1 test）。**error = HARD（落とす）/ warn = SHOULD・SOFT 残差（可視化のみ）** に対応し、上の決定性スコープ表をコードでも守る。新規 PJ は `scaffold/` で最初から規約に乗せられる（scaffold 出力 ≡ fitness の conforming fixture でドリフト不能）。詳細は `fitness-functions/README.md` / `scaffold/README.md`。
 
-> 関連: ADR-0021（stack pack 方式）/ ADR-0019（opt-in ハーネス）/ ADR-0018（北極星）/ ADR-0020（Spine / Observability の解凍）。検証の一次出典は本 pack の `README.md` を参照。
+> 関連: ADR-0021（stack pack 方式）/ ADR-0019（opt-in ハーネス）/ ADR-0018（目的原則）/ ADR-0020（Spine / Observability の解凍）。検証の一次出典は本 pack の `README.md` を参照。

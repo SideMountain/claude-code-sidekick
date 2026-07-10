@@ -247,7 +247,7 @@ fi
 
 #### 3e. REVIEW.md の調整（レビュー規範・コア・ADR-0027）
 
-`/review` アダプタと公式 `/code-review` が読む PJ 規範ファイル。**opt-in ではなくコア**（全 ccs PJ が恩恵を受ける = 北極星「意識せず恩恵」）。fork / adopt 済みならルートに既在する。
+`/review` アダプタと公式 `/code-review` が読む PJ 規範ファイル。**opt-in ではなくコア**（全 ccs PJ が恩恵を受ける = 目的原則「意識せず恩恵」）。fork / adopt 済みならルートに既在する。
 
 Project Configuration に合わせて条件ブロックを調整する（該当しなければ削除）:
 

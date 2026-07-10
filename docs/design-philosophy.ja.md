@@ -1,10 +1,12 @@
 # sidekick — 設計思想
 
+> 読者: OSS 利用者・ccs 保守者（人間） · 役割: 思想 — 背骨の単一ソース（ADR-0033） · ロード: 非ロード（runtime では読み込まれない）
+
 sidekick の**現在の**設計を1枚で掴むダイジェストです。判断の履歴や番号は持ちません — 各選択の理由とトレードオフは [`docs/decisions/`](./decisions/) の ADR を参照してください。
 
 ---
 
-## 北極星
+## 目的
 
 > **下流はハーネスの複雑さを意識しない。デフォルトのまま安全、組み立て不要。**
 
@@ -62,7 +64,7 @@ UI 品質（デザインシステム、トークン、アクセシビリティ�
 
 ## stack pack — opt-in・規定アーキ
 
-既知スタックの PJ には、**opt-in な stack pack** が agnostic core の上に「規定アーキ（golden path）+ システム可視化」を載せる。狙い: 下流が既知アーキに従うと、パーサは*その規約*を読むだけで**地図が決定的に描かれる** — 「汎用」と「決定的」が両立する。core（hooks / brain / 北極星 / skills）は stack 非依存のまま一次、pack は上物であって baseline ではない。**方法**（アーキ規定 → 決定性 → 強制）は stack 非依存で、Next.js は第一インスタンス。opt-in は setup 時に設定する単一フラグ（`STACK_PACK`: `none` / `nextjs`）で配線され、opt-in しない PJ はコストゼロ。Next.js pack は3層を同梱: golden path 契約（`.claude/stack-packs/nextjs/ARCHITECTURE.md`）・規約準拠のアプリ骨格を生む **scaffold**・golden path 逸脱で CI を落とす **アーキ fitness 関数**（`npm run test:arch`）— 認知 → 強制 → 検知。
+既知スタックの PJ には、**opt-in な stack pack** が agnostic core の上に「規定アーキ（golden path）+ システム可視化」を載せる。狙い: 下流が既知アーキに従うと、パーサは*その規約*を読むだけで**地図が決定的に描かれる** — 「汎用」と「決定的」が両立する。core（hooks / brain / 目的原則 / skills）は stack 非依存のまま一次、pack は上物であって baseline ではない。**方法**（アーキ規定 → 決定性 → 強制）は stack 非依存で、Next.js は第一インスタンス。opt-in は setup 時に設定する単一フラグ（`STACK_PACK`: `none` / `nextjs`）で配線され、opt-in しない PJ はコストゼロ。Next.js pack は3層を同梱: golden path 契約（`.claude/stack-packs/nextjs/ARCHITECTURE.md`）・規約準拠のアプリ骨格を生む **scaffold**・golden path 逸脱で CI を落とす **アーキ fitness 関数**（`npm run test:arch`）— 認知 → 強制 → 検知。
 
 ## 全体を貫く原則
 
