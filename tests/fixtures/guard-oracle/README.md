@@ -26,8 +26,12 @@ guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警
 ## 検証（リプレイ）
 
 ```bash
-bash tests/fixtures/guard-oracle/replay.sh <リポルート>   # 42/42 PASS で exit 0
+bash tests/fixtures/guard-oracle/replay.sh <リポルート>          # 42/42 PASS で exit 0
+bash tests/fixtures/guard-oracle/bootstrap-test.sh <リポルート>  # 25/25 PASS で exit 0
 ```
+
+- `replay.sh`: **healthy** な helper lib に対する guard の deny/allow 期待値（`cases.jsonl` 42 ケース）。
+- `bootstrap-test.sh`: helper lib を**破損させた**ときに 4 enforcement guard が fail-closed で deny するかを検査（Issue #103 / ADR-0032）。SEALED（欠落 / 途中 syntax error / top-level exit / stdout ゴミ / env 継承 sentinel）は deny を assert。CEILING（BASH_ENV + readonly `deny` の関数注入）は現状 bypass する既知の天井で XFAIL 記録 — env-scrub で封じたら SEALED へ昇格する。
 
 CI への配線・他 guard（push / rm 系）への拡張は別ステップ（実装 wave）。
 

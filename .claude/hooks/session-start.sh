@@ -10,11 +10,19 @@
 #   5. Weekly review staleness check
 #   6. Critical sidekick update pending warning (P3, ADR-0009)
 #   7. Personal brain layer health check (ADR-0016)
+#   8. Enforcement layer health (fail-closed guards + DB-pattern drift, ADR-0032)
 #
 # chmod +x .claude/hooks/session-start.sh
 # =============================================================================
 
-source "$(dirname "$0")/hook-helpers.sh"
+# Advisory hook — source fail-open (ADR-0032). The enforcement guards are
+# fail-closed; this hook must still run (and SURFACE the failure in [8/8]) even
+# when the helper library is broken, so it degrades to safe defaults instead.
+. "$(dirname "$0")/hook-helpers.sh" 2>/dev/null
+_CCS_ENFORCE_OK=0
+[ "${_CCS_HELPERS_LOADED:-}" = "1" ] && _CCS_ENFORCE_OK=1
+command -v get_protected_branches >/dev/null 2>&1 || get_protected_branches() { printf 'main'; }
+command -v get_db_pattern >/dev/null 2>&1 || get_db_pattern() { printf ''; }
 
 INPUT=$(cat)
 if command -v jq &>/dev/null; then
@@ -51,8 +59,8 @@ read -ra PROTECTED_BRANCHES <<< "$(get_protected_branches "$PROJECT_DIR/CLAUDE.m
 echo "=== SESSION START: Automated Checks ==="
 echo ""
 
-# --- [1/7] Branch Status ---
-echo "[1/7] Branch status"
+# --- [1/8] Branch Status ---
+echo "[1/8] Branch status"
 git fetch origin 2>/dev/null
 BRANCH=$(git branch --show-current 2>/dev/null)
 echo "  Current branch: $BRANCH"
@@ -82,9 +90,9 @@ else
   echo "  INFO: Not on a protected branch. Ensure this is intentional."
 fi
 
-# --- [2/7] Uncommitted Changes ---
+# --- [2/8] Uncommitted Changes ---
 echo ""
-echo "[2/7] Uncommitted changes"
+echo "[2/8] Uncommitted changes"
 CHANGES=$(git status --short 2>/dev/null)
 if [ -n "$CHANGES" ]; then
   echo "  WARNING: Uncommitted changes detected:"
@@ -93,23 +101,23 @@ else
   echo "  OK: clean"
 fi
 
-# --- [3/7] Active Work ---
+# --- [3/8] Active Work ---
 echo ""
-echo "[3/7] Active Work (parallel work board)"
+echo "[3/8] Active Work (parallel work board)"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   sed -n '/^## Active Work/,/^## [^A]/p' "$MEMORY_FILE" | head -30 | sed 's/^/  /'
 else
   echo "  (MEMORY.md not found)"
 fi
 
-# --- [4/7] Existing Worktrees ---
+# --- [4/8] Existing Worktrees ---
 echo ""
-echo "[4/7] Existing worktrees"
+echo "[4/8] Existing worktrees"
 git worktree list 2>/dev/null | sed 's/^/  /'
 
-# --- [5/7] Maintenance ---
+# --- [5/8] Maintenance ---
 echo ""
-echo "[5/7] Maintenance"
+echo "[5/8] Maintenance"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   LAST_REVIEW=$(grep -o '最終棚卸し: [0-9-]*' "$MEMORY_FILE" 2>/dev/null | head -1 | sed 's/最終棚卸し: //')
   if [ -n "$LAST_REVIEW" ]; then
@@ -134,8 +142,8 @@ else
 fi
 
 echo ""
-# --- [6/7] Critical sidekick update pending (ADR-0009 P3) ---
-echo "[6/7] Critical sidekick update"
+# --- [6/8] Critical sidekick update pending (ADR-0009 P3) ---
+echo "[6/8] Critical sidekick update"
 CRITICAL_FLAG=""
 if [ -n "$MEM_DIR" ]; then
   CRITICAL_FLAG="$MEM_DIR/project_critical_pending.md"
@@ -149,8 +157,8 @@ else
 fi
 
 echo ""
-# --- [7/7] Personal brain layer health check (ADR-0016) ---
-echo "[7/7] Personal brain layer"
+# --- [7/8] Personal brain layer health check (ADR-0016) ---
+echo "[7/8] Personal brain layer"
 PERSONAL_BRAIN="$HOME/.claude/brain/thinking.md"
 if [ -f "$PERSONAL_BRAIN" ]; then
   echo "  OK: $PERSONAL_BRAIN"
@@ -158,6 +166,27 @@ else
   echo "  WARNING: 個人 brain が未配置: $PERSONAL_BRAIN"
   echo "     → /setup または /adopt-sidekick-update でテンプレートから初期化を提案できます"
   echo "     → 不在のままでも PJ brain は機能しますが、個人横断の判断軸が context に乗りません"
+fi
+
+echo ""
+# --- [8/8] Enforcement layer health (ADR-0032) ---
+# The enforcement guards are fail-closed on a broken helper library: if it does
+# not load, EVERY Bash/Edit is denied. Surface that here so the cause is visible
+# rather than mysterious. Also surface DB-pattern drift ("configured then lost"),
+# which silently downgrades PRD-write protection.
+echo "[8/8] Enforcement layer"
+if [ "$_CCS_ENFORCE_OK" = "1" ]; then
+  echo "  OK: guard helper library loaded (guards fail-closed on load failure)"
+else
+  echo "  ⚠️  WARNING: hook-helpers.sh did not load cleanly."
+  echo "     → enforcement guards are FAIL-CLOSED: Bash/Edit calls will be denied until fixed."
+  echo "     → run: bash -n .claude/hooks/hook-helpers.sh   (check for a syntax error)"
+fi
+_PRD_PATTERN=$(get_db_pattern "$PROJECT_DIR/CLAUDE.md" PRD_DB_PATTERN 2>/dev/null)
+if [ -n "$_PRD_PATTERN" ]; then
+  echo "  OK: PRD DB-pattern configured (PRD-write guard active)"
+else
+  echo "  INFO: no PRD_DB_PATTERN set — PRD-write deny is inactive (expected if this project has no PRD DB)."
 fi
 
 echo ""

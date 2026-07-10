@@ -21,7 +21,23 @@
 # chmod +x .claude/hooks/guard-db-operation.sh
 # =============================================================================
 
-source "$(dirname "$0")/hook-helpers.sh"
+# Fail-closed bootstrap (Issue #103 / ADR-0032): an enforcement guard that
+# cannot fully load its helper library must DENY, not silently allow. The load
+# runs inside a subshell probe first, so a top-level `exit` or a syntax error in
+# the library cannot terminate this guard before the check (a non-zero guard
+# exit is a non-blocking hook error = fail-open). The EOF sentinel proves the
+# WHOLE file parsed; `unset` + the subshell isolate an env-inherited sentinel.
+# Sealing the load-failure hole only — a loaded-but-tampered library is a
+# separate trust boundary (ADR-0032), so the deny reason names no file to "fix".
+_ccs_helpers="$(dirname "$0")/hook-helpers.sh"
+if ! ( unset _CCS_HELPERS_LOADED; . "$_ccs_helpers" >/dev/null 2>&1; [ "${_CCS_HELPERS_LOADED:-}" = "1" ]; ); then
+  cat >/dev/null 2>&1 || true
+  printf '%s\n' "BLOCKED: enforcement helper library failed to load (fail-closed). Escalate to a human to restore the guards." >&2
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Guard bootstrap failed: the enforcement helper library did not load cleanly. Guards are fail-closed, so this call is blocked. Restoring the enforcement layer is a human step — do not bypass or rewrite the guards to proceed."}}\n'
+  exit 0
+fi
+unset _CCS_HELPERS_LOADED
+. "$_ccs_helpers"
 
 INPUT=$(cat)
 
