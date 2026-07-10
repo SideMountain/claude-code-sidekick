@@ -32,15 +32,23 @@
 # chmod +x .claude/hooks/budget-cycle-halt.sh
 # =============================================================================
 
-source "$(dirname "$0")/hook-helpers.sh"
+# Advisory Stop hook — fail-open (ADR-0032). Needs _json_escape (hook-helpers.sh)
+# and the budget readers (hook-helpers-budget.sh); both are sourced fail-open so
+# a broken/missing helper skips silently rather than trapping the stop (blocking
+# a stop over a broken helper would trap the user — only enforcement guards are
+# fail-closed).
+_ccs_dir="$(dirname "$0")"
+. "$_ccs_dir/hook-helpers.sh" 2>/dev/null
+. "$_ccs_dir/hook-helpers-budget.sh" 2>/dev/null
+if ! command -v _json_escape >/dev/null 2>&1 || ! command -v ccs_budget_read >/dev/null 2>&1; then
+  exit 0
+fi
 
 INPUT=$(cat)
 
 # --- Configuration ---
 CACHE_DIR="${CCS_CACHE_DIR:-$HOME/.claude/.cache}"
 RATE_FILE="$CACHE_DIR/ccs-rate-limits.json"
-THROTTLE_PCT=60
-PAUSE_PCT=85
 # captured_at older than this (seconds) -> data too stale to enforce (fail-open)
 STALE_SECS="${CCS_BUDGET_STALE_SECS:-1800}"
 
@@ -67,79 +75,12 @@ if [ -z "$SESSION_ID" ] && [ -n "$INPUT" ]; then
 fi
 [ -z "$SESSION_ID" ] && SESSION_ID="unknown"
 
-# --- No data -> NORMAL (fail-open, silent) ---
-[ -f "$RATE_FILE" ] || exit 0
-
-# --- Read canonical file (capturer schema, ADR-0024 decision 2) ---
-CAPTURED_AT=""
-FIVE_PCT=""
-FIVE_RESET=""
-SEVEN_PCT=""
-SEVEN_RESET=""
-if command -v jq &>/dev/null; then
-  CAPTURED_AT=$(jq -r '.captured_at // ""' "$RATE_FILE" 2>/dev/null)
-  FIVE_PCT=$(jq -r '.five_hour.pct // ""' "$RATE_FILE" 2>/dev/null)
-  FIVE_RESET=$(jq -r '.five_hour.resets_at // ""' "$RATE_FILE" 2>/dev/null)
-  SEVEN_PCT=$(jq -r '.seven_day.pct // ""' "$RATE_FILE" 2>/dev/null)
-  SEVEN_RESET=$(jq -r '.seven_day.resets_at // ""' "$RATE_FILE" 2>/dev/null)
-else
-  # grep fallback for the capturer's compact JSON ("five_hour":{"pct":42.5,...})
-  FIVE_PCT=$(grep -o '"five_hour":{"pct":[0-9.]*' "$RATE_FILE" 2>/dev/null | grep -o '[0-9.]*$')
-  SEVEN_PCT=$(grep -o '"seven_day":{"pct":[0-9.]*' "$RATE_FILE" 2>/dev/null | grep -o '[0-9.]*$')
-  CAPTURED_AT=$(grep -o '"captured_at":[0-9]*' "$RATE_FILE" 2>/dev/null | grep -o '[0-9]*$')
-fi
-
-NOW=$(date +%s 2>/dev/null)
-
-# Numeric check: returns 0 when $1 is a plain (possibly decimal) number
-_is_num() {
-  printf '%s' "$1" | grep -qE '^[0-9]+(\.[0-9]+)?$'
-}
-
-# resets_at may be epoch seconds or ISO8601 — normalize to epoch ("" if unknown)
-_to_epoch() {
-  local v="$1"
-  if printf '%s' "$v" | grep -qE '^[0-9]+$'; then
-    printf '%s' "$v"
-  elif [ -n "$v" ] && [ "$v" != "null" ]; then
-    date -d "$v" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%S" "${v%%.*}" +%s 2>/dev/null || printf ''
-  fi
-}
-
-# Severity of one window: NORMAL / THROTTLE / PAUSE
-# now > resets_at counts as recovered -> NORMAL (decision 5)
-_severity() {
-  local pct="$1" reset="$2" reset_epoch=""
-  _is_num "$pct" || { printf 'NORMAL'; return; }
-  reset_epoch=$(_to_epoch "$reset")
-  if [ -n "$reset_epoch" ] && [ -n "$NOW" ] && [ "$NOW" -gt "$reset_epoch" ] 2>/dev/null; then
-    printf 'NORMAL'
-    return
-  fi
-  if awk -v p="$pct" -v t="$PAUSE_PCT" 'BEGIN{exit !(p>t)}'; then
-    printf 'PAUSE'
-  elif awk -v p="$pct" -v t="$THROTTLE_PCT" 'BEGIN{exit !(p>=t)}'; then
-    printf 'THROTTLE'
-  else
-    printf 'NORMAL'
-  fi
-}
-
-FIVE_SEV=$(_severity "$FIVE_PCT" "$FIVE_RESET")
-SEVEN_SEV=$(_severity "$SEVEN_PCT" "$SEVEN_RESET")
-
-# five_hour primary; seven_day may only raise severity (binding constraint)
-SEVERITY="$FIVE_SEV"
-BINDING="five_hour"
-BINDING_PCT="$FIVE_PCT"
-BINDING_RESET="$FIVE_RESET"
-_rank() { case "$1" in PAUSE) printf '2';; THROTTLE) printf '1';; *) printf '0';; esac; }
-if [ "$(_rank "$SEVEN_SEV")" -gt "$(_rank "$FIVE_SEV")" ]; then
-  SEVERITY="$SEVEN_SEV"
-  BINDING="seven_day"
-  BINDING_PCT="$SEVEN_PCT"
-  BINDING_RESET="$SEVEN_RESET"
-fi
+# --- Read canonical file (capturer schema) + binding window. "strict" keeps
+# this hook's original fallback (grep only when jq is ABSENT), so a malformed
+# JSON that jq rejects yields empty pct -> NORMAL -> silent = fail-open
+# (ADR-0032). No file -> NORMAL, silent. ---
+ccs_budget_read "$RATE_FILE" strict || exit 0
+ccs_budget_binding
 
 # Clear a stale wrap-up marker once this session is out of the PAUSE band
 _clear_halt_marker() {
@@ -148,20 +89,13 @@ _clear_halt_marker() {
   fi
 }
 
-if [ "$SEVERITY" = "NORMAL" ]; then
+if [ "$CCS_SEVERITY" = "NORMAL" ]; then
   _clear_halt_marker
   exit 0
 fi
 
 # --- Staleness gate: old data must not enforce (fail-open + detection note) ---
-IS_STALE=true
-if printf '%s' "$CAPTURED_AT" | grep -qE '^[0-9]+$' && [ -n "$NOW" ]; then
-  AGE=$(( NOW - CAPTURED_AT ))
-  if [ "$AGE" -ge 0 ] && [ "$AGE" -le "$STALE_SECS" ]; then
-    IS_STALE=false
-  fi
-fi
-if [ "$IS_STALE" = "true" ]; then
+if ccs_budget_is_stale "$STALE_SECS"; then
   _clear_halt_marker
   MSG=$(_json_escape "[ccs budget] rate-limit data is stale (captured_at too old) — treating as NORMAL (fail-open). Check that the capturer (statusline ccs-rate-capture.sh) is wired.")
   printf '{"systemMessage":"%s"}\n' "$MSG"
@@ -169,9 +103,9 @@ if [ "$IS_STALE" = "true" ]; then
 fi
 
 # --- THROTTLE: advisory only, never blocks (decision 3) ---
-if [ "$SEVERITY" = "THROTTLE" ]; then
+if [ "$CCS_SEVERITY" = "THROTTLE" ]; then
   _clear_halt_marker
-  MSG=$(_json_escape "[ccs budget] THROTTLE: ${BINDING} cap at ${BINDING_PCT}% (>= ${THROTTLE_PCT}%). Narrow the width, not the correctness: suppress fan-out, avoid non-essential upper-model calls, keep outputs concise. Resets at: ${BINDING_RESET:-unknown}.")
+  MSG=$(_json_escape "[ccs budget] THROTTLE: ${CCS_BINDING} cap at ${CCS_BINDING_PCT}% (>= ${CCS_BUDGET_THROTTLE_PCT}%). Narrow the width, not the correctness: suppress fan-out, avoid non-essential upper-model calls, keep outputs concise. Resets at: ${CCS_BINDING_RESET:-unknown}.")
   printf '{"systemMessage":"%s"}\n' "$MSG"
   exit 0
 fi
@@ -179,7 +113,7 @@ fi
 # --- PAUSE: one bounded wrap-up turn, then stop (decision 3) ---
 if [ "$STOP_HOOK_ACTIVE" = "true" ] || { [ -f "$HALT_MARKER" ] && [ "$(cat "$HALT_MARKER" 2>/dev/null)" = "$SESSION_ID" ]; }; then
   # Wrap-up turn already ran for this session -> allow the stop.
-  MSG=$(_json_escape "[ccs budget] PAUSE: ${BINDING} cap at ${BINDING_PCT}% (> ${PAUSE_PCT}%). Autonomous loop paused until reset (${BINDING_RESET:-unknown}). State should be persisted in the ledger/commit.")
+  MSG=$(_json_escape "[ccs budget] PAUSE: ${CCS_BINDING} cap at ${CCS_BINDING_PCT}% (> ${CCS_BUDGET_PAUSE_PCT}%). Autonomous loop paused until reset (${CCS_BINDING_RESET:-unknown}). State should be persisted in the ledger/commit.")
   printf '{"systemMessage":"%s"}\n' "$MSG"
   exit 0
 fi
@@ -190,6 +124,6 @@ mkdir -p "$CACHE_DIR" 2>/dev/null
 printf '%s' "$SESSION_ID" > "$HALT_MARKER.tmp" 2>/dev/null && mv -f "$HALT_MARKER.tmp" "$HALT_MARKER" 2>/dev/null
 rm -f "$HALT_MARKER.tmp" 2>/dev/null
 
-REASON=$(_json_escape "[ccs budget-gate] ${BINDING} cap at ${BINDING_PCT}% (> ${PAUSE_PCT}% = PAUSE, ADR-0024). Wrap up NOW in one turn: (1) persist the progress ledger (decisions + why, remaining tasks, next step) to disk, (2) commit completed verifiable work, (3) then stop. Do NOT start new work until the cap resets (${BINDING_RESET:-unknown}). If seven_day is the binding constraint, switch to weekly-priority triage after reset.")
+REASON=$(_json_escape "[ccs budget-gate] ${CCS_BINDING} cap at ${CCS_BINDING_PCT}% (> ${CCS_BUDGET_PAUSE_PCT}% = PAUSE, ADR-0024). Wrap up NOW in one turn: (1) persist the progress ledger (decisions + why, remaining tasks, next step) to disk, (2) commit completed verifiable work, (3) then stop. Do NOT start new work until the cap resets (${CCS_BINDING_RESET:-unknown}). If seven_day is the binding constraint, switch to weekly-priority triage after reset.")
 printf '{"decision":"block","reason":"%s"}\n' "$REASON"
 exit 0

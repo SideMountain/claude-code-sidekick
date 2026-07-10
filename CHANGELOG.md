@@ -23,6 +23,15 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Fixed
+
+- **enforcement guard の fail-open 穴を封じる（Issue #103 / ADR-0032）**: `hook-helpers.sh` の source 失敗（ファイル欠落・破損）時、`deny` 未定義により enforcement guard が無言で fail-open（何も止まらない）に倒れていた。4 guard（`guard-bash` / `guard-db-operation` / `guard-commit-message` / `guard-protected-branch-edit`）に fail-closed ブートストラップ（EOF sentinel + subshell probe）を追加し、helper lib を完全に読み込めなければ deny する。`Bash(*)` 自動承認下で guard が唯一の防壁になる運用で load-bearing。
+
+### Changed
+
+- **budget パースを `hook-helpers-budget.sh` に分離（ADR-0032）**: `prompt-reminder.sh` と `budget-cycle-halt.sh` の rate-cap 読み取り重複 ~60 行を集約。高 churn な budget コードを fail-closed の enforcement core から切り離し、事故的な全 Bash/Edit ロックアウトを防ぐ。両 hook の観測可能な挙動は不変（分離前と byte-exact 一致を検証）。
+- **`session-start.sh` に enforcement 健全性チェック `[8/8]` を追加（ADR-0032）**: helper lib の load 失敗（= 全 Bash/Edit が deny される状態）と PRD DB-pattern の drift を毎セッション可視化する検知層。
+
 ## [0.15.0] - 2026-07-10
 
 ### Added

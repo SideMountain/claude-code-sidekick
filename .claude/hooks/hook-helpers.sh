@@ -354,3 +354,15 @@ ccs_official_gate() {
   fi
   return 0
 }
+
+# =============================================================================
+# EOF load sentinel — DO NOT add definitions below this line (ADR-0032)
+#
+# The fail-closed bootstrap in each enforcement guard checks this flag to prove
+# the ENTIRE library parsed. A mid-file syntax error leaves earlier functions
+# defined but never reaches this line, so the flag stays unset and the guard
+# denies (fail-closed) instead of running with a half-loaded library. Anything
+# appended AFTER this line is outside that proof — add new helpers ABOVE, and
+# keep this assignment the last statement in the file.
+# =============================================================================
+_CCS_HELPERS_LOADED=1
