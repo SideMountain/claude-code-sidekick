@@ -31,6 +31,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 - **budget パースを `hook-helpers-budget.sh` に分離（ADR-0032）**: `prompt-reminder.sh` と `budget-cycle-halt.sh` の rate-cap 読み取り重複 ~60 行を集約。高 churn な budget コードを fail-closed の enforcement core から切り離し、事故的な全 Bash/Edit ロックアウトを防ぐ。両 hook の観測可能な挙動は不変（分離前と byte-exact 一致を検証）。
 - **`session-start.sh` に enforcement 健全性チェック `[8/8]` を追加（ADR-0032）**: helper lib の load 失敗（= 全 Bash/Edit が deny される状態）と PRD DB-pattern の drift を毎セッション可視化する検知層。
+- **CLAUDE.md を 200 行以内に圧縮（237→196 行）**: 常駐 footprint の削減（`context-management.md` の行数目標に整合）。§1 brain 説明の表→prose 化（正の表は `knowledge-map.md`）、判断ゲート・ブロック通知・Stack Pack 節の prose 圧縮、セクション内区切り線の削除。機械パース対象（§0 YAML）・セクション番号 0〜3・ゲート名・HARD ルール一覧とブラックリスト表は不変（guard oracle 42/42 + bootstrap-test 25/25 で検証）。
 
 ## [0.15.0] - 2026-07-10
 

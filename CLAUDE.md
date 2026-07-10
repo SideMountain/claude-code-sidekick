@@ -18,8 +18,7 @@ PROTECTED_BRANCHES:           # 保護ブランチ名（直接コミット・pus
   # - release/stg            # STG_ENABLED=true の場合に追加
 ORM_TYPE: none                # prisma | drizzle | none
 LANGUAGE: typescript          # typescript | python | gas
-STACK_PACK: none              # none | nextjs : opt-in stack pack（規定アーキ golden path + system-map 可視化）
-                              # nextjs: .claude/stack-packs/nextjs/ARCHITECTURE.md の規約に従う（ADR-0021）。none なら無視（無コスト）
+STACK_PACK: none              # none | nextjs : opt-in stack pack（詳細は下の Stack Pack 節）
 TEST_COMMAND: ""              # 例: "npx vitest run", "pytest", ""
 TYPECHECK_COMMAND: ""         # 例: "npx tsc --noEmit", "", ""
 BUILD_COMMAND: ""             # 例: "npm run build", "", ""
@@ -36,24 +35,13 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 
 ### Stack Pack（opt-in・ADR-0021）
 
-`STACK_PACK: nextjs` の場合、この PJ は **Next.js stack pack の規定アーキ（golden path）に従う**。実装・レビュー時は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）を実装規約として読み、`system-map` スキルでコードベースを可視化できる。`none`（既定）の場合はこのレイヤー全体を無視してよい（**非 Next PJ は無コスト**）。
-
-stack pack は ccs core の上に載る **opt-in な上物**であって core ではない（core = hooks / brain / 北極星 / skills は stack 非依存）。有効化は `/setup` で対話的に行う。
+`STACK_PACK: nextjs` の場合、この PJ は **Next.js stack pack の規定アーキ（golden path）に従う** — 実装・レビュー時は `.claude/stack-packs/nextjs/ARCHITECTURE.md`（Tier-1 STRUCTURAL / Tier-2 HYGIENE）を実装規約として読み、`system-map` スキルでコードベースを可視化できる。stack pack は ccs core（hooks / brain / 北極星 / skills = stack 非依存）の上に載る **opt-in な上物**。有効化は `/setup` で対話的に行い、`none`（既定）ならこのレイヤー全体を無視してよい（**非 Next PJ は無コスト**）。
 
 ---
 
 ## 1. オーナーの判断軸
 
-判断基盤は **brain (2 層構造)** に定義する。
-
-| 層 | 配置 | スコープ | ロード対象 |
-|---|---|---|---|
-| 個人 brain | `~/.claude/brain/thinking.md` | 個人（複数 PJ 横断）。利用者が育てる | ✅ |
-| PJ 固有 brain | `.claude/brain/thinking.md` | この PJ 固有 | ✅ |
-
-PJ 固有 brain が `@~/.claude/brain/thinking.md` で個人 brain を 1 段 `@import` する。個人 brain 不在時は silent ignore され、PJ brain だけがロードされる（フェイルセーフ）。
-
-OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート素材としてリポに含まれるが、ロード対象ではない（`/setup` で個人 brain を初期化する際の素材）。詳細は ADR-0016 を参照。
+判断基盤は **brain（2 層構造・ADR-0016）**。PJ 固有 brain（`.claude/brain/thinking.md`・この PJ 固有）が、個人 brain（`~/.claude/brain/thinking.md`・複数 PJ 横断、利用者が育てる）を 1 段 `@import` し、**両層ともロード対象**。個人 brain 不在時は silent ignore され、PJ brain だけがロードされる（フェイルセーフ）。OSS 配布物の `brain/thinking.md` はロード対象外（`/setup` で個人 brain を初期化する際のテンプレート素材）。
 
 @.claude/brain/thinking.md
 
@@ -70,8 +58,6 @@ OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート
 | **GUIDE** | 推奨。従わなくても報告不要 | 意識するが厳密に従わなくてよい |
 
 **HARD ルールに対して「今回は不要では？」「さっき確認した」等の判断を適用しない。** 判断するから間違える。
-
----
 
 ### HARD ルール一覧
 
@@ -112,13 +98,9 @@ OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート
 
 - **H15**: コミット本文に 背景/対応/影響 必須（自明な変更でも省略しない）
 
----
-
 ### 自動実行の制御方式: ブラックリスト
 
-**原則: 禁止・承認必須に該当しないものは全て自動実行。**
-ホワイトリスト（許可リスト）ではなくブラックリスト（禁止リスト）で制御する。
-（ADR-0002「ブラックリスト方式」参照）
+**原則: 禁止・承認必須に該当しないものは全て自動実行。** ホワイトリスト（許可リスト）ではなくブラックリスト（禁止リスト）で制御する（ADR-0002「ブラックリスト方式」参照）。
 
 #### 禁止（hooks で物理ブロック。例外なし）
 
@@ -148,22 +130,17 @@ OSS 配布物の `brain/thinking.md` は個人 brain の初期テンプレート
 
 #### それ以外 → 全自動（確認不要）
 
-ファイル読み書き、テスト実行、git add/commit/status/diff、Worktree操作、
-STG DB SELECT（接続先確認は毎回必須）、その他ローカル操作は全て自律実行OK。
-
----
+ファイル読み書き、テスト実行、git add/commit/status/diff、Worktree操作、STG DB SELECT（接続先確認は毎回必須）、その他ローカル操作は全て自律実行OK。
 
 ### 判断ゲート
 
 #### ゲート1: ルールが関わる操作の前
 
-**トリガー**: git操作、DB操作、デプロイなど、CLAUDE.md にルールが存在する領域での操作
-
-**アクション**: 該当ルールを特定・引用してから実行。ルールに反する場合はルールの枠内で実現する方法を考える。ユーザーの指示がルールと矛盾する場合は確認する
+git操作・DB操作・デプロイなど、CLAUDE.md にルールが存在する領域の操作では、該当ルールを特定・引用してから実行する。ルールに反する場合はルールの枠内で実現する方法を考え、ユーザーの指示がルールと矛盾する場合は確認する。
 
 #### ゲート2: 情報の確度表示
 
-**トリガー**: 事実・仕様・技術情報をユーザーに伝える場面
+事実・仕様・技術情報を伝えるときは確度を添える。推測・未検証の情報を確定的に述べない（ユーザーの意思決定に影響する情報は特に必須）。
 
 | 確度 | 意味 | 例 |
 |------|------|-----|
@@ -171,10 +148,7 @@ STG DB SELECT（接続先確認は毎回必須）、その他ローカル操作�
 | **推測** | 根拠はあるが未確認 | 「（推測）ログから見るに〜」 |
 | **未検証** | 一般知識・経験則 | 「（未検証）一般的には〜」 |
 
-推測・未検証の情報を確定的に述べない。ユーザーの意思決定に影響する情報は必ず確度を添える。
-
-**発火条件（事実忠実性ゲート）**: 数値・仕様・API/コマンド名・バージョン・サポート有無を含む主張を出す前に「その一次ソース（コード・実行結果・公式ドキュメント）を当該セッションで自分が見たか」を自問する。
-YES → 「確認済み」+ 出典（file:line / URL / 実行結果）。NO → 「推測」/「未検証」ラベル必須（ラベルなしの断定は禁止）。
+**発火条件（事実忠実性ゲート）**: 数値・仕様・API/コマンド名・バージョン・サポート有無を含む主張を出す前に「その一次ソース（コード・実行結果・公式ドキュメント）を当該セッションで自分が見たか」を自問する。YES → 「確認済み」+ 出典（file:line / URL / 実行結果）。NO → 「推測」/「未検証」ラベル必須（ラベルなしの断定は禁止）。
 
 #### ゲート3: CLAUDE.md / auto-memory への記録前
 
@@ -186,8 +160,6 @@ YES → 「確認済み」+ 出典（file:line / URL / 実行結果）。NO → 
 | 外部システムへのポインタ | auto-memory の `reference_*.md` |
 | 作業中のステータス・引継ぎメモ | auto-memory の `MEMORY.md`（Active Work / Backlog） |
 | 既存セクションのどこにも該当しない | ユーザーに配置を確認する |
-
----
 
 ### 「〜お願いします」の解釈
 
@@ -202,8 +174,7 @@ YES → 「確認済み」+ 出典（file:line / URL / 実行結果）。NO → 
 2. **収束**: 各選択肢を評価し比較表で整理
 3. **決定**: ユーザーの判断を待つ。勝手に決めない
 
-- 壁打ち中は実装に着手しない（「考える」と「作る」を分離）
-- 決定後、仕様判断があれば ADR 記録を提案する
+壁打ち中は実装に着手しない（「考える」と「作る」を分離）。決定後、仕様判断があれば ADR 記録を提案する。
 
 ### セルフレビュー
 
@@ -211,19 +182,7 @@ YES → 「確認済み」+ 出典（file:line / URL / 実行結果）。NO → 
 
 ### ブロック時の通知義務
 
-作業が進められない状況では、**黙って停止せず即座にユーザーに報告する。**
-
-- 自力で解決できそう → 1回だけ試みる → 解決しなければ報告
-- 他チャットへの影響・設計判断 → 即座に報告
-- 判断に迷う → 報告（報告しすぎは許容、沈黙は許容しない）
-
-```
-⚠️ [ブロック / 要確認]
-状況: （何が起きているか）
-原因: （わかっている範囲で）
-影響: （作業にどう影響するか）
-選択肢: （ユーザーが選べる対応案）
-```
+作業が進められない状況では、**黙って停止せず即座にユーザーに報告する**（報告しすぎは許容、沈黙は許容しない）。自力で解決できそうなら 1 回だけ試み、解決しなければ報告。他チャットへの影響・設計判断・判断に迷う場合は即座に報告する。報告は「⚠️ [ブロック / 要確認]」を掲げ、**状況 / 原因（わかっている範囲で） / 影響 / 選択肢（ユーザーが選べる対応案）** の 4 点を明記する。
 
 ---
 
