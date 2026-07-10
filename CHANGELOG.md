@@ -25,6 +25,7 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Added
 
+- **docs 全体の文体・重複是正（ADR-0033 実装・最終）**: ①敬体・常体の地の文混在を解消（`docs/migrations/memory-md-to-auto-memory.md`・`design-philosophy.ja.md`）②英語版 `lifecycle.md` の地の文に残っていた日本語を英訳（guard が grep する機能的リテラル「背景/対応/影響」は保持）③逐語重複 3 系統を単一ソース化 — knowledge-map（正 = `knowledge-reflux.md`）・current-state-oracle（正 = `context-economy.md` §5）・ARCHITECTURE 冒頭（正 = pack README）を要約 + 参照に縮約（消失テストで全削除文の正側現存を確認）④cron-setup-guide の独自 Guard 番号表を CLAUDE.md「禁止」表への参照に置換（drift 解消）⑤規範文書の地の文の口語・砕けた比喩を中立化（「牢獄ではない」「MUST に焼く」等）⑥配布物に残っていた保守者固有の環境・用途表現 6 件を普遍的な理由に書き換え（exec-bit の理由 = `git show > file` は mode 非保持、等）。
 - **文書ガバナンス（ADR-0033）**: `.claude/rules/oss-doc-authoring.md` に文体標準（README = 敬体・規範/仕様/手順 = 常体・口語の禁止）、表記統一表、全 doc 冒頭の読者宣言標準（読者/役割/ロード条件）、逐語再掲の禁止（単一ソース原則）を追加し、path スコープを `.claude/docs/**`・`README.ja.md`・`REVIEW.md`・`brain/**` に拡張。思想の背骨の正 = design doc（`design-philosophy.md` へ改名予定）、用語「北極星」→「目的」、既存 ADR は遡及適用外（詳細は ADR-0033。導線索引・改名・是正は後続リリース）。
 - **docs/ 導線の整備（ADR-0033 実装）**: ①`docs/README.md` 索引を新設（読者別入口・置かないもの・執筆規約への導線） ②`docs/design.md` / `design.ja.md` を **`design-philosophy.md` / `design-philosophy.ja.md` に改名**（git mv・リンク参照は README×2 / lifecycle×2 / oss-doc-authoring を更新。CHANGELOG・ADR 内の過去言及は記録として不変） ③用語「北極星（North Star）」→「目的（Purpose）」を非 ADR 15 箇所（9 ファイル）で置換（ADR タイトルの引用は不変・ADR-0018 は索引注記で対応） ④冒頭ヘッダ（読者/役割/ロード条件）を design-philosophy×2・cron-setup-guide・migrations/README・skill-agent-design に敷設。
 

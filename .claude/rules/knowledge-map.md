@@ -112,11 +112,8 @@ brain は 2 層構造（ADR-0016）。OSS テンプレート（`brain/thinking.m
 
 ### 知識還流（PJ → 個人 → OSS テンプレート）
 
-- 還流タグ: `[PJ 固有]` / `[個人 brain 昇格]` / `[OSS 還流候補]`
-- `/close-chat` Step 2.5 でフラグを立てる
-- `/weekly-inventory` Step 4 でフラグをまとめて処理する
-- 即座に反映しない。蓄積→パターン検出→昇格→還流の順
-- OSS 還流は手動 PR（sidekick リポへ）。自動同期はしない
+- `/close-chat` Step 2.5 でフラグを立て、`/weekly-inventory` Step 4 でまとめて処理する（即時反映しない）
+- 還流タグの分類・記録アクションの詳細と正 = `.claude/docs/knowledge-reflux.md`（R7・記録アクション節）
 
 ## 書かないもの（どこにも置かない）
 

@@ -30,7 +30,7 @@ flowchart TD
 # 1時間おき（09:00-20:00 JST）: approved Issue の自動実装
 0 9-20 * * * /path/to/scripts/cron-implement.sh
 
-# 夜間並列バッチ（22:00）: 溜まった approved Issue を並列処理
+# 夜間並列バッチ（22:00）: 蓄積された approved Issue を並列処理
 0 22 * * * /path/to/scripts/cron-batch.sh
 
 # 毎朝 09:00: 全PJの /inventory 実行
@@ -140,11 +140,14 @@ done
 
 ## 安全策
 
+無人実行（cron 経由・`SIDEKICK_AUTO=true` + `--dangerouslySkipPermissions`）であっても、CLAUDE.md「禁止（hooks で物理ブロック）」表の全項目はそのまま有効に効く（回避不可）。対象操作とブロック手段は CLAUDE.md を参照する。
+
+cron 実行（無人実行）特有の挙動:
+
 | 区分 | 対象 |
 |---|---|
-| 🚫 **絶対に自動実行しない**（SIDEKICK_AUTO でも止まる） | `prisma db push`（Guard 6）/ 保護ブランチへの直接 push（Guard 2）/ `rm -rf`（Guard 5）/ `.env DATABASE_URL` の変更（Guard 4）/ 保護ブランチへの PR マージ（Guard 8）— いずれもハードブロック |
 | ✅ **自動承認**（SIDEKICK_AUTO=true 時） | `git push`（feature ブランチ）/ `gh pr create` / `gh pr merge`（保護ブランチ以外） |
-| 👤 **人間が判断** | PR のレビュー・マージ（朝のルーティン）/ DB マイグレーション / 本番デプロイ |
+| 👤 **人間が判断**（SIDEKICK_AUTO=true でも自動化されない） | PR のレビュー・マージ（朝のルーティン）/ DB マイグレーション / 本番デプロイ |
 
 ## SIDEKICK_AUTO の使い方
 
@@ -153,7 +156,7 @@ done
 SIDEKICK_AUTO=true claude --dangerouslySkipPermissions -p "..."
 
 # シェル全体に設定しない（対話モードでも警告が消える）
-# export SIDEKICK_AUTO=true  ← これはやらない
+# export SIDEKICK_AUTO=true（この設定は行わない）
 ```
 
 ## 注意事項

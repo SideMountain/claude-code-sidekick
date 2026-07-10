@@ -2,21 +2,21 @@
 
 **対象**: sidekick v0.5.0 以降を取り込む既存下流 PJ
 
-**背景**: ADR-0008 により、project-root の `/MEMORY.md` を廃止し、Claude Code 標準の auto-memory システム（`~/.claude/projects/<project-slug>/memory/`）に一本化しました。
+**背景**: ADR-0008 により、project-root の `/MEMORY.md` を廃止し、Claude Code 標準の auto-memory システム（`~/.claude/projects/<project-slug>/memory/`）に一本化した。
 
-本ガイドは既存下流 PJ が新しい構成に移行する手順を示します。
+本ガイドは既存下流 PJ が新しい構成に移行する手順を示す。
 
 ---
 
 ## 移行の要否判定
 
-以下のいずれかに該当する場合は移行が必要です:
+以下のいずれかに該当する場合は移行が必要である:
 
 - [ ] project root に `/MEMORY.md` が存在する
 - [ ] `/MEMORY.md` に `<!-- sidekick_version: x.x.x -->` コメントがある
 - [ ] `/MEMORY.md` に Active Work / Backlog を記載している
 
-該当しない場合、移行は不要です。sidekick を更新してそのまま使えます。
+該当しない場合、移行は不要である。sidekick を更新してそのまま使える。
 
 ---
 
@@ -120,19 +120,19 @@ rm MEMORY.md
 
 ### Q. Active Work や Backlog を auto-memory に置くと、チームで共有できなくなる？
 
-A. 元々 `/MEMORY.md` も gitignored で個人ローカル扱いでした。チーム共有が必要な情報（Milestones 等）は CLAUDE.md や `docs/` に置くべきで、auto-memory は個人の作業メモです。
+A. 元々 `/MEMORY.md` も gitignored で個人ローカル扱いだった。チーム共有が必要な情報（Milestones 等）は CLAUDE.md や `docs/` に置くべきで、auto-memory は個人の作業メモである。
 
 ### Q. 既に auto-memory に何か入っていたが、そこに追記していいのか？
 
-A. 問題ありません。auto-memory は Claude Code が自動管理するので、既存ファイルと混在しても機能します。
+A. 問題ない。auto-memory は Claude Code が自動管理するので、既存ファイルと混在しても機能する。
 
 ### Q. `/MEMORY.md` を残したまま併用していいか？
 
-A. 併用は推奨しません。どちらに書くか迷う原因になります。廃止して auto-memory に一本化してください（ADR-0008 参照）。
+A. 併用は推奨しない。どちらに書くか迷う原因になる。廃止して auto-memory に一本化する（ADR-0008 参照）。
 
 ### Q. このガイドに従うと sidekick 側の /setup や /close-chat は再配置されるか？
 
-A. されません。`/setup` は既存 PJ モードで `MEMORY.md` を配置しなくなりますが、既存ファイルは残ります。ユーザー側で手動削除が必要です。
+A. されない。`/setup` は既存 PJ モードで `MEMORY.md` を配置しなくなるが、既存ファイルは残る。ユーザー側で手動削除が必要である。
 
 ---
 

@@ -256,7 +256,7 @@ for f in $APPLIED_FILES; do
   mkdir -p "$(dirname "$f")"      # 新規ネストパス（stack pack の deep tree・hooks/scripts 等）に対応
   git show "${LATEST}:$f" > "$f"  # タグ参照（drift 回避）
   # .sh は実行権限を復元する。git show は内容のみ書き出し mode を保持しない。
-  # WSL では fs の exec bit が不安定なため index にも記録する（リポの WSL exec-bit 慣行）。
+  # git show > file は mode を保持しないため、実ファイルだけでなく index にも実行権限を記録して復元する。
   case "$f" in
     *.sh) chmod +x "$f"; git add "$f" && git update-index --chmod=+x "$f" 2>/dev/null || true ;;
   esac
@@ -565,7 +565,7 @@ vX.Y.Z-1 → vX.Y.Z
 - **`while read` は heredoc で**: パイプ経由 (`... | while read; do ...; done`) はサブシェル化により 1 イテレーション後に停止する事象あり。`done <<< "$VAR"` のヒアストリング形式を使うと配列収集も含めて確実に動く
 - **配布カバレッジ（hooks / scripts / docs / templates / skills scripts / REVIEW.md / settings.json）**: skills の `scripts/`・`templates/`、`.claude/hooks/`・`.claude/githooks/`、`.claude/scripts/`、`.claude/docs/`、`.claude/templates/` も配布対象。加えて `REVIEW.md`（6.4e diff 案内）と `.claude/settings.json` の hooks キー（6.4f partial merge）を PJ migration 経由で追従させる。従来これらは無カテゴリで下流に届かず、Critical 修正（guard-bash 強化等）・rules 参照先 doc・PJ 規範の更新・新規 hook の配線が配布されない配布ブロッカーだった。`.claude/statusline/` は settings.json の statusLine 配線が PJ 固有のため既定の自動配布に含めない（必要なら手動）
 - **settings.json の hooks 未配線は silent no-op**: hook 本体（.sh）だけ取り込んで settings.json の hooks 配線を取り込まないと、新規 guard / Stop hook はファイルが存在しても発火しない。[hooks] を適用したリリースでは 6.4f の hooks 同期を必ず通す
-- **`.sh` の実行権限**: `git show > file` は mode を保持しない。適用時に `chmod +x` + `git update-index --chmod=+x` で復元する（WSL の fs exec bit 不安定対策）。復元しないと下流でガード・検査スクリプトが実行不能になる
+- **`.sh` の実行権限**: `git show > file` は mode を保持しない。適用時に `chmod +x` + `git update-index --chmod=+x` で復元する。復元しないと下流でガード・検査スクリプトが実行不能になる
 - **hooks の PJ カスタマイズ clobber 注意**: `.claude/githooks/pre-commit` は下流 PJ が PII パターン等を末尾に追記している場合がある（`/setup` 2d の運用）。`[hooks]` を `[Y]全適用` で blind overwrite すると PJ ローカル追記が消える。カスタマイズ済み PJ は `[n]個別判断` で diff 確認してから取り込む
 
 ## 参考
