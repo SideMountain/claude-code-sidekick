@@ -23,6 +23,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-07-11
+
 ### Added
 
 - **docs 全体の文体・重複是正（ADR-0033 実装・最終）**: ①敬体・常体の地の文混在を解消（`docs/migrations/memory-md-to-auto-memory.md`・`design-philosophy.ja.md`）②英語版 `lifecycle.md` の地の文に残っていた日本語を英訳（guard が grep する機能的リテラル「背景/対応/影響」は保持）③逐語重複 3 系統を単一ソース化 — knowledge-map（正 = `knowledge-reflux.md`）・current-state-oracle（正 = `context-economy.md` §5）・ARCHITECTURE 冒頭（正 = pack README）を要約 + 参照に縮約（消失テストで全削除文の正側現存を確認）④cron-setup-guide の独自 Guard 番号表を CLAUDE.md「禁止」表への参照に置換（drift 解消）⑤規範文書の地の文の口語・砕けた比喩を中立化（「牢獄ではない」「MUST に焼く」等）⑥配布物に残っていた保守者固有の環境・用途表現 6 件を普遍的な理由に書き換え（exec-bit の理由 = `git show > file` は mode 非保持、等）。
