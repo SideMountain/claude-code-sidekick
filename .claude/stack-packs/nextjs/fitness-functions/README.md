@@ -56,7 +56,7 @@ fitness と（後続の）system-map route adapter は**必ずここを import**
 
 ## escape hatch（黙って外さない）
 
-golden path は既定であって牢獄ではない。逸脱は**コメントで明示**する（fitness が認識して抑止）:
+golden path は既定であって、拘束が目的ではない。逸脱は**コメントで明示**する（fitness が認識して抑止）:
 
 | マーカー | 対象 | 用途 |
 |---|---|---|

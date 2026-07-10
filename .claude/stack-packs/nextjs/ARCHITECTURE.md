@@ -4,8 +4,7 @@
 > 下流PJ はこの規約に従って実装する。目的は2つ:
 > **(a) 一貫した良いアーキテクチャ** / **(b) `system-map` のパーサが決定的になる**（アーキが既知 → 静的に「地図が自分で描かれる」）。
 >
-> これは **opt-in な参照 stack pack**であって ccs の core ではない。Next.js を使わない PJ は無コスト。
-> 規約を当てる "方法"（アーキを規定 → 決定性 → 強制で守らせる）は stack 非依存で、Next.js はその第一インスタンス（ADR-0021）。
+> **位置づけの正は同 dir `README.md`**（opt-in / ccs core との関係）。ここでの前提: 規約を当てる "方法"（アーキを規定 → 決定性 → 強制で守らせる）は stack 非依存で、Next.js はその第一インスタンス（ADR-0021）。
 
 ## 対象スタック（baseline）
 
@@ -24,9 +23,9 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 | **② 主流** | 業界で広く支持されるが「公式の既定」より一歩強い。本 pack では決定性のため MUST/SHOULD に**格上げ**（出自を明記） |
 | **③ ccs 独自** | Next 標準には無い。`system-map` の決定性のための規約 |
 
-> **格上げの誠実性**: ②③ を MUST に焼く箇所は必ず「公式は recommend 止まり / 標準に無い」+「ccs 決定性のため」を併記する。過剰規約（目的原則「組み立て不要」違反）を自己抑制するため、load-bearing でない規約は SHOULD に留める。
+> **格上げの誠実性**: ②③ を MUST に格上げする箇所は必ず「公式は recommend 止まり / 標準に無い」+「ccs 決定性のため」を併記する。過剰規約（目的原則「組み立て不要」違反）を自己抑制するため、load-bearing でない規約は SHOULD に留める。
 >
-> **逸脱（escape hatch）**: golden path は既定であって牢獄ではない。逸脱する場合は**理由をコードコメント or PR に明記**する（fitness 関数が検出する）。黙って外さない。
+> **逸脱（escape hatch）**: golden path は既定であって、拘束が目的ではない。逸脱する場合は**理由をコードコメント or PR に明記**する（fitness 関数が検出する）。黙って外さない。
 
 ---
 
@@ -40,7 +39,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
   - 全 import は `@/*` alias を使う。
   - **barrel（`index.ts` による re-export 集約）を作らない**。例外: ライブラリ的な public entry point は除外してよい（but-clause）。
 - **出自**: 単方向依存は普遍原則。`@/*` は公式デフォルト。**barrel ゼロは Next 標準では SHOULD**（公式は禁止せず `optimizePackageImports` という緩和策を出す立場・対象は外部パッケージ限定で local barrel には効かない / Turbopack も re-export barrel の不要モジュール除去は未対応〔16.2 既知制約〕）→ ccs は parser のシンボル↔ファイル住所トレースのため MUST に格上げ。
-  - 注: 決定性に効くのは **barrel ゼロ + 単方向**。`@/*` alias 自体は DX で決定性中立（① 公式）。dogfood 実測では依存方向の規約は計測 2 PJ とも**自然準拠**で、MUST 化の摩擦は小さい（既に守られているものを焼く形）。
+  - 注: 決定性に効くのは **barrel ゼロ + 単方向**。`@/*` alias 自体は DX で決定性中立（① 公式）。dogfood 実測では依存方向の規約は計測 2 PJ とも**自然準拠**で、MUST 化の摩擦は小さい（既に守られているものを規約として明文化する形）。
 - **検証**: `grep -rl 'from .@/app' lib components` = 0 ／ `find lib components -name index.ts`（public entry を除く）= 0 ／ `madge --circular` = 0
 
 ## S2. route handler は DB を直接触らない — DAL/service 層経由
@@ -88,7 +87,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 - **出自**: 公式 security「The majority of security checks should be performed as close as possible to your data source」「re-read access control」。OWASP の Broken Object Level Authorization（IDOR）対策。
 - **なぜ決定性 + 安全**: 認可がデータ近接の DAL に集約されると、parser が「どの resource にどの認可が掛かるか」を service 層で追える（route 散在だと soft）。同時に「直URL NG」が**構造で**成立する。
 - **検証**: DAL のリソース取得関数が tenant/owner スコープ（例 `where: { companyId, id }`）を持つ ／ route gate のみで DAL がスコープを欠く取得 = 違反
-- **残余（正直に）**: 行レベルの**業務ルール認可**（「差戻し中のみ編集可」等）は logic として残り、完全 hard 化はしない（SOFT・後述）。
+- **残余**: 行レベルの**業務ルール認可**（「差戻し中のみ編集可」等）は logic として残り、完全 hard 化はしない（SOFT・後述）。
 
 ## S7. validation — schema 単一ソース + server 再検証
 
@@ -128,7 +127,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 
 - **判定**: SHOULD（一部 ① 方向）
 - **規約**:
-  - catch して 5xx を返すなら **PJ 定義の単一エラー seam 経由**で報告（`Sentry.captureException` / `console.error` の直呼びを報告経路にしない）。**特別な後処理が不要なら throw して `instrumentation.ts` の `onRequestError` に委ねる（こちらが原則）**。seam の具体名は PJ が定義する（規約に焼かない）。
+  - catch して 5xx を返すなら **PJ 定義の単一エラー seam 経由**で報告（`Sentry.captureException` / `console.error` の直呼びを報告経路にしない）。**特別な後処理が不要なら throw して `instrumentation.ts` の `onRequestError` に委ねる（こちらが原則）**。seam の具体名は PJ が定義する（規約に含めない）。
   - レスポンスは成功 `{ data }`（必要なら `pagination`）/ 失敗 `{ error }` の単一エンベロープ。
   - **webhook / scheduler の冪等性（SHOULD）**: provider-callback（webhook）は **at-least-once 配信前提**。event-id を**永続化して replay を短絡**するか、全副作用が**証明可能に冪等**であること。`findUnique`-based の business-key upsert は DB 行は冪等でも、通知送信等の副作用は replay で二重発火しうる（event-id を log するだけでは不十分）。cron も多重起動を前提に冪等に。
 - **出自**: `onRequestError` 集約は公式方向。エンベロープは公式に標準が無い（③ ccs・SHOULD）。冪等性は分散配信の普遍原則（dogfood で webhook の replay-safety gap を検出・SHOULD）。
@@ -149,7 +148,7 @@ Next.js **App Router**（15 / 16）+ React 19 + **Prisma** + 認証ライブラ�
 
 ---
 
-# 決定性スコープ（正直な約束）
+# 決定性スコープ（実態に即した記述）
 
 「100% hard・推測ゼロ」は**地図全体でなく以下の feature に限定**した約束。
 

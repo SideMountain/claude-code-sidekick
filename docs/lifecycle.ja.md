@@ -19,7 +19,7 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design-philosop
 | 3 | **Dev パイプライン** | `/discover`（調査 + Issue 作成可）→ `/record-decision`（ADR）→ `/auto-implement`（`gh issue view` → worktree → 実装+テスト → `/review` → PR）→ `/review` → PR | ✅ |
 | 4 | **Release → Adopt** | `/release`（`verify-release-notes.sh` ゲート → GitHub Release に severity マーカー・移行ガイドは `docs/migrations/`）→ `/inventory`（下流: 版/severity 差検知）→ `session-start.sh` が critical flag を surface → `/adopt-sidekick-update`（バッチ適用・`SIDEKICK_VERSION` 更新・個人 brain は上書きしない） | ✅ |
 | 5 | **強制 ×3**（認知→強制→検知） | worktree 規律（H9/H12 → `prompt-reminder` → `guard-bash`/`guard-protected-branch-edit` DENY）・PII（`pii-prevention` → `/review`/`/close-chat` scan → `githooks/pre-commit` block）・commit 本文（H15 → `guard-commit-message` block） | ✅ |
-| 6 | **逆流**（下流 → 保守者） | GitHub Issue（`.github/ISSUE_TEMPLATE/`）→ `/inventory` Step 3（`gh issue list`）→ `/discover`/`/auto-implement` → `/release` | ✅（README では一方通行に見える＝doc gap・輪は切れてない） |
+| 6 | **逆流**（下流 → 保守者） | GitHub Issue（`.github/ISSUE_TEMPLATE/`）→ `/inventory` Step 3（`gh issue list`）→ `/discover`/`/auto-implement` → `/release` | ✅（README では一方通行に見える＝doc gap・輪は切れていない） |
 | 7 | **stack-pack アプリ構築**（opt-in Next.js） | `STACK_PACK=nextjs` → `ARCHITECTURE.md`（認知）→ `scaffold.js`（強制/生成）→ `fitness-functions`/`test:arch`（検知）→ `system-map`（可視化） | ⚠️ **開**（下記） |
 | 8 | **上流ウォッチ**（Claude Code 公式 → ccs） | `official-freshness.sh`（リポ内で floor drift を機械検知 → `gh issue create`・official-adoption ラベル）+ `news-upstream`（保守者専用の週次読み）→ gap 分析 → backlog → `/weekly-inventory` → ADR / skill / OSS テンプレ | ⚠️ **部分的に閉**（下記） |
 

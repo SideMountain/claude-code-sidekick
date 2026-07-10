@@ -298,7 +298,7 @@ bash .claude/skills/weekly-inventory/scripts/official-freshness.sh
 
 **判断部分（機械化不可）** — 新規公式スキル・挙動変更の検知。入力ソース:
 
-1. `news-upstream`（個人スキル・任意）の gap 分析 = **ラッパー刷新の一次入力**。公式・業界・Zenn・X の週次ウォッチ結果を照合する。
+1. `news-upstream`（個人スキル・任意）の gap 分析 = **ラッパー刷新の一次入力**。公式・業界動向の週次ウォッチ結果を照合する。
 2. 公式リリースノート（Claude Code changelog）。
 
 検知した gap の扱い:

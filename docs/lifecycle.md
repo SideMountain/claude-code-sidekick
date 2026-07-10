@@ -12,7 +12,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design-philosoph
 - **Purpose (ADR-0018):** the downstream developer feels the benefit without feeling the harness.
   Default-safe; nothing to assemble; only **three verbs by hand** — `/news` → your work → `/close-chat`
   (plus weekly `/weekly-inventory`). Everything else is plumbing that fires on its own.
-- **仕組み化 = 認知 → 強制 → 検知** (Awareness → Enforcement → Detection). Rules alone don't hold, so
+- **Systemization = recognize → enforce → detect.** Rules alone don't hold, so
   CLAUDE.md HARD/SOFT/GUIDE rules (re-asserted every turn by `prompt-reminder.sh`) are physically backed
   by PreToolUse guards + a `settings.json` deny list + a git-native PII pre-commit hook, and slips are
   caught by `/review` (deterministic fitness + official `/code-review` + REVIEW.md norms).
@@ -28,9 +28,9 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design-philosoph
 | 2 | **Knowledge compounding** | feedback → auto-memory `feedback_*.md` → `/close-chat` reflux flags → `/weekly-inventory` (3-item rule) → PJ brain → personal brain → OSS template → next session | ✅ |
 | 3 | **Dev pipeline** | `/discover` (investigate + may file Issues) → `/record-decision` (ADR) → `/auto-implement` (`gh issue view` → worktree → impl+test → `/review` → PR) → `/review` → PR | ✅ |
 | 4 | **Release → Adopt** | `/release` (`verify-release-notes.sh` gate → severity marker on GitHub Release; migration notes in `docs/migrations/`) → `/inventory` (downstream: version/severity gap) → `session-start.sh` surfaces critical flag → `/adopt-sidekick-update` (batched apply, bump `SIDEKICK_VERSION`, never overwrites personal brain) | ✅ |
-| 5 | **Enforcement ×3** (認知→強制→検知) | worktree discipline (H9/H12 → `prompt-reminder` → `guard-bash`/`guard-protected-branch-edit` DENY) · PII (`pii-prevention` → `/review`/`/close-chat` scan → `githooks/pre-commit` block) · commit body (H15 → `guard-commit-message` block) | ✅ |
+| 5 | **Enforcement ×3** (recognize→enforce→detect) | worktree discipline (H9/H12 → `prompt-reminder` → `guard-bash`/`guard-protected-branch-edit` DENY) · PII (`pii-prevention` → `/review`/`/close-chat` scan → `githooks/pre-commit` block) · commit body (H15 → `guard-commit-message` block) | ✅ |
 | 6 | **Reverse signal** (downstream → maintainer) | GitHub Issue (`.github/ISSUE_TEMPLATE/`) → `/inventory` Step 3 (`gh issue list`) → `/discover`/`/auto-implement` → `/release` | ✅ (reads one-way in README — doc gap, not a break) |
-| 7 | **Stack-pack app build** (opt-in Next.js) | `STACK_PACK=nextjs` → `ARCHITECTURE.md` (認知) → `scaffold.js` (強制/generate) → `fitness-functions`/`test:arch` (検知) → `system-map` (visualize) | ⚠️ **open** — see below |
+| 7 | **Stack-pack app build** (opt-in Next.js) | `STACK_PACK=nextjs` → `ARCHITECTURE.md` (recognize) → `scaffold.js` (enforce/generate) → `fitness-functions`/`test:arch` (detect) → `system-map` (visualize) | ⚠️ **open** — see below |
 | 8 | **Upstream watch** (Claude Code official → ccs) | `official-freshness.sh` (in-repo floor-drift check → `gh issue create`, official-adoption label) + `news-upstream` (maintainer-only weekly read) → gap analysis → backlog → `/weekly-inventory` → ADR / skill / OSS-template | ⚠️ **partly closed** — see below |
 
 ## Open loops (where the wheel doesn't fully close)
@@ -46,7 +46,7 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design-philosoph
   **Partly by design** (the downstream owns its CI; a map is a visualization, not a gate) — the honest
   statement is in the README stack-pack section.
 - **8. Upstream watch is now partly closed inside the repo.** `official-freshness.sh` (weekly-inventory
-  Step 5d, v0.13.0 / ADR-0027 決定4) mechanically detects drift between the running Claude Code CLI and the
+  Step 5d, v0.13.0 / ADR-0027 Decision 4) mechanically detects drift between the running Claude Code CLI and the
   version floors ccs wraps, and files a `gh issue create` (official-adoption label) that rides the
   reverse-signal loop (6) back into `/discover` / `/auto-implement`. What stays manual **by design**:
   reading upstream release notes and the broader `news-upstream` watch run only on the maintainer's machine
@@ -97,9 +97,9 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design-philosoph
 ### Stack pack — Next.js (opt-in, `.claude/stack-packs/nextjs/`)
 | Artifact | Role |
 |---|---|
-| `ARCHITECTURE.md` | Prescriptive golden path: S1-S8 MUST / H1-H4; grep-checkable; ①official/②mainstream/③ccs-own (認知) |
-| `scaffold/` | `scaffold.js` copies a conforming `posts` slice; template **is** the fitness fixture (強制/generate) |
-| `fitness-functions/` | Zero-dep Node checker; each MUST → grep assertion; `route-enumerator.js` = canonical count (検知) |
+| `ARCHITECTURE.md` | Prescriptive golden path: S1-S8 MUST / H1-H4; grep-checkable; ①official/②mainstream/③ccs-own (recognize) |
+| `scaffold/` | `scaffold.js` copies a conforming `posts` slice; template **is** the fitness fixture (enforce/generate) |
+| `fitness-functions/` | Zero-dep Node checker; each MUST → grep assertion; `route-enumerator.js` = canonical count (detect) |
 | `system-map` (skill) | One offline HTML map: screen↔API↔DB↔authz↔flow; hard static + soft domain subagents; self-verifies |
 
 ### Enforcement — hooks / guards
@@ -120,11 +120,11 @@ JA: [lifecycle.ja.md](./lifecycle.ja.md) · Philosophy digest: [design-philosoph
 ### Deterministic checks & regression fixtures
 | Artifact | What it is + which loop/purpose it serves |
 |---|---|
-| `.claude/scripts/detect-hard-spot.sh` | Deterministic force-flag for R2 hard-spots (ADR-0028 決定3); shared gate that `/auto-implement` & `/adopt-sidekick-update` call so a design/security/root-cause change can't skip the L1–L4 verification ladder |
+| `.claude/scripts/detect-hard-spot.sh` | Deterministic force-flag for R2 hard-spots (ADR-0028 Decision 3); shared gate that `/auto-implement` & `/adopt-sidekick-update` call so a design/security/root-cause change can't skip the L1–L4 verification ladder |
 | `review-fitness.sh` | Deterministic pre-gate for `/review` (breaking-migration keyword, a11y, empty-catch); single source of truth whose WARN findings feed the min() verdict — Loops 1/3 |
 | `verify-release-notes.sh` | Deterministic gate for `/release` notes: severity marker/title/banner 3-way match + non-empty `[Unreleased]`; keeps the downstream `/inventory`/`/adopt` severity read from breaking — Loop 4 |
 | `official-freshness.sh` | weekly-inventory Step 5d: version-floor drift check of wrapped official features → `gh issue create` — Loop 8 |
-| `tests/fixtures/judgment-corpus/` | 27 frozen judgments (append-only; `expected/` hidden from measured models; train/held-out case split; `results/` incl. worth-it measurement) = permanent benchmark of judgment quality across model generations (ADR-0028 決定2) |
+| `tests/fixtures/judgment-corpus/` | 27 frozen judgments (append-only; `expected/` hidden from measured models; train/held-out case split; `results/` incl. worth-it measurement) = permanent benchmark of judgment quality across model generations (ADR-0028 Decision 2) |
 | `tests/fixtures/guard-oracle/` | 42-case guard regression oracle + `replay.sh`: real-run deny/allow baseline for `guard-bash.sh` routing/env guards (no read-judged expectations) |
 
 ### Knowledge & judgment

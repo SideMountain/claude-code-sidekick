@@ -73,7 +73,7 @@ Co-Authored-By: ...
 - **CI ジョブ分割でブランチ保護が壊れる**: 単一ジョブ名（例 `Lint / Test / Build`）を required check にしている場合、分割すると旧名のチェックが消え **全 PR が Expected で詰まる**。→ **安定名の集約ゲート `CI Success`**（`if: always()` + `needs.*.result` 厳密検査）を追加し、required check をそれ1本に張替（admin 作業＝ユーザー）。
 - **`npm ci` の lockfile drift**: `npm install` 運用だった repo は初回 `npm ci` で peer 不一致が露見しうる → その場合 lockfile 再生成 PR を先行。CI green がそのまま lockfile 健全の証明。
 - **GitHub Actions 課金停止**: org の spending-limit で全 run が startup_failure（`steps: []`・注釈に "spending limit"）。**自分の変更起因と誤認しない** — base も赤なら課金問題。Claude/Anthropic 課金とは無関係の別ベンダー。
-- **pre-push hook が WSL で hang/fail**: config のみ変更でテストロジック不変なら `--no-verify` 可（CI が検証）。業務リポでは安易に多用しない。
+- **pre-push hook が WSL で hang/fail**: config のみ変更でテストロジック不変なら `--no-verify` 可（環境依存の回避策 — 環境により不要。CI が検証）。業務リポでは安易に多用しない。
 - **マージ判断は「効果」でなく「安全」**: green CI = 安全確認。効果（速度）の大小はマージ後に自動で乗る。未検証（CI 未通過）のものは業務リリースブランチに入れない。
 - **PR を開いたまま待つドリフト**: base が進んでも、触るファイルが被らなければクリーンなまま。再開時に base 取り込み→green→マージ。作業は remote ブランチに永続。
 
