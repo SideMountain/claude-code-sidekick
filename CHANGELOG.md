@@ -23,6 +23,10 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Changed
+
+- **README 安全性表現の適正化（en/ja）**: Design Principles の安全原則を「巧妙な回避策でも破られない」という無限定断言から、「既知の危険パターンを実行前に物理ブロックし、既知の検知漏れは guard oracle に観測値のまま凍結・公開」という検証可能な主張に書き換え（guard oracle・ADR-0032 リンク）。auto mode 節に `--dangerouslySkipPermissions` でも `settings.json` deny ルールが全モードで維持される旨を公式ドキュメント根拠付きで明記。
+
 ## [0.16.0] - 2026-07-11
 
 ### Added
