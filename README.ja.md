@@ -21,7 +21,7 @@ sidekick は Claude Code の土台になる**リポジトリテンプレート**
 |---|---|---|
 | `rm -rf` や main 直 push など危険操作を**物理的にブロック** | `/discover`、`/review`、`/auto-implement` など**13 スキル**が即使える | あなたの判断原則を学習し、**使うほど Claude の提案精度が上がる**。難所（設計・原因究明・セキュリティ・リリース判断）は検証 ladder（多段検証）に乗せ、単発で決めない |
 
-3つ目の「思考OS」が、sidekick を他のテンプレートと分ける中核です。
+3つ目の「思考OS」が、sidekick を他のテンプレートと分ける中核です。sidekick は Claude を賢くするのではなく、Claude の判断をあなたの判断にします。
 
 <p align="center">
   <img src="docs/images/three-layers-ja.svg" alt="3層構造 — 安全ガード、スキル、思考OS" width="720"/>
@@ -109,7 +109,10 @@ Claude : → Worktree 作成（main は触らない）
 <summary><b>よくある質問 — Claude Code 専用？ 個人/チーム？ 課金？ 既存PJ？</b></summary>
 
 **Q. Claude Code 専用ですか？ Cursor / Cline / Gemini でも使える？**
-はい、Claude Code 専用です。hooks / skills / settings.json のフォーマットは Claude Code 仕様です。ただし「**あなたの判断軸を AI に学習させる**」という設計思想自体は他のツールにも応用できます。
+実装は Claude Code 専用です。hooks / skills / settings.json のフォーマットは Claude Code 仕様です。移植できるのは概念のほうです — 3層の安全モデル（認知 → 強制 → 検知）と、feedback から原則への学習ループは、特定ツールに依存しません。
+
+**Q. Java など他の言語でも使える？**
+使えます。ハーネス自体（ガード・スキル・思考OS）は言語非依存です。`LANGUAGE` が実際に分岐するのは命名規則プリセット（`.claude/rules/naming-conventions.md`、現状 TypeScript/Python）と `/setup` が書き込む初期値だけで、それ以外は言語で分岐しません。プリセットのない言語は、この命名規則の恩恵だけがない状態で使えます。
 
 **Q. 個人開発でも使える？ チーム向け？**
 両方で使えます。「エンタープライズ版」は用意していません。同じ設定を規模に応じてスケールさせます（Worktree が並行作業で必須に、`/review` がチームゲートに、`PROTECTED_BRANCHES` が増えます）。
@@ -240,6 +243,8 @@ sidekick は判断軸を2つのファイルに分け、個人の原則は**あ�
 | `CLAUDE.md` | プロジェクト設定 + HARD/SOFT/GUIDE ルール | プロジェクトが変わったとき |
 
 ### ⚖️ 思考ハーネス — 難所は単発で決めない
+
+> **sidekick が上げるのは知能ではなく、判断の質です。** モデルの賢さはあなたのサブスクリプションが決めるもので、テンプレートには変えられません。sidekick が変えるのは判断です — あなたの判断軸を文脈として渡し（brain）、難所には検証構造を掛けます（下記の ladder）。その分トークンは節約どころか増えます（ladder は単発判断の約 3.1 倍を実測、下記）。それでも成立するのは Max 固定費だからです — 従量課金なら躊躇する検証トークンを、失敗が高くつく判断にこそ惜しまず使う設計です。トークン節約テンプレートではなく、判断品質テンプレートです。詳細: [`docs/design-philosophy.ja.md`](./docs/design-philosophy.ja.md#知能ではなく判断の質)。
 
 学習は Claude が*何を*決めるかを直し、ハーネスは*どれだけ慎重に*決めるかを司ります。**難所** — 設計判断・root-cause 分析・矛盾裁定・セキュリティ変更・最終のマージ/リリース判断からなる閉集合 — は、決定的な機械検査（[`detect-hard-spot.sh`](.claude/scripts/detect-hard-spot.sh)・パス/キーワードの grep）と Claude 自身の判断の**両方**で検知します。どちらか一方でも十分で、難所と判定されたら単発では確定させません。
 

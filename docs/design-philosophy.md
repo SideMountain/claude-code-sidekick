@@ -50,6 +50,14 @@ Learning fixes *what* Claude decides; the harness governs *how carefully*. A clo
 
 > **ladder** — L1: ≥1 adversarial pass (every hard call) · L2: 3 independent votes (design / arbitration) · L3: execution is the arbiter (root-cause) · L4: multi-agent + `min()` (merge / release).
 
+## Judgment, not intelligence
+
+sidekick does not make the model smarter — the intelligence running underneath is whatever model your subscription serves. What sidekick changes is **judgment**: it feeds the model your decision principles as context (the brain, above) and puts hard calls through a verification structure instead of a single pass (the ladder, above).
+
+That costs tokens rather than saving them — the L2 ladder measured **~3.1× a single-shot judgment** ([worth-it run](../tests/fixtures/judgment-corpus/results/2026-07-05-worth-it.md)). It holds up because it runs on a **fixed Claude Max cap**: verification tokens that would be hard to justify under per-request billing are cheap insurance against mistakes that are expensive to make.
+
+**Is / is not**: sidekick **is** a template that buys judgment quality inside a fixed budget. It **is not** a token-saving tool, and it does not make the underlying model more capable.
+
 ## Context economy — long runs on a fixed cap
 
 A fixed Claude Max cap is a budget, so **resident context is a liability, not an asset**: the default is *retrieve > resident*, deep references live in lazy-load docs, and each model/subagent gets only what its task needs. A budget-gate reads the live rate-limit and stages down at 60% / 85% — advisory first, then one bounded wrap-up turn — and is **fail-open**: missing or stale data falls back to normal, and safety guards run independently of budget state, so a hot cap never weakens a hard block.
@@ -76,6 +84,7 @@ For projects on a known stack, an **opt-in stack pack** layers a prescriptive ar
 | **Fixed cost** | runs on Claude Max; no per-project API charges |
 | **Knowledge compounds** | feedback → principle → applied automatically |
 | **Hard calls are never single-shot** | escalation ladder + frozen judgment corpus |
+| **Judgment, not intelligence** | teaches judgment as context; spends tokens rather than saving them |
 | **Context is a liability, not an asset** | retrieve > resident; lazy-load; fail-open budget-gate |
 
 ---
