@@ -349,6 +349,8 @@ SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
   -p "/auto-implement #10, #11, #12"
 ```
 
+`--dangerouslySkipPermissions` が省略するのは承認ダイアログだけです — `settings.json` の deny ルールは全モードで維持されます（[公式 permission-modes ドキュメント](https://code.claude.com/docs/en/permission-modes)）。
+
 ```mermaid
 flowchart LR
     P0["Phase 0<br/>設計確定<br/>チェック"] --> P1["Phase 1<br/>Worktree<br/>作成"]
@@ -412,7 +414,7 @@ your-project/
 ## 設計思想
 
 1. **知識が複利で効く**: セッションの気づきが feedback → 原則 → 思考OS に育つ。使うほど賢くなる。（[ADR-0007](./docs/decisions/0007-thinking-os-positioning.md)）
-2. **安全が最優先**: ハードブロックは絶対に解除されない。auto モードでも、あなたの指示でも、巧妙な回避策でも。
+2. **安全が最優先**: 既知の危険パターンは実行前に物理ブロックします — auto モードでも同じで、指示で緩めることもしません。ガードの挙動は 42 ケースの回帰オラクルで固定し、既知の検知漏れも観測値のまま凍結して公開しています。限界は隠さず文書化する方針です（[guard オラクル](./tests/fixtures/guard-oracle/README.md)・[ADR-0032](./docs/decisions/0032-enforcement-guards-fail-closed.md)）。
 3. **ブラックリスト方式**: 危険なものだけリスト化。残りは全自動。（[ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md)）
 4. **固定費、プロジェクト数に比例しない**: Claude Max 上で動く。API 従量課金なし。10 プロジェクトでも月 $100 固定。（[ADR-0003](./docs/decisions/0003-slack-cron-architecture.md)）
 5. **Git が Source of Truth**: 外部 DB 不要。CLAUDE.md + ADR + GitHub Issues + auto-memory で完結。Notion はオプション。（[ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md)）

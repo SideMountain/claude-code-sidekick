@@ -365,6 +365,8 @@ SIDEKICK_AUTO=true claude --dangerouslySkipPermissions \
   -p "/auto-implement #10, #11, #12"
 ```
 
+`--dangerouslySkipPermissions` only skips the approval dialog — `settings.json` deny rules stay in force in every mode, per the [official permission-modes documentation](https://code.claude.com/docs/en/permission-modes).
+
 ```mermaid
 flowchart LR
     P0["Phase 0<br/>Design<br/>Check"] --> P1["Phase 1<br/>Worktree<br/>Setup"]
@@ -428,7 +430,7 @@ Set in `Project Configuration` at the top of `CLAUDE.md`:
 ## Design Principles
 
 1. **Knowledge compounds**: Session insights flow from feedback → principles → Thinking OS. Your AI gets better every week. ([ADR-0007](./docs/decisions/0007-thinking-os-positioning.md))
-2. **Safety is non-negotiable**: Hard blocks are never overridden. Not by auto mode, not by user request, not by clever workarounds.
+2. **Safety is non-negotiable**: known dangerous patterns are physically blocked before execution — in auto mode too, and never relaxed on request. Guard behavior is regression-pinned by a 42-case oracle that freezes known gaps alongside the blocks, so the limits are documented, not hidden ([guard oracle](./tests/fixtures/guard-oracle/README.md), [ADR-0032](./docs/decisions/0032-enforcement-guards-fail-closed.md)).
 3. **Blacklist over whitelist**: Only dangerous things are listed. Everything else runs automatically. ([ADR-0002](./docs/decisions/0002-blacklist-execution-and-two-lanes.md))
 4. **Fixed cost, not per-project**: Runs on Claude Max. No API charges. 10 projects for the same $100/month. ([ADR-0003](./docs/decisions/0003-slack-cron-architecture.md))
 5. **Git is the source of truth**: No external DB required. CLAUDE.md + ADR + GitHub Issues + auto-memory. Notion is optional. ([ADR-0004](./docs/decisions/0004-context-consolidation-claude-code-first.md))
