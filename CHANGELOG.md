@@ -27,6 +27,10 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 - **設計思想「知能ではなく判断の質」を文書化（en/ja）**: design-philosophy に新節を追加（単一ソース・ADR-0033）— sidekick はモデルを賢くするのではなく判断の質を上げる（brain = 判断軸の文脈化 + ladder = 検証構造）。トークンは節約でなく検証に投下する（worth-it 実測 約 3.1 倍）設計で、固定の Claude Max cap の上で成立する。is/is-not を明示。README は要約 + リンクを ⚖️ 節に追加し、FAQ に「概念はツール非依存で移植可能」「ハーネスは言語非依存（`LANGUAGE` は命名規則プリセット等の初期値のみ）」の 2 件を補強。
 
+### Changed
+
+- **README 安全性表現の適正化（en/ja）**: Design Principles の安全原則を「巧妙な回避策でも破られない」という無限定断言から、「既知の危険パターンを実行前に物理ブロックし、既知の検知漏れは guard oracle に観測値のまま凍結・公開」という検証可能な主張に書き換え（guard oracle・ADR-0032 リンク）。auto mode 節に `--dangerouslySkipPermissions` でも `settings.json` deny ルールが全モードで維持される旨を公式ドキュメント根拠付きで明記。
+
 ## [0.16.0] - 2026-07-11
 
 ### Added
