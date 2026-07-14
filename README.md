@@ -21,7 +21,7 @@ sidekick is a **repository template** for Claude Code. It ships with three layer
 |---|---|---|
 | **Physically blocks** dangerous ops like `rm -rf` or pushing to main | **13 skills** ready to use: `/discover`, `/review`, `/auto-implement`, etc. | Learns your decision principles — **Claude's proposals improve over time**; hard calls (design / root-cause / security / release decisions) run a verification ladder, never single-shot |
 
-The "Thinking OS" is what sets sidekick apart from other templates.
+The "Thinking OS" is what sets sidekick apart from other templates. It doesn't make Claude smarter — it makes Claude's judgment yours.
 
 <p align="center">
   <img src="docs/images/three-layers.svg" alt="Three Layers — Safety, Skills, Thinking OS" width="720"/>
@@ -109,7 +109,10 @@ In other words, **you stop repeating yourself.**
 <summary><b>FAQ — Claude Code only? Solo or team? API billing? Existing projects?</b></summary>
 
 **Q. Claude Code only? Does it work with Cursor / Cline / Gemini?**
-Yes, Claude Code only — hooks / skills / settings.json use Claude Code's format. That said, the core idea — **teaching your judgment to an AI** — is tool-agnostic.
+The implementation is Claude Code only — hooks / skills / settings.json use Claude Code's format. What ports is the concept: the three-layer safety model (awareness → enforcement → detection) and the feedback → principle learning loop don't depend on any particular tool.
+
+**Q. Does it work with other languages, like Java?**
+Yes — the harness itself (guards, skills, Thinking OS) is language-agnostic. `LANGUAGE` only drives the naming-convention preset (`.claude/rules/naming-conventions.md`, TypeScript/Python today) and a default written by `/setup`; nothing else branches on it. Languages without a preset just skip that one convenience.
 
 **Q. Solo dev or team?**
 Both. No "enterprise edition." The same config scales with your team size (Worktree becomes essential for parallel work; `/review` becomes a team gate; `PROTECTED_BRANCHES` grows).
@@ -256,6 +259,8 @@ The shipped `brain/thinking.md` at the repo root is a **template only (not loade
 | `CLAUDE.md` | Project config + HARD/SOFT/GUIDE rules | The project changes |
 
 ### ⚖️ The thinking harness — hard calls are never single-shot
+
+> **What sidekick is — and isn't.** sidekick doesn't make the model smarter; the intelligence is whatever model your subscription runs. What it changes is **judgment** — your decision principles as context (the brain), and a verification structure for hard calls (the ladder below). That costs tokens rather than saving them (the ladder measured ~3.1× a single-shot judgment, below), and sidekick spends them deliberately: on a fixed-cost Claude Max plan, verification tokens are cheap insurance for expensive mistakes. If you want a token-saving template, this isn't one — it's a judgment-quality template. Full write-up: [`docs/design-philosophy.md`](./docs/design-philosophy.md#judgment-not-intelligence).
 
 Learning fixes *what* Claude decides; the harness governs *how carefully* it decides. **Hard calls** — a closed set of design decisions, root-cause analysis, contradiction arbitration, security changes, and final merge/release judgments — are flagged both by a deterministic machine check ([`detect-hard-spot.sh`](.claude/scripts/detect-hard-spot.sh), a path/keyword grep) and by Claude's own judgment. Either one is enough, and a flagged call may not be settled single-shot.
 
