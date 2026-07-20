@@ -15,6 +15,7 @@
 | `brain/thinking.md`（sidekick リポ内） | OSS テンプレート — 個人 brain の初期テンプレート素材（配布物） | Claude（合意の上、OSS 還流で更新） | される | ❌ | 長い |
 | `rules/*.md`（brain 以外） | 領域特化ルール（what to do, scoped） | 人間 + Claude（合意の上） | される | ✅（path-scoped） | 長い |
 | `skills/` | 繰り返し手順（how to do） | Claude（合意の上） | される | 呼び出し時 | 中〜長い |
+| `~/.claude/skills/`（user-level スキル） | 職能ナレッジ — プロジェクト非依存の役割別判断軸・メソッド（how to think, role-scoped） | 個人 + Claude（合意の上） | されない（実体は個人のナレッジリポで管理し、コピー配布） | description 常駐 + 呼び出し時 | 長い |
 | `agents/` | 専門実行主体の定義（who does it） | Claude（合意の上） | される | 呼び出し時 | 長い |
 | `docs/decisions/` (ADR) | 設計判断記録（why we decided） | Claude（合意の上） | される | — | 永続 |
 | `agent-memory/` | エージェントの学習記録（PJスコープ共有） | Agent（自動） | される | — | 可変（棚卸しで整理） |
@@ -42,6 +43,10 @@ brain は 2 層構造（ADR-0016）。OSS テンプレート（`brain/thinking.m
   │     ├── 全 PJ で適用したい（複数 PJ 横断） → 個人 brain（~/.claude/brain/thinking.md）
   │     └── PJ 固有（PJ ドメイン依存）         → PJ brain（<PJ>/.claude/brain/thinking.md）
   │     ※ 迷ったら PJ brain から始め、3 件ルールで個人 brain に昇格させる
+  │
+  ├── 役割（経営・プロダクト・技術投資等）の職能ナレッジで、プロジェクト非依存か？
+  │     → Yes → user-level スキル（`~/.claude/skills/`。実体は個人のナレッジリポに置き、コピー配布で全プロジェクトへ）
+  │     ※ 個人の思考スタイルは個人 brain、プロジェクト固有の事実（ペルソナ実体・価格等）は各プロジェクトの docs に置く
   │
   ├── プロジェクト全体のルール（規約）か？
   │     ├── 全セクションに適用 → CLAUDE.md
@@ -74,6 +79,7 @@ brain は 2 層構造（ADR-0016）。OSS テンプレート（`brain/thinking.m
 | 設計思想・原則（業界共通） | 「意図のないコードは書くな」 | OSS テンプレート（`brain/thinking.md`、配布物として PR） |
 | 設計思想・原則（個人横断） | 「確証 95% 未満は断定しない」 | 個人 brain（`~/.claude/brain/thinking.md`） |
 | 設計思想・原則（PJ 固有） | 「拡張ファースト」（sidekick 特有） | PJ brain（`<PJ>/.claude/brain/thinking.md`） |
+| 職能の判断軸（役割別・プロジェクト非依存） | 「技術的負債の優先順位の判断式」「価格設定の判断軸」 | user-level スキル（`~/.claude/skills/`・個人のナレッジリポで管理） |
 | 事故・障害の教訓 | 「マージコマンドをテスト目的で実行しない」 | auto-memory `feedback_*.md` or CLAUDE.md Lessons Learned |
 | 実装パターン | フレームワーク固有の落とし穴等 | auto-memory `reference_*.md` |
 | 運用手順 | 「本番DBはコマンド単位で接続文字列を渡す」 | CLAUDE.md + rules/*.md |
