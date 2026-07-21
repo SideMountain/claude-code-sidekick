@@ -23,13 +23,17 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-07-22
+
 ### Added
 
+- **`/ux-scan` スキルを追加（ADR-0034）**: UX 導線フリクションのプロファイラ。タスク頻度×到達コスト（タップ+遷移+認知分岐）でフリクションを数値化し、処遇3択（磨く / 消す / 機械向け口に落とす=MCP化）まで提案する。初回はタスクリスト合意→静的スキャン、再実行は before/after の回帰判定（ルーブリック凍結で回帰テスト化）。rules 雛形 `.claude/rules/ux-flow-friction.md.example` を同梱。
 - **設計思想「知能ではなく判断の質」を文書化（en/ja）**: design-philosophy に新節を追加（単一ソース・ADR-0033）— sidekick はモデルを賢くするのではなく判断の質を上げる（brain = 判断軸の文脈化 + ladder = 検証構造）。トークンは節約でなく検証に投下する（worth-it 実測 約 3.1 倍）設計で、固定の Claude Max cap の上で成立する。is/is-not を明示。README は要約 + リンクを ⚖️ 節に追加し、FAQ に「概念はツール非依存で移植可能」「ハーネスは言語非依存（`LANGUAGE` は命名規則プリセット等の初期値のみ）」の 2 件を補強。
 
 ### Changed
 
 - **README 安全性表現の適正化（en/ja）**: Design Principles の安全原則を「巧妙な回避策でも破られない」という無限定断言から、「既知の危険パターンを実行前に物理ブロックし、既知の検知漏れは guard oracle に観測値のまま凍結・公開」という検証可能な主張に書き換え（guard oracle・ADR-0032 リンク）。auto mode 節に `--dangerouslySkipPermissions` でも `settings.json` deny ルールが全モードで維持される旨を公式ドキュメント根拠付きで明記。
+- **knowledge-map に user-level スキル層を追補**: `.claude/rules/knowledge-map.md` のレイヤー表・判断フロー・種類別ガイドに user-level スキル（`~/.claude/skills/`）層を追加。役割別の職能ナレッジ（プロジェクト非依存の判断軸）を全プロジェクトで使い回す運用パターン（個人ナレッジリポで一元管理 → コピー配布でドリフト防止）を明文化。
 
 ## [0.16.0] - 2026-07-11
 
