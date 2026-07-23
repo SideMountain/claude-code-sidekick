@@ -23,6 +23,17 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+### Added
+
+- **Guard 5.5: `git worktree remove` の node_modules junction 事故を物理ブロック**: 削除対象の Worktree 配下に `node_modules`（junction / symlink / 実体）が残っている場合は deny し、安全順序（①リンク解除 → ②消失確認 → ③再実行）を提示する。Windows 環境では worktree removal が junction を辿ってメインWS の実体 node_modules を削除しうる（実インシデント・2026-07-23）。変数・コマンド置換で検査不能なパスも fail-closed で deny。
+- **Guard 5.6: Windows の再帰削除 `rmdir /s` を警告対象に追加**: `rm -rf` の別名コマンドとして permission ダイアログでの確認を促す（rmdir /s は junction を辿らないため deny ではなく warning）。
+- **executor 検出に `cmd /c`・`cmd //c` を追加**: Windows シェル実行子で包まれた payload が引用符除去ベースのガード全てをすり抜ける盲点を封鎖。ラップされた破壊コマンド（再帰削除等）も raw 検査で既存 deny ガードに掛かる。
+- **guard oracle に 11 ケース追加（計 53）**: Guard 5.5/5.6/cmd executor の deny/allow 期待値を実走で凍結。`replay.sh` に `{{REPO}}` プレースホルダ置換を追加し、コミット済み fixture パス（疑似 Worktree `wt-junction-sim/`）を portably 参照可能に。
+
+### Changed
+
+- **worktree-guide.md に削除の安全順序を追記**: リンク共有した Worktree の削除は「node_modules 除去 → 確認 → `git worktree remove`」の順序を明記（Guard 5.5 の認知層ペア）。
+
 ## [0.17.0] - 2026-07-22
 
 ### Added

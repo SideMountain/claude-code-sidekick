@@ -9,11 +9,16 @@
 #   4. .env DATABASE_URL modification via shell commands (hard block)
 #   4.5 any shell write to .env — redirect / cp / mv (hard block)
 #   5. rm recursive deletion (hard block — requires user confirmation)
+#   5.5 git worktree remove while <target>/node_modules exists (hard block —
+#       Windows junction incident: git followed the junction and deleted the
+#       main workspace's real node_modules. Unlink the junction first.)
+#   5.6 rmdir /s (Windows recursive deletion — rm -rf alternate command)
+#       (warning — defers to permission dialog)
 #   6. prisma db push (hard block — must use prisma migrate dev)
 #   7. gh api write operations (hard block — POST/PUT/DELETE/PATCH)
 #   8. gh pr merge (warning — defers to permission dialog)
 #   9. find bulk deletion (-delete / -exec rm) (warning)
-#  10. shell executor present (bash -c / sh -c / eval / xargs) (warning)
+#  10. shell executor present (bash -c / sh -c / eval / xargs / cmd /c) (warning)
 #  11. STG PR routing — feature->main (H10) / main->stg (H11) (hard block,
 #      STG_ENABLED=true only). Evaluated BEFORE guard 10 so an executor-wrapped
 #      PR is still routed here instead of slipping past guard 10's warning-exit.
@@ -107,7 +112,11 @@ GIT_CMD=$(normalize_git_cmd "$CLEAN_CMD")
 #      destructive patterns so the wrapped payload cannot hide. A harmless
 #      executor only triggers a warning (Guard 10), never a deny.
 EXECUTOR_PRESENT=0
-if printf '%s\n' "$COMMAND" | grep -qE '\b(bash|sh)[[:space:]]+-c\b|\beval\b|\bxargs\b'; then
+# `cmd /c` (Windows shell executor, also written `cmd //c` from Git Bash) is an
+# executor too: its payload lives inside the quotes CLEAN_CMD strips, so e.g.
+# `cmd /c "rmdir /s /q <dir>"` would otherwise carry a recursive deletion past
+# every quote-based guard (found via Guard 5.6 fault injection).
+if printf '%s\n' "$COMMAND" | grep -qE '\b(bash|sh)[[:space:]]+-c\b|\beval\b|\bxargs\b|\bcmd(\.exe)?[[:space:]]+//?[cC]\b'; then
   EXECUTOR_PRESENT=1
 fi
 
@@ -225,6 +234,62 @@ ENV_SEG_EOF
 # --- Guard 5: rm recursive deletion (hard block) [H-2: -r/-R + combined flags] ---
 if printf '%s\n' "$DESTRUCT_CMD" | grep -qE '\brm\s+(-[a-zA-Z]*[rR]|--recursive)|\brm\s+-[a-zA-Z]*\s+-[a-zA-Z]*[rR]'; then
   deny "Recursive file deletion requires user confirmation. Confirm the target path and reason with the user before executing."
+fi
+
+# --- Guard 5.5: git worktree remove with node_modules present (hard block) ---
+# Incident (2026-07-23, downstream Windows project): `git worktree remove
+# --force` followed a node_modules JUNCTION inside the worktree and deleted the
+# real main-workspace node_modules through it. The safe order is mechanical:
+# ① unlink the junction (`cmd /c rmdir <wt>\node_modules` — removes the link
+# only, never the target) ② verify it is gone ③ then `git worktree remove`.
+# This guard enforces that order: if the removal target still contains a
+# node_modules entry (junction OR real dir), the removal is denied.
+# Unresolvable targets (variables/substitution) are denied too — a destructive
+# command the guard cannot inspect is fail-closed, not fail-open.
+# Per-segment scan (mirrors Guard 2) so chained removals are all covered.
+if printf '%s\n' "$GIT_CHECK_CMD" | grep -qE 'git\s+worktree\s+remove\b'; then
+  # Targets are extracted from the RAW command (git-normalised) — CLEAN_CMD
+  # strips quoted strings, so a quoted literal path ("../wt") would vanish and
+  # falsely register as uninspectable. The gate above stays on the quote-
+  # stripped form so PR bodies mentioning the command never trigger this guard.
+  while IFS= read -r _wseg; do
+    printf '%s\n' "$_wseg" | grep -qE 'git\s+worktree\s+remove\b' || continue
+    # Extract the target path: strip through "worktree remove", then drop flags.
+    _wt_args=$(printf '%s\n' "$_wseg" | sed -E 's/^.*worktree[[:space:]]+remove[[:space:]]*//')
+    _wt_target=""
+    for _tok in $_wt_args; do
+      case "$_tok" in
+        -*) continue ;;
+        *) _wt_target="$_tok"; break ;;
+      esac
+    done
+    # Strip surrounding quotes if any survived.
+    _wt_target=$(printf '%s' "$_wt_target" | sed "s/^[\"']//; s/[\"']\$//")
+    if [ -z "$_wt_target" ] || printf '%s' "$_wt_target" | grep -q '[$`]'; then
+      deny "git worktree remove: target path could not be inspected (empty or contains a variable/substitution). This command is destructive and the node_modules-junction check cannot run, so it is blocked fail-closed. Re-run with a literal path, one worktree at a time."
+    fi
+    # Resolve relative targets against the session cwd.
+    case "$_wt_target" in
+      /*|[A-Za-z]:*) _wt_abs="$_wt_target" ;;
+      *) _wt_abs="${CWD}/${_wt_target}" ;;
+    esac
+    if [ -e "$_wt_abs/node_modules" ]; then
+      _wt_win=$(printf '%s' "$_wt_abs" | sed 's|^/\([a-zA-Z]\)/|\1:/|; s|/|\\\\|g')
+      deny "git worktree remove: '$_wt_target/node_modules' still exists. On Windows, worktree removal can follow a node_modules junction and delete the REAL main-workspace node_modules through it (incident 2026-07-23). Safe order: (1) unlink the junction: cmd /c rmdir \"$_wt_win\\node_modules\" (removes the link only) (2) verify it is gone (3) re-run git worktree remove. If node_modules is a real directory here, delete it explicitly first so the removal is a conscious step."
+    fi
+  done <<WT_SEG_EOF
+$(normalize_git_cmd "$COMMAND" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
+WT_SEG_EOF
+fi
+
+# --- Guard 5.6: rmdir /s — Windows recursive deletion (warning) [alternate cmd] ---
+# `cmd /c rmdir /s /q <dir>` is the Windows twin of `rm -rf` and previously
+# slipped past Guard 5 entirely (alternate-command gap). Warning, not deny:
+# rmdir /s does NOT follow junctions (that property makes it the recommended
+# cleanup tool), but it is still an irreversible bulk deletion that deserves
+# the permission dialog's attention.
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qiE '\brmdir\b[^;&|]*[[:space:]]/s\b'; then
+  allow_with_context "WARNING: rmdir /s (Windows recursive deletion) detected. This deletes the directory tree irreversibly (junctions are removed as links, not followed). Verify the target path before proceeding."
 fi
 
 # --- Guard 6: prisma db push (hard block) ---
@@ -352,7 +417,7 @@ fi
 # Reached only when no destructive pattern was found inside the executor AND the
 # command was not a forbidden STG PR route (Guard 11 above already denied those).
 if [ "$EXECUTOR_PRESENT" -eq 1 ]; then
-  allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
+  allow_with_context "WARNING: shell executor (bash -c / sh -c / eval / xargs / cmd /c) detected. Quote-based guards are weakened inside executors; verify the wrapped command performs no destructive action."
 fi
 
 # --- Guard 4.5 deferred emit: template -> .env setup copy (WARNING — see Guard 4.5) ---

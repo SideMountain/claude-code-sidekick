@@ -3,12 +3,18 @@
 set -u
 REPO="${1:?usage: replay-oracle.sh <repo-root>}"
 FIXTURE="$REPO/tests/fixtures/guard-oracle/cases.jsonl"
+# Guard 5.5 fixture: a simulated worktree containing node_modules. Provisioned
+# here (not committed) because the repo-wide .gitignore excludes node_modules/.
+mkdir -p "$REPO/tests/fixtures/guard-oracle/wt-junction-sim/node_modules"
 PASS=0; FAIL=0
 while IFS= read -r line; do
   [ -z "$line" ] && continue
   id=$(printf '%s\n' "$line" | jq -r '.id')
   hook=$(printf '%s\n' "$line" | jq -r '.hook')
   stdin_json=$(printf '%s\n' "$line" | jq -c '.stdin')
+  # {{REPO}} placeholder: lets a case reference a committed fixture path (e.g. a
+  # simulated worktree with node_modules for Guard 5.5) portably across clones.
+  stdin_json=${stdin_json//"{{REPO}}"/$REPO}
   exp_dec=$(printf '%s\n' "$line" | jq -r '.expected.decision')
   exp_sub=$(printf '%s\n' "$line" | jq -r '.expected.output_contains // ""')
   envargs=$(printf '%s\n' "$line" | jq -r '.env | to_entries | map("\(.key)=\(.value)") | .[]' 2>/dev/null)
