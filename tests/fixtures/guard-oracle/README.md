@@ -1,14 +1,17 @@
 # guard 回帰オラクル — STG ルーティング・.env 書き込みガードの凍結期待値
 
 guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警告）フォールスルー、
-および **Guard 4.5**（`.env` 書き込み = H5）の回帰ベースライン。`cases.jsonl` は計 42 ケース
-= Guard 11 STG 経路 26（ルーティングマトリクス 18 + 敵対 8）+ Guard 4.5 `.env` 書き込み 16
-（v0.13.1 追加）。いずれも **hook への stdin JSON → deny/allow の観測結果を実走で確定**したもの
+**Guard 4.5**（`.env` 書き込み = H5）、および **Guard 5.5/5.6 + cmd executor**（`git worktree
+remove` の node_modules junction 事故防止 / Windows 再帰削除 / `cmd /c` ラップ payload）の回帰
+ベースライン。`cases.jsonl` は計 53 ケース = Guard 11 STG 経路 26（ルーティングマトリクス 18 +
+敵対 8）+ Guard 4.5 `.env` 書き込み 16（v0.13.1 追加）+ Guard 5.5/5.6/cmd executor 11。
+いずれも **hook への stdin JSON → deny/allow の観測結果を実走で確定**したもの
 （読み判断による期待値は 1 件もない）。
 
 - 凍結日: 2026-07-05（Guard 11 26 ケース）/ 2026-07-06 追加（Guard 4.5 16 ケース）
+  / 2026-07-23 追加（Guard 5.5/5.6/cmd executor 11 ケース）
   / 検証対象: `.claude/hooks/guard-bash.sh`
-- 全 42 ケースを `replay.sh` で実走し 42/42 一致を確認してから凍結
+- 全 53 ケースを `replay.sh` で実走し 53/53 一致を確認してから凍結
 
 ## 形式（cases.jsonl・1 行 1 ケース）
 
@@ -22,15 +25,19 @@ guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警
 - `expected.decision`: `deny`（stdout JSON `permissionDecision:deny`）/ `allow_context`（allow + additionalContext）/ `allow_silent`（出力なし・exit 0）
 - `expected.output_contains`: stdout に含まれるべき部分文字列（H10/H11 の理由文・警告文）
 - `known_gap: true`: 現行実装の**既知の検知漏れを観測値のまま**凍結したケース（下記）
+- `{{REPO}}`（`stdin` 内のプレースホルダ）: `replay.sh` が実行時にリポルートへ置換する。
+  fixture パス（例: Guard 5.5 の疑似 Worktree `wt-junction-sim/`）を clone 位置に依存せず
+  参照するための機構。`wt-junction-sim/node_modules/` は `.gitignore`（`node_modules/`）で
+  コミットできないため、`replay.sh` が実行時に自己プロビジョンする
 
 ## 検証（リプレイ）
 
 ```bash
-bash tests/fixtures/guard-oracle/replay.sh <リポルート>          # 42/42 PASS で exit 0
+bash tests/fixtures/guard-oracle/replay.sh <リポルート>          # 53/53 PASS で exit 0
 bash tests/fixtures/guard-oracle/bootstrap-test.sh <リポルート>  # 25/25 PASS で exit 0
 ```
 
-- `replay.sh`: **healthy** な helper lib に対する guard の deny/allow 期待値（`cases.jsonl` 42 ケース）。
+- `replay.sh`: **healthy** な helper lib に対する guard の deny/allow 期待値（`cases.jsonl` 53 ケース）。
 - `bootstrap-test.sh`: helper lib を**破損させた**ときに 4 enforcement guard が fail-closed で deny するかを検査（Issue #103 / ADR-0032）。SEALED（欠落 / 途中 syntax error / top-level exit / stdout ゴミ / env 継承 sentinel）は deny を assert。CEILING（BASH_ENV + readonly `deny` の関数注入）は現状 bypass する既知の天井で XFAIL 記録 — env-scrub で封じたら SEALED へ昇格する。
 
 CI への配線・他 guard（push / rm 系）への拡張は別ステップ（実装 wave）。

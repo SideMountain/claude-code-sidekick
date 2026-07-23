@@ -65,11 +65,22 @@ ln -s $(realpath node_modules) ../<project>-<用途>/node_modules
 
 **注意**: ブランチ間で `package.json` / `package-lock.json` が異なる場合はシンボリックリンクではなく通常の `npm install` を使うこと。
 
+**⚠ 削除時の危険（Windows junction / symlink 共有時）**: リンク共有した Worktree を
+リンク解除より先に `git worktree remove`（特に `--force`）すると、junction を辿って
+**メインWS の実体 node_modules が削除される**（Windows 環境での実インシデント・2026-07-23）。
+安全な削除順序は下記ライフサイクル節を参照。guard-bash.sh Guard 5.5 がこの順序を強制する
+（`node_modules` が残っている Worktree の remove は deny される）。
+
 ### Worktree ライフサイクル
 
 - **原則**: ユーザーが「作業完了」と明言するまで保持。PRマージ後すぐには削除しない
 - **PRマージ後**: auto-memory MEMORY.md のステータスを「STG確認待ち」に更新
 - **削除**: ユーザー明言後に `git worktree remove` → ブランチ削除 → auto-memory MEMORY.md更新
+- **削除の安全順序（node_modules がある Worktree）**: ① node_modules のリンク・実体を先に
+  明示的に除去する（junction は `cmd /c rmdir <wt>\node_modules` — リンクのみ消え実体は消えない /
+  symlink は `rm <wt>/node_modules` / 実体ディレクトリは中身ごと削除） → ② 消えたことを確認 →
+  ③ `git worktree remove`。junction / symlink を残したまま remove すると、リンクを辿って
+  メインWS の実体が削除されうる（Guard 5.5 が deny で強制）
 
 ### Active Work ステータス
 
