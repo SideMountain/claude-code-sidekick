@@ -25,6 +25,34 @@
 # （Claude 経由の push は guard-bash.sh も通るため、--no-verify では
 #   そちらの防衛線は外れない）
 
+# ゲート0: マージ済み PR のブランチへの追い足し push を止める
+#   PR マージ後に同じブランチへ push しても差分は元 PR に反映されず、ベースブランチに入らない。
+#   判定は .claude/scripts/check-merged-pr.sh（guard-bash.sh Guard 2.5 と同じ単一の正）。
+#   ※ stdin は消費しない（下の while read ループが push 対象 ref を読むため）。
+#   Worktree でも起動する（core.hooksPath=.claude/githooks は追跡ディレクトリを指すため）。
+_mp_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ -n "$_mp_branch" ] && [ "$_mp_branch" != "HEAD" ] && [ -f .claude/scripts/check-merged-pr.sh ]; then
+  bash .claude/scripts/check-merged-pr.sh "$_mp_branch"
+  _mp_rc=$?
+  if [ "$_mp_rc" -eq 1 ]; then
+    echo ""
+    echo "❌ [pre-push] '$_mp_branch' には既にマージ済みの PR があります。"
+    echo "   このブランチへ push しても、コミットは元 PR には反映されずベースブランチに入りません。"
+    echo "   → ベースから新しいブランチを切り、新しい PR を作成してください。"
+    echo "   意図的に push する場合のみ: CONFIRM_PUSH_TO_MERGED=1 git push ..."
+    echo ""
+    exit 1
+  elif [ "$_mp_rc" -eq 2 ]; then
+    echo ""
+    echo "❌ [pre-push] '$_mp_branch' の PR 状態を確認できませんでした（gh 不在 / 未認証 / API エラー）。"
+    echo "   マージ済みブランチへの push を防ぐため fail-closed で中止します。"
+    echo "   → 'gh auth status' を確認するか、意図的に進める場合のみ:"
+    echo "      CONFIRM_PUSH_TO_MERGED=1 git push ..."
+    echo ""
+    exit 1
+  fi
+fi
+
 # 検証ゲート実行ヘルパー。失敗時は原因の切り分けを示して push を中止する。
 run_gate() {
   name="$1"

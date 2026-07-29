@@ -5,6 +5,9 @@
 # Guards:
 #   1. git checkout / switch (blocked in main workspace — use worktrees instead)
 #   2. git push to protected branches (hard block — must use PRs)
+#   2.5 git push to a branch whose PR is already merged (hard block — the
+#       commits would never reach the base branch; fail-closed when gh
+#       cannot answer)
 #   3. git push general (warning — defers to permission dialog)
 #   4. .env DATABASE_URL modification via shell commands (hard block)
 #   4.5 any shell write to .env — redirect / cp / mv (hard block)
@@ -151,6 +154,51 @@ if printf '%s\n' "$GIT_CHECK_CMD" | grep -qE 'git\s+push\b'; then
   done <<SEGMENTS_EOF
 $(printf '%s\n' "$GIT_CHECK_CMD" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
 SEGMENTS_EOF
+fi
+
+# --- Guard 2.5: push to a branch whose PR is already MERGED (hard block) ---
+# PR がマージされた後に同じブランチへ push しても、その差分は元 PR に反映されない。
+# push 自体は成功しリモートにもコミットが載るため「出したつもりでベースに入っていない」が
+# 起きる。規約（push 前に PR 状態を確認する）は守り漏れるので機械で止める。
+# 判定は .claude/scripts/check-merged-pr.sh（単一の正・git hook 側からも同じ判定を呼ぶ）。
+#
+# 判定不能（gh 不在 / 未認証 / API 失敗）は fail-closed で block する。意図的に外すときは
+# CONFIRM_PUSH_TO_MERGED=1 を付ける（ゲートを外した事実がコマンド履歴に残る）。
+if printf '%s\n' "$GIT_CHECK_CMD" | grep -qE 'git\s+push\b'; then
+  _pg_script="$(dirname "$0")/../scripts/check-merged-pr.sh"
+  if [ -f "$_pg_script" ]; then
+    # push 引数から対象ブランチを解決する（最初の非フラグトークンは remote 名）。
+    _pg_args=$(printf '%s\n' "$GIT_CHECK_CMD" | sed -E 's/^.*git[[:space:]]+push[[:space:]]*//')
+    _pg_branch=""
+    _pg_seen_remote=0
+    _pg_restore=0
+    case $- in *f*) : ;; *) set -f; _pg_restore=1 ;; esac
+    for _pg_tok in $_pg_args; do
+      case "$_pg_tok" in -*) continue ;; esac
+      _pg_tok="${_pg_tok%%;*}"; _pg_tok="${_pg_tok%%&*}"; _pg_tok="${_pg_tok%%|*}"
+      [ -z "$_pg_tok" ] && continue
+      if [ "$_pg_seen_remote" -eq 0 ]; then _pg_seen_remote=1; continue; fi
+      _pg_branch="${_pg_tok##*:}"
+      _pg_branch="${_pg_branch#+}"
+      _pg_branch="${_pg_branch#refs/heads/}"
+      break
+    done
+    [ "$_pg_restore" -eq 1 ] && set +f
+    # refspec 省略時（git push / git push origin）は cwd の現在ブランチが対象。
+    if [ -z "$_pg_branch" ]; then
+      _pg_branch=$(git -C "${CWD:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    fi
+    # detached HEAD 等でブランチを特定できないときは判定しない（誤 block を作らない）。
+    if [ -n "$_pg_branch" ] && [ "$_pg_branch" != "HEAD" ]; then
+      bash "$_pg_script" "$_pg_branch"
+      _pg_rc=$?
+      if [ "$_pg_rc" -eq 1 ]; then
+        deny "Branch '$_pg_branch' already has a MERGED pull request. Pushing more commits to it will NOT reach the base branch. Create a new branch from the base and open a new PR. Override (leaves a trace): CONFIRM_PUSH_TO_MERGED=1 git push ..."
+      elif [ "$_pg_rc" -eq 2 ]; then
+        deny "Could not verify whether '$_pg_branch' already has a MERGED pull request (gh missing, unauthenticated, or API error). Blocked fail-closed. Fix gh (gh auth status), or override: CONFIRM_PUSH_TO_MERGED=1 git push ..."
+      fi
+    fi
+  fi
 fi
 
 # --- Guard 3: git push general (allow with context) ---
