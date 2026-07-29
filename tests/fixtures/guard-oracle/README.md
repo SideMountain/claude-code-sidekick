@@ -3,16 +3,16 @@
 guard-bash.sh **Guard 11**（STG PR 経路 = H10/H11）+ Guard 10（executor 警告）フォールスルー、
 **Guard 4.5**（`.env` 書き込み = H5）、および **Guard 5.5/5.6 + cmd executor**（`git worktree
 remove` の node_modules junction 事故防止 / Windows 再帰削除 / `cmd /c` ラップ payload）の回帰
-ベースライン。`cases.jsonl` は計 58 ケース = Guard 11 STG 経路 26（ルーティングマトリクス 18 +
-敵対 8）+ Guard 4.5 `.env` 書き込み 16（v0.13.1 追加）+ Guard 5.5/5.6/cmd executor 11 + Guard 2.5 merged-PR push 5（v0.18 追加）。
+ベースライン。`cases.jsonl` は計 63 ケース = Guard 11 STG 経路 26（ルーティングマトリクス 18 +
+敵対 8）+ Guard 4.5 `.env` 書き込み 16（v0.13.1 追加）+ Guard 5.5/5.6/cmd executor 11 + Guard 2.5 merged-PR push 5 + Guard 13 STG テストゲート 5（v0.18 追加）。
 いずれも **hook への stdin JSON → deny/allow の観測結果を実走で確定**したもの
 （読み判断による期待値は 1 件もない）。
 
 - 凍結日: 2026-07-05（Guard 11 26 ケース）/ 2026-07-06 追加（Guard 4.5 16 ケース）
   / 2026-07-23 追加（Guard 5.5/5.6/cmd executor 11 ケース）
-  / 2026-07-29 追加（Guard 2.5 merged-PR push 5 ケース）
+  / 2026-07-29 追加（Guard 2.5 merged-PR push 5 ケース / Guard 13 STG テストゲート 5 ケース）
   / 検証対象: `.claude/hooks/guard-bash.sh`
-- 全 58 ケースを `replay.sh` で実走し 58/58 一致を確認してから凍結
+- 全 63 ケースを `replay.sh` で実走し 63/63 一致を確認してから凍結
 
 ## 形式（cases.jsonl・1 行 1 ケース）
 
@@ -34,11 +34,11 @@ remove` の node_modules junction 事故防止 / Windows 再帰削除 / `cmd /c`
 ## 検証（リプレイ）
 
 ```bash
-bash tests/fixtures/guard-oracle/replay.sh <リポルート>          # 58/58 PASS で exit 0
+bash tests/fixtures/guard-oracle/replay.sh <リポルート>          # 63/63 PASS で exit 0
 bash tests/fixtures/guard-oracle/bootstrap-test.sh <リポルート>  # 25/25 PASS で exit 0
 ```
 
-- `replay.sh`: **healthy** な helper lib に対する guard の deny/allow 期待値（`cases.jsonl` 58 ケース）。
+- `replay.sh`: **healthy** な helper lib に対する guard の deny/allow 期待値（`cases.jsonl` 63 ケース）。
 - `bootstrap-test.sh`: helper lib を**破損させた**ときに 4 enforcement guard が fail-closed で deny するかを検査（Issue #103 / ADR-0032）。SEALED（欠落 / 途中 syntax error / top-level exit / stdout ゴミ / env 継承 sentinel）は deny を assert。CEILING（BASH_ENV + readonly `deny` の関数注入）は現状 bypass する既知の天井で XFAIL 記録 — env-scrub で封じたら SEALED へ昇格する。
 
 CI への配線・他 guard（push / rm 系）への拡張は別ステップ（実装 wave）。

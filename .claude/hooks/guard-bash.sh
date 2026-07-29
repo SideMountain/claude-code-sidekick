@@ -25,6 +25,9 @@
 #  11. STG PR routing — feature->main (H10) / main->stg (H11) (hard block,
 #      STG_ENABLED=true only). Evaluated BEFORE guard 10 so an executor-wrapped
 #      PR is still routed here instead of slipping past guard 10's warning-exit.
+#  12. release PR (--base main) carrying migrations (warning — apply order)
+#  13. full test suite / build on a non-release branch (warning — the
+#      feature->STG gate is scoped tests + typecheck only; STG_ENABLED=true only)
 #
 # Guard hardening (red-team): git invocations are normalised first so that
 # `git -C <dir>` / `-c` / `--git-dir` cannot smuggle a subcommand past a guard
@@ -459,6 +462,87 @@ if [ "$STG_ENABLED_VAL" = "true" ]; then
   done <<STG_SEG_EOF
 $(printf '%s\n' "$COMMAND" | sed -E 's/(&&|\|\|)/\n/g; s/[;&|]/\n/g')
 STG_SEG_EOF
+fi
+
+# --- Guard 12: release PR carrying migrations (warning) ---
+# Trigger: `gh pr create --base main` whose diff contains a migrations/ path.
+#
+# WHY: deploy-strategy.md states that additive (non-destructive) schema changes
+# apply the migration BEFORE the deploy. A release PR that ships code writing to
+# a column whose migration has not reached production breaks every write to that
+# table until the migration is applied. The rule alone does not prevent this —
+# what is missing is a reminder at the moment of creating the release PR.
+#
+# This is advisory only (never blocks): whether the migration must precede the
+# deploy depends on the diff (does the shipped code write the new column?), and
+# that judgement belongs to the author, not to a pattern match.
+#
+# ORDERING: placed after every deny guard so blocks keep precedence, and before
+# Guard 10 so this specific advisory supersedes the generic executor warning
+# (allow_with_context exits, so only the first warning is emitted).
+# Fail-open by design: no git, no repo, or a failed diff -> stay silent.
+if printf '%s\n' "$COMMAND" | grep -qE 'gh\s+pr\s+create\b' \
+   && printf '%s\n' "$COMMAND" | grep -qE '(^|[[:space:]])--base[[:space:]=]+main([[:space:]]|$)'; then
+  _repo_root="$(dirname "$0")/../.."
+  _mig_files=$(git -C "$_repo_root" diff --name-only origin/main...HEAD 2>/dev/null | grep -E '(^|/)migrations/' )
+  if [ -n "$_mig_files" ]; then
+    _mig_count=$(printf '%s\n' "$_mig_files" | grep -c .)
+    _mig_names=$(printf '%s\n' "$_mig_files" | sed 's|.*/||' | tr '\n' ' ')
+    allow_with_context "WARNING: this release PR contains ${_mig_count} migration(s) not in main: ${_mig_names}- deploy-strategy.md: additive schema changes apply the migration BEFORE the deploy. If the shipped code READS a new column, either order works; if it WRITES one, the migration MUST be applied to production BEFORE the deploy, or every write to that table fails in production. State the required order explicitly in the PR body."
+  fi
+fi
+
+# --- Guard 13: full test suite / build outside the release gate (warning) ---
+# Active ONLY when STG_ENABLED=true (two-stage test gate — see CLAUDE.md
+# テスト実行の最適化). Trigger: a vitest run with no positional filter (= whole
+# suite), pnpm/npm/yarn test with no forwarded filter, or a production build —
+# while the target checkout is NOT on release/stg, main, or a hotfix branch.
+#
+# WHY: the two-stage gate says feature->release/stg needs scoped tests + full
+# typecheck only; the full suite and build belong to the release/stg->main gate.
+# A rule alone does not change behaviour — full-suite runs keep happening for
+# STG-bound fixes, and parallel worktrees each running the whole suite degrade
+# the machine. The missing piece is a reminder at the moment of action.
+#
+# Advisory only (never blocks): a full run on a feature branch is legitimate
+# for high-risk changes — that judgement belongs to the author. Detection is
+# heuristic and fail-open: matching runs on CLEAN_CMD (quoted text stripped, so
+# commit messages mentioning these commands stay silent); an executor-wrapped
+# full run is Guard 10's territory. A flag value in space form (--pool x) reads
+# as a positional and stays silent — acceptable for an advisory layer.
+if [ "$STG_ENABLED_VAL" = "true" ]; then
+  _g13_hit=""
+  if printf '%s\n' "$CLEAN_CMD" | grep -qE 'vitest[[:space:]]+run'; then
+    _g13_rest=$(printf '%s\n' "$CLEAN_CMD" | sed -E 's/.*vitest[[:space:]]+run//; s/(&&|\|\|).*//; s/[;|&].*//')
+    _g13_pos=$(printf '%s\n' "$_g13_rest" | tr '[:space:]' '\n' | grep -vE '^$|^-|^[0-9]*[<>]' | head -1)
+    [ -z "$_g13_pos" ] && _g13_hit="full-suite vitest run (no file/pattern filter)"
+  fi
+  if [ -z "$_g13_hit" ] && printf '%s\n' "$CLEAN_CMD" | grep -qE '(^|[[:space:];&|(])(pnpm|npm|yarn)([[:space:]]+run)?[[:space:]]+test([[:space:]]|$)'; then
+    _g13_rest=$(printf '%s\n' "$CLEAN_CMD" | sed -E 's/.*(pnpm|npm|yarn)([[:space:]]+run)?[[:space:]]+test//; s/(&&|\|\|).*//; s/[;|&].*//')
+    _g13_pos=$(printf '%s\n' "$_g13_rest" | tr '[:space:]' '\n' | grep -vE '^$|^-|^[0-9]*[<>]' | head -1)
+    [ -z "$_g13_pos" ] && _g13_hit="full-suite test script"
+  fi
+  if [ -z "$_g13_hit" ] && printf '%s\n' "$CLEAN_CMD" | grep -qE '(^|[[:space:];&|(])((pnpm|npm|yarn)([[:space:]]+run)?[[:space:]]+build|next[[:space:]]+build)\b'; then
+    _g13_hit="production build"
+  fi
+  if [ -n "$_g13_hit" ]; then
+    # Judge by the branch of the directory the command targets: the first
+    # `cd <dir>` wins, so `cd ../wt && npx vitest run` is judged by the
+    # worktree's branch, not the hook cwd's.
+    _g13_dir=$(printf '%s\n' "$CLEAN_CMD" | grep -oE '(^|[;&|[:space:]])cd[[:space:]]+[^;&|[:space:]]+' | head -1 | sed -E 's/^.*cd[[:space:]]+//')
+    case "$_g13_dir" in
+      ""|/*|[A-Za-z]:*) : ;;                      # absolute (POSIX or Windows) as-is
+      *) [ -n "$CWD" ] && _g13_dir="$CWD/$_g13_dir" ;;  # relative: resolve against tool cwd
+    esac
+    [ -z "$_g13_dir" ] && _g13_dir="${CWD:-.}"
+    _g13_branch=$(git -C "$_g13_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    case "$_g13_branch" in
+      release/stg|main|hotfix/*) : ;;  # release gate — the full suite/build is the policy there
+      *)
+        allow_with_context "WARNING: ${_g13_hit} on branch '${_g13_branch:-unknown}'. CLAUDE.md テスト実行の最適化: the feature->release/stg gate is scoped tests + full typecheck only — the full suite and build belong to the release/stg->main gate. Scope the run (test file / directory / --changed) unless this change is explicitly release-bound or high-risk. Parallel worktrees each running the full suite degrade the whole machine."
+        ;;
+    esac
+  fi
 fi
 
 # --- Guard 10: shell executor present (warning) [C-2b] ---
