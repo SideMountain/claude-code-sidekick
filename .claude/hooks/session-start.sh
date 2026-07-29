@@ -65,6 +65,24 @@ git fetch origin 2>/dev/null
 BRANCH=$(git branch --show-current 2>/dev/null)
 echo "  Current branch: $BRANCH"
 
+# H21 (STG_ENABLED=true のみ): メインWS（primary worktree）の常駐ブランチ検査。
+# STG 運用ではメインWSを release/stg に固定する — main で滞在すると誤コミット・
+# 誤 push の面が増えるため、逸脱をセッション開始時に検知する（advisory）。
+_STG_VAL="${SIDEKICK_STG_ENABLED:-}"
+if [ -z "$_STG_VAL" ] && [ -f "$PROJECT_DIR/CLAUDE.md" ]; then
+  _STG_VAL=$(grep -m1 -E '^[[:space:]]*STG_ENABLED[[:space:]]*:' "$PROJECT_DIR/CLAUDE.md" 2>/dev/null | sed -E "s/^[^:]*:[[:space:]]*//; s/[[:space:]#].*//; s/[\"']//g")
+fi
+if [ "$_STG_VAL" = "true" ]; then
+  # パス表記を揃えて比較（Windows: git は C:/... を返し pwd は /c/... を返す）
+  _norm() { cygpath -m "$1" 2>/dev/null || printf '%s' "$1"; }
+  _PRIMARY_WT=$(git worktree list --porcelain 2>/dev/null | grep -m1 '^worktree ' | sed 's/^worktree //')
+  _CURRENT_WT=$(git rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$_PRIMARY_WT" ] && [ "$(_norm "$_PRIMARY_WT")" = "$(_norm "$_CURRENT_WT")" ] && [ "$BRANCH" != "release/stg" ]; then
+    echo "  WARNING: メインWS の常駐ブランチは 'release/stg' 固定です (H21)。現在 '$BRANCH'。"
+    echo "     → main 視点が必要な操作は checkout せず 'git fetch origin && git log origin/main' 等で参照する"
+  fi
+fi
+
 IS_PROTECTED=false
 for PB in "${PROTECTED_BRANCHES[@]}"; do
   if [ "$BRANCH" = "$PB" ]; then

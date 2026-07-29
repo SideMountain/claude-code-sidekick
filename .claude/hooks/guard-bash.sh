@@ -20,6 +20,10 @@
 #   6. prisma db push (hard block — must use prisma migrate dev)
 #   7. gh api write operations (hard block — POST/PUT/DELETE/PATCH)
 #   8. gh pr merge (warning — defers to permission dialog)
+#   8.5 Supabase CLI destructive operations (hard block — H16/H17/H18) /
+#       Supabase CLI migration execution (warning — H19/H20). ORM_TYPE=none
+#       (Supabase) projects have no prisma-side guard, so this is the ONLY
+#       physical enforcement point for those rules.
 #   9. find bulk deletion (-delete / -exec rm) (warning)
 #  10. shell executor present (bash -c / sh -c / eval / xargs / cmd /c) (warning)
 #  11. STG PR routing — feature->main (H10) / main->stg (H11) (hard block,
@@ -373,6 +377,31 @@ if printf '%s\n' "$MERGE_CHECK_CMD" | grep -qE 'gh\s+pr\s+merge'; then
   else
     allow_with_context "WARNING: gh pr merge detected. Verify the PR number, target branch, and changes."
   fi
+fi
+
+# --- Guard 8.5a: Supabase CLI destructive operations (hard block) [H16/H17/H18] ---
+# ORM_TYPE=none (Supabase). supabase db reset: drops ALL data and recreates
+# schema. Uses DESTRUCT_CMD so an executor-wrapped invocation cannot hide.
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE 'supabase\s+db\s+reset'; then
+  deny "'supabase db reset' is forbidden. It drops all data and recreates the schema. To apply new migrations, use 'supabase db push' instead."
+fi
+# supabase db push --force: forces destructive schema changes (DROP TABLE/COLUMN)
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE 'supabase\s+db\s+push\s+.*--force'; then
+  deny "'supabase db push --force' is forbidden. It may drop tables/columns with data. Use the Expand-Contract pattern for destructive changes (see deploy-strategy.md)."
+fi
+# supabase migration repair: tampers with migration history
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE 'supabase\s+migration\s+repair'; then
+  deny "'supabase migration repair' is forbidden. It modifies migration tracking history. If migration state is inconsistent, consult the user."
+fi
+
+# --- Guard 8.5b: Supabase CLI migration execution (warning) [H19/H20] ---
+# supabase db push: applies pending migrations to the linked project.
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE 'supabase\s+db\s+push\b'; then
+  allow_with_context "WARNING: 'supabase db push' applies migrations to the linked Supabase project. Verify: target project, pending migrations, and expected changes (H19; PRD targets need the full H20 approval package)."
+fi
+# supabase db execute: runs arbitrary SQL
+if printf '%s\n' "$DESTRUCT_CMD" | grep -qE 'supabase\s+db\s+execute\b'; then
+  allow_with_context "WARNING: 'supabase db execute' runs SQL directly on the database. Verify: target project and SQL content."
 fi
 
 # --- Guard 9: find bulk deletion (warning) [H-2] ---
