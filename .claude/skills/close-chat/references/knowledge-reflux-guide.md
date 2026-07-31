@@ -17,6 +17,6 @@
 
 ## 記録アクション
 
-拾った項目を `.claude/docs/knowledge-reflux.md` の **R7 還流 3 分類**で振り分け、feedback_*.md + MEMORY.md Backlog に還流タグ（`[OSS 還流候補]` / `[個人 brain 昇格]` / `[PJ 固有]`）を立てる。
+拾った項目を `.claude/docs/knowledge-reflux.md` の **R7 還流 3 分類**で振り分け、feedback_*.md + `BACKLOG.md` に還流タグ（`[OSS 還流候補]` / `[個人 brain 昇格]` / `[PJ 固有]`）を立てる。
 
 **重要: 即座に brain / OSS テンプレートを更新しない。** フラグを立てるだけ。統合・昇格は棚卸し（`/weekly-inventory`）でまとめて行う（doc「記録アクション」節）。

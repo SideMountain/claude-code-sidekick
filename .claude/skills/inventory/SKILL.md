@@ -21,7 +21,7 @@ allowed-tools: "Read Grep Glob Bash(git *) Bash(gh *) Agent WebFetch"
 
 ## 目的
 
-複数のタスクソース（Tasks DB、GitHub Issues、auto-memory MEMORY.md Backlog）を横断的に取得・照合し、
+複数のタスクソース（Tasks DB、GitHub Issues、auto-memory `BACKLOG.md`）を横断的に取得・照合し、
 現在の作業全体像を一覧表示する。加えて、sidekick テンプレートの更新有無を検知する。
 
 セッション開始時やタスクの優先順位を見直したいときに実行する。
@@ -79,9 +79,12 @@ gh issue list --state open --limit 50 --json number,title,labels,assignees,creat
 
 Issue がない場合は「GitHub Issues: 0件」と表示してスキップ。
 
-### Step 4: auto-memory MEMORY.md Backlog 読み込み
+### Step 4: auto-memory BACKLOG.md 読み込み
 
-auto-memory の MEMORY.md（`~/.claude/projects/<slug>/memory/MEMORY.md`）の `## Backlog` セクションを読み込み、未完了項目（`- [ ]`）を一時保持する。
+auto-memory の **`BACKLOG.md`**（`~/.claude/projects/<slug>/memory/BACKLOG.md`）を読み込み、未完了項目（`- [ ]`）を一時保持する。
+
+**`MEMORY.md` ではない。** backlog は常駐コストを避けるため別ファイルに分けてある（ADR-0035）。
+`BACKLOG.md` が存在しない PJ では、後方互換として `MEMORY.md` の `## Backlog` セクションを見る。
 
 ```
 [Backlog] {内容}

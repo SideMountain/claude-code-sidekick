@@ -37,3 +37,5 @@ sidekick の設計判断とその根拠を記録する。
 | 0031 | [現在状態オラクル原則（時点根拠 ≠ 現在の真）](0031-current-state-oracle.md) | 採用（2026-07-10） |
 | 0032 | [enforcement 層は fail-closed、advisory 層は fail-open + 検知](0032-enforcement-guards-fail-closed.md) | 採用（2026-07-10） |
 | 0033 | [文書ガバナンス（文体標準・読者宣言・単一ソース原則）](0033-doc-governance-style-and-single-source.md) | 採用（2026-07-10） |
+| 0034 | [UX 導線スキャンスキル（/ux-scan）の追加](0034-ux-scan-skill.md) | 提案（2026-07-20） |
+| 0035 | [積み残しは常駐メモリから分離する（`MEMORY.md` / `BACKLOG.md`）](0035-backlog-separated-from-resident-memory.md) | 採用（2026-07-31） |

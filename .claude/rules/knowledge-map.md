@@ -25,7 +25,8 @@
 | auto-memory `reference_*.md` | 外部システム・設定へのポインタ | Claude（自動） | されない | — | 長い |
 | auto-memory `project_*.md` | 進行中の作業・ゴール・マイルストーン | Claude（自動） | されない | — | 中（作業完了で整理） |
 | auto-memory `user_*.md` | ユーザーの役割・好み・知識 | Claude（自動） | されない | — | 長い |
-| auto-memory `MEMORY.md` | 索引 + Active Work + Backlog | Claude（自動） | されない | ✅ | 可変（棚卸しで整理） |
+| auto-memory `MEMORY.md` | 索引 + Active Work（**1 エントリ 1 行**） | Claude（自動） | されない | ✅ **常駐** | 可変（棚卸しで整理） |
+| auto-memory `BACKLOG.md` | 積み残し（未成形の検討残） | Claude（自動） | されない | ❌ **常駐しない**（`/inventory` `/close-chat` `/weekly-inventory` が読む） | 可変 |
 
 brain は 2 層構造（ADR-0016）。OSS テンプレート（`brain/thinking.md`）は配布素材で、`/setup` で個人 brain 不在時のみコピーされる（既存個人 brain は上書き禁止）。
 
@@ -88,7 +89,7 @@ user-level スキル（`~/.claude/skills/`）は Claude Code の標準機構で�
 | UIルール | 「ブラウザネイティブダイアログを使わない」 | auto-memory `feedback_*.md` + rules/ |
 | 外部連携の情報 | 「Notion タスクDB の ID」 | auto-memory `reference_*.md` |
 | 一時的な作業状態 | 「今このタスクをやっている」 | auto-memory `MEMORY.md` の Active Work |
-| 積み残しタスク（個人・working・未成形） | 「次回これをやる」 | auto-memory `MEMORY.md` の Backlog |
+| 積み残しタスク（個人・working・未成形） | 「次回これをやる」 | auto-memory `BACKLOG.md` |
 | 作業単位（チーム・機能改善・bug・他人が拾える） | 「この機能を追加」「このバグを直す」 | GitHub Issue（intake routing・ADR-0022・[task-management.md](task-management.md)） |
 | スキルの分析履歴 | レビュー傾向、scout 結果 | skills/*/.data/ |
 | スキル・エージェントの設計判断 | 「隔離する/しない」「エージェント定義を作る」 | .claude/docs/skill-agent-design.md |

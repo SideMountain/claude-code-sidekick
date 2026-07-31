@@ -114,8 +114,14 @@ wc -l <MEMORY.md のパス>
 # Active Work の件数
 grep -c "^\- \*\*" <MEMORY.md のパス>
 
-# Backlog の未完了件数
+# Backlog の未完了件数（BACKLOG.md。MEMORY.md ではない）
+grep -c "^\- \[ \]" <BACKLOG.md のパス>
+
+# ⚠️ MEMORY.md に backlog が漏れていないか（あれば BACKLOG.md へ移す）
 grep -c "^\- \[ \]" <MEMORY.md のパス>
+
+# ⚠️ 判定だけして起票していない項目（滞留していたら先頭に出す）
+grep -c "Issue推奨\|Issue化候補\|Issue化推奨" <BACKLOG.md のパス>
 
 # feedback ファイル数
 ls memory/feedback_*.md 2>/dev/null | wc -l
@@ -124,9 +130,10 @@ ls memory/feedback_*.md 2>/dev/null | wc -l
 結果をユーザーに報告:
 ```
 === 棚卸し対象スナップショット ===
-MEMORY.md: XXX行
-Active Work: X件
-Backlog: XX件（未完了）
+MEMORY.md: XXX行 / YYY bytes（常駐。backlog が混ざっていれば ⚠️）
+BACKLOG.md: XX件（未完了）
+⚠️ Issue 未起票の滞留: X件 ← 0 でなければ Step 2b の先頭で処理する
+Active Work: X件（うち完了済 X件 ← アーカイブへ1行化する）
 feedback: XX件
 前回棚卸し: YYYY-MM-DD
 ```
@@ -143,19 +150,33 @@ feedback: XX件
 git worktree list
 ```
 
-#### 2b. Backlog 整理
+#### 2b. Backlog 整理（`BACKLOG.md`）
 
+**最初に Issue 未起票の滞留を処理する。** `［Issue推奨］`『Issue化候補』等のタグが付いた項目は
+**判定が済んでいるのに行動していない**状態で、放置すると backlog が Issue の代替物として溜まる。
+その場で `gh issue create` し、**backlog 側からは消して Issue# だけ残す**（1 アイテム＝1 ホーム）。
+
+そのうえで:
+
+- **Issue クラスの再判定**: タグが無い項目も「他人が拾えるか / チームに見せたいか / 具体的な作業単位か」で
+  見直す。YES なら Issue へ。**backlog が肥大する主因はサイズではなくこの振り分け漏れ**
 - **完了済み項目**: `[x]` マーク付きを削除候補として提示
-- **重複項目**: 同趣旨の項目が複数ないか確認
+- **重複項目**: 同趣旨の項目が複数ないか確認（起票済みなのに backlog に残っている重複を特に見る）
 - **陳腐化項目**: 1ヶ月以上前の項目で、状況が変わっていないか確認
 - **優先度の再評価**: ユーザーに「今もやりたい？」を確認
 
-#### 2c. MEMORY.md 行数チェック
+#### 2c. MEMORY.md のサイズチェック
 
-200行上限に近づいている場合:
-- 完了済みコメントの圧縮
-- 完了済みバックログの削除
-- Critical Rules で CLAUDE.md に昇格すべきものの提案
+`MEMORY.md` は**毎セッション常駐**するので、サイズは直接コンテキスト代になる。上限に近づいたら:
+
+- **まず「なぜ増えたか」を分類する。** 圧縮だけで凌ぐと翌週同じ位置に戻る。増加の主因は次のどれか。
+  1. **backlog が混ざっている** → `BACKLOG.md` へ移す（構造で解決。以後増えない）
+  2. **Active Work のエントリが数行に膨らんでいる** → 詳細を topic に出して 1 行に戻す
+  3. **完了済みが Active Work に残っている** → アーカイブへ 1 行化
+- 圧縮は上記 1〜3 を潰した**あと**にやる
+- **並行セッションがある場合は圧縮が追いつかないことを前提にする。** 他セッションの Active Work を
+  独断で削らない。削る候補として提示し、判断を仰ぐ
+- Critical Rules で CLAUDE.md に昇格すべきものがあれば提案する
 
 ### Step 3: feedback 圧縮
 
@@ -204,7 +225,7 @@ Backlog 内の `[OSS 還流候補]` `[個人 brain 昇格]` `[PJ 固有]` プレ
 > **前提条件**: CLAUDE.md の `NOTION_ENABLED` が `true`、かつタスクDB連携の設定ファイル（`.claude/rules/` 配下）が存在するプロジェクトのみ実行する。
 > 該当しない場合はこのステップをスキップする。
 
-- `[Tasks DB投入]` フラグ付きのMEMORY.md Backlog項目を確認
+- `[Tasks DB投入]` フラグ付きの `BACKLOG.md` 項目を確認
 - オーナーに投入を依頼すべきか、自分でDB投入するか判断
 - Tasks DBの Doing タスクで24h以上更新がないものを検出して報告
 
@@ -348,7 +369,7 @@ MEMORY.md に最終棚卸し日を記録する。
 weekly-inventory は Step 1-5 を Agent に委譲する場合がある。その際のデータ契約:
 
 ### 返すもの
-- Step 1 のスナップショット数値（MEMORY.md行数、Active Work件数、Backlog未完了件数、feedback件数）
+- Step 1 のスナップショット数値（MEMORY.md の行数と bytes、Active Work 件数と完了済み件数、`BACKLOG.md` の未完了件数、Issue 未起票の滞留件数、feedback 件数）
 - Step 2 の整理候補リスト（削除・統合・陳腐化の各候補）
 - Step 3 の feedback 統合候補・昇格候補
 - Step 4 の知識還流フラグ一覧

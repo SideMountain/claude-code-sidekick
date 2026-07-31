@@ -32,6 +32,8 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Changed
 
+- **積み残しを常駐メモリから分離（ADR-0035）**: `MEMORY.md` は「索引 + Active Work（1 エントリ 1 行）」に限定し、積み残しは**常駐しない `BACKLOG.md`** に置く。`MEMORY.md` は毎セッション自動ロードされるため、積み残しを同居させると「そのセッションで使わない情報」が常駐コストを食う（運用実測で backlog が全体の 4 割・読み取り上限に到達しかけた）。分けておけば backlog がどれだけ伸びても `MEMORY.md` は伸びない。`/close-chat` は追記先を、`/inventory` `/auto-implement` は読み込み元を `BACKLOG.md` に変更（**`BACKLOG.md` が無い PJ は `MEMORY.md` の `## Backlog` を見る後方互換つき＝既存 PJ は移行不要**）。
+- **`/weekly-inventory` に「圧縮の前に主因を分類する」手順と Issue 滞留の強制表示を追加**: スナップショットに bytes・`MEMORY.md` への backlog 混入・**Issue 未起票の滞留件数**を追加し、Step 2b の先頭で滞留を処理させる。`［Issue推奨］`と書いたまま起票しない状態は「判定は済んでいるのに行動していない」ため、backlog が Issue の代替物として溜まる原因になる。Step 2c は行数チェックから「①backlog 混入 ②Active Work の膨張 ③完了済みの残置 のどれかを特定してから圧縮する」手順に変更し、並行セッション下では他セッションの Active Work を独断で削らないことを明記。
 - **worktree-guide.md に削除の安全順序を追記**: リンク共有した Worktree の削除は「node_modules 除去 → 確認 → `git worktree remove`」の順序を明記（Guard 5.5 の認知層ペア）。
 
 ## [0.17.0] - 2026-07-22
