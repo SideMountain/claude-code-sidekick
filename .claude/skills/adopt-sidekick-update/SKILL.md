@@ -441,7 +441,7 @@ if printf '%s\n' "${PROTECTED_PENDING[@]}" | grep -q '^REVIEW\.md$'; then
 fi
 ```
 
-REVIEW.md が下流に未配置の場合（旧バージョンから飛び石で取り込む等）は diff でなく全文配置: `git show "${LATEST}:REVIEW.md" > REVIEW.md` → `/setup` 3e のロジックで条件ブロックを調整する。
+REVIEW.md が下流に未配置の場合（旧バージョンから飛び石で取り込む等）は diff でなく全文配置: `git show "${LATEST}:REVIEW.md" > REVIEW.md` → `/setup` 3e のロジックで条件ブロックを調整する。**この分岐は上のブロックが `PROTECTED_PENDING` に REVIEW.md を含むときしか通らない** — 差分範囲に REVIEW.md が現れなければここには来ないので、未配置の検知は Step 6.6 の配布完結性ゲートが担う（人の目に頼らない）。
 
 #### 6.4f: .claude/settings.json — hooks キーのみ partial merge
 
@@ -524,7 +524,62 @@ fi
 - **個人 brain は利用者領域**: `/setup` 初回 or `/adopt-sidekick-update` での明示的同意でのみ初期化。以降は触らない
 - **差分マージは手動**: 利用者の判断軸との衝突を機械では判定できない
 
+### Step 6.6: 配布完結性ゲート（fail-closed。ここを通らない限り Step 7 へ進まない）
+
+Step 2 が抽出するのは差分であって **closure ではない**。`v${CURRENT}..${LATEST}` に現れなかった companion — スキルが Step 1 で叩くスクリプト、スキルが Read する規範ファイル — は、その SKILL.md が更新されても一緒には届かない。前のバージョンで変わった companion、あるいは `scripts/` が配布フィルタに入る前から存在していた companion は、以後どの差分にも現れないため**永久に届かない**。
+
+実観測: 下流 PJ に `.claude/skills/review/SKILL.md` だけが在り、`scripts/review-fitness.sh` と `REVIEW.md` が両方欠落したまま `/review` が「判定」を返していた。決定的前置ゲートと PJ 規範 dimension が min() から黙って消え、**不完全なレビューが合格を出す**状態になる。
+
+判定は `.claude/scripts/distribution-gate.sh` が持つ（stop/proceed の対応表をスキルの散文で再導出しない）。ゲート自身も「届かなかった companion」でありうるため、先に取り寄せる — その取り寄せも**成否・空ファイル・実行権限まで確認する**:
+
+```bash
+GATE=.claude/scripts/distribution-gate.sh
+if [ ! -f "$GATE" ]; then
+  mkdir -p .claude/scripts || { echo "⛔ .claude/scripts を作成できません"; exit 6; }
+  if ! git cat-file -e "${LATEST}:$GATE" 2>/dev/null; then
+    echo "⛔ $GATE が ${LATEST} に存在しません。取り込みは未完了です"; exit 6
+  fi
+  if ! git show "${LATEST}:$GATE" > "$GATE.tmp" 2>/dev/null; then
+    rm -f "$GATE.tmp"; echo "⛔ git show ${LATEST}:$GATE に失敗しました"; exit 6
+  fi
+  if [ ! -s "$GATE.tmp" ]; then
+    rm -f "$GATE.tmp"; echo "⛔ 取り出した $GATE が空でした（空の検査器は配置しない）"; exit 6
+  fi
+  mv "$GATE.tmp" "$GATE" || { rm -f "$GATE.tmp"; echo "⛔ $GATE の配置に失敗"; exit 6; }
+  chmod +x "$GATE" || { echo "⛔ $GATE に実行権限を付与できません"; exit 6; }
+fi
+
+bash "$GATE" --repair-from "${LATEST}"
+GATE_ST=$?
+# 代入は必ず 0 を返す。`bash "$GATE" …; GATE_ST=$?` で終えると断片全体の exit が
+# 代入の 0 になり、取り込みが未完了でも「成功」として次へ進んでしまう。
+if [ "$GATE_ST" -ne 0 ]; then
+  echo "⛔ 配布完結性ゲートが exit $GATE_ST — 取り込みは未完了です。Step 7 へ進まないでください"
+  exit "$GATE_ST"
+fi
+```
+
+**`GATE_ST` が 0 以外なら、その場で停止する。Step 7 の commit 提案へ進まない。**
+
+| exit | 意味 | 動作 |
+|---|---|---|
+| 0 | 配布は完結（参照先すべて実在） | Step 7 へ |
+| 3 | 補修後も companion が欠落 | **停止**（取り込み未完了） |
+| 4 | 判定不能（manifest 欠落 / repo 外） | **停止**（「欠落なし」と読まない） |
+| 5 | 検査器が不在で復元もされなかった | **停止** |
+| 6 | bootstrap 失敗（ref に無い / 空 / chmod・配置失敗） | **停止** |
+| 7 | 検査器が想定外の exit を返した | **停止** |
+| **その他（`*)`）** | 未知の状態 | **停止**（想定外は成功ではない） |
+
+- exit 3 / 4 を `echo` だけして続行しない。**メッセージを出すことは停止の代わりにならない** — 続行すれば「取り込み完了」と記録され、欠落は次の差分にも現れないまま残る。
+- `--repair-from` は Step 6 と同じく**タグ参照**で取り寄せる（ブランチ tip 参照の drift 回避）。`.sh` は実行権限を復元する。
+- 補修で入ったファイルは Step 7 の commit に含める（取り込みの一部であり、別 PR に分離しない）。
+- 上流が意図的に削除したファイルを参照元が指したままなら exit 6 の「ref に無い」で止まる。これは補修対象ではなく**参照元の是正対象**（撤去はソース以外の参照まで畳んで完了）。
+- 回帰テスト: `tests/fixtures/distribution-gate/replay.sh`（12 ケース。bootstrap 失敗・空ファイル・想定外 exit を含む）。
+
 ### Step 7: 取り込み結果 → commit 提案
+
+> **前提**: Step 6.6 のゲートが exit 0 を返していること。0 以外のままここへ来てはならない — 欠落を抱えたまま commit すると「vX.Y.Z 取り込み済み」と記録され、欠けた companion は次の差分にも現れないので二度と検知されない。
 
 ```
 === 取り込み結果 ===
@@ -563,6 +618,7 @@ vX.Y.Z-1 → vX.Y.Z
 - **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり
 - **SIDEKICK_VERSION 抽出のクォート**: シングル/ダブルクォート両対応の regex を Step 0 で使う。下流 PJ で書式が揺れていても CURRENT を正しく抽出する
 - **`while read` は heredoc で**: パイプ経由 (`... | while read; do ...; done`) はサブシェル化により 1 イテレーション後に停止する事象あり。`done <<< "$VAR"` のヒアストリング形式を使うと配列収集も含めて確実に動く
+- **差分は closure ではない（Step 6.6）**: `v<CURRENT>..<LATEST>` に現れない companion は、その SKILL.md が更新されても届かない。前のバージョンで変わったもの・配布フィルタに入る前から在ったものは以後どの差分にも現れず**永久に届かない**。適用の最後に `distribution-gate.sh --repair-from "${LATEST}"` を必ず通し、**0 以外なら Step 7 へ進まない**。exit 3 / 4 を `echo` して続行しない（メッセージは停止の代わりにならない）。default 分岐まで書き、想定外 exit も停止させる
 - **配布カバレッジ（hooks / scripts / docs / templates / skills scripts / REVIEW.md / settings.json）**: skills の `scripts/`・`templates/`、`.claude/hooks/`・`.claude/githooks/`、`.claude/scripts/`、`.claude/docs/`、`.claude/templates/` も配布対象。加えて `REVIEW.md`（6.4e diff 案内）と `.claude/settings.json` の hooks キー（6.4f partial merge）を PJ migration 経由で追従させる。従来これらは無カテゴリで下流に届かず、Critical 修正（guard-bash 強化等）・rules 参照先 doc・PJ 規範の更新・新規 hook の配線が配布されない配布ブロッカーだった。`.claude/statusline/` は settings.json の statusLine 配線が PJ 固有のため既定の自動配布に含めない（必要なら手動）
 - **settings.json の hooks 未配線は silent no-op**: hook 本体（.sh）だけ取り込んで settings.json の hooks 配線を取り込まないと、新規 guard / Stop hook はファイルが存在しても発火しない。[hooks] を適用したリリースでは 6.4f の hooks 同期を必ず通す
 - **`.sh` の実行権限**: `git show > file` は mode を保持しない。適用時に `chmod +x` + `git update-index --chmod=+x` で復元する。復元しないと下流でガード・検査スクリプトが実行不能になる

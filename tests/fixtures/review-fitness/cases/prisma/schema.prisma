@@ -1,0 +1,7 @@
+// characterization corpus: check 1 pathspec covers *.prisma too
+model Legacy {
+  id Int @id @default(autoincrement())
+}
+// @@map rename
+// DROP TABLE legacy_notes
+// renamed_model stays quiet

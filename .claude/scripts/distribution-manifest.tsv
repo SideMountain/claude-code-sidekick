@@ -1,0 +1,17 @@
+# distribution-manifest.tsv — hard companion dependencies that a path scan cannot see
+#
+# Format (tab-separated):  <owner>\t<required>\t<why it is load-bearing>
+#
+# `verify-distribution.sh` already derives dependencies from full-path references
+# inside SKILL.md / rules / REVIEW.md (e.g. `.claude/skills/review/scripts/...`).
+# This file only carries the ones that reference is *not* written as a scannable
+# repo-relative path — bare root-level filenames, mostly — and would otherwise be
+# invisible to the machine check.
+#
+# Add an entry when a skill stops working (or, worse, keeps working while
+# silently dropping a dimension) because a file the diff-based distribution
+# never carried is absent downstream. Do not add entries a path scan already
+# covers: a duplicated dependency is a second place to forget to update.
+#
+# owner	required	why
+.claude/skills/review/SKILL.md	REVIEW.md	/review Step 3-2 reads it and applies §1 as its own dimension; without it min() silently loses the PJ-norm dimension and returns a passing verdict from an incomplete review

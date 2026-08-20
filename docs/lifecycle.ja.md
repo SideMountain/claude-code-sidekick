@@ -97,6 +97,10 @@ EN: [lifecycle.md](./lifecycle.md) · 思想ダイジェスト: [design-philosop
 | `verify-release-notes.sh` | `/release` notes の決定的ゲート: severity マーカー/title/banner の3点一致 + `[Unreleased]` 非空。下流 `/inventory`/`/adopt` の severity 読取りが壊れるのを防ぐ — ループ 4 |
 | `official-freshness.sh` | weekly-inventory Step 5d: ラップ対象公式 feature の version floor drift 検知 → `gh issue create` — ループ 8 |
 | `tests/fixtures/judgment-corpus/` | 凍結判定 27 件（append-only・`expected/` は被測定モデルに非公開・train/holdout のケース分割・`results/` に worth-it 実測）= モデル世代交代を跨ぐ判定品質の恒久基準器（ADR-0028 決定2） |
+| `.claude/scripts/distribution-gate.sh` | fail-closed な caller 側判定（stop/proceed）。`/review` Step 0・`/inventory` 5e・`/adopt-sidekick-update` Step 6.6 が共有し、exit code の対応表をスキルの散文で再導出させない。`*)` 分岐により想定外 exit も停止側に倒れる。bootstrap は空ファイル・実行権限まで検査してから配置する |
+| `.claude/scripts/verify-distribution.sh` + `distribution-manifest.tsv` | 配布完結性ゲート: ローカルの SKILL.md/rules/REVIEW.md がパスで参照する資産の実在検査 + パス走査では見えない依存の manifest。`/review` Step 0（判定を出す前に停止）・`/inventory` 5e（検知）・`/adopt-sidekick-update` Step 6.6（タグから `--repair-from`）に配線。配布が差分であって closure でないために存在する — ループ 3/6 |
+| `tests/fixtures/review-fitness/` | characterization コーパス + `replay.sh`（4 起動モード・byte 一致 golden）+ `bench.sh`（合成 N 行 diff の wall time + 出力 checksum）: 実装を作り替えても検出が黙って変わらないよう fitness の契約を凍結する |
+| `tests/fixtures/distribution-gate/` | 配布ゲートの fail-closed 回帰 12 件: companion / manifest / 検査器の欠落・補修成功・ref 側も欠落・検査器の想定外 exit・bootstrap 失敗（ref に無い / 空 / 一時ファイル残留なし） |
 | `tests/fixtures/guard-oracle/` | guard 回帰オラクル 42 件 + `replay.sh`: `guard-bash.sh` の経路/env ガードの deny/allow を実走で確定した基準（読み判定の期待値なし） |
 
 ### 知識 & 判断

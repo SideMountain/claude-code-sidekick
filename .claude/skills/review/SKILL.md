@@ -13,10 +13,57 @@ allowed-tools: "Read Grep Bash"
 
 | 層 | 担当 | 実体 |
 |---|---|---|
-| 決定的検査 | ccs | `review-fitness.sh`（破壊的キーワード・a11y・エラー握りつぶし grep を LLM の前に落とす） |
+| 決定的検査 | ccs | `review-fitness.sh`（破壊的キーワード・a11y・エラー握りつぶしを LLM の前に落とす。diff 1 回 + awk 1 プロセス） |
 | 機構（一般レビュー） | 公式 | `/code-review`（effort 段階・cloud ultra） |
 | PJ 規範 | ccs | `REVIEW.md`（HARD照合・ADR整合・破壊的変更・hook教訓・severity・findings 契約） |
 | 唯一のロジック | ccs | **min() 総合判定**（BLOCKER が 1 件でも総合ブロック） |
+
+## Step 0: 前提の実在確認（fail-closed・判定より前）
+
+このアダプタは自分が持っていない部品を静かに飛ばせてしまう。`REVIEW.md` が無ければ Step 3-2 の PJ 規範 dimension が、`review-fitness.sh` が無ければ決定的検査が、**エラーを出さずに min() から消える**。残った dimension だけで min() を取れば当然通りやすくなるので、欠落は「甘い判定」ではなく「合格」に化ける。下流 PJ に SKILL.md だけが届き両方欠落していた実例がある（配布は差分であって closure ではない）。
+
+```bash
+GATE=.claude/scripts/distribution-gate.sh
+if [ ! -f "$GATE" ]; then
+  echo "[EVIDENCE_REQUIRED] $GATE が存在しません — 配布完結性を検査できないため /review を続行しません"
+  echo "  → /adopt-sidekick-update で取り込むか、tag から復元してください"
+  exit 3
+fi
+
+bash "$GATE"
+GATE_ST=$?
+# 代入は必ず 0 を返す。`bash "$GATE"; GATE_ST=$?` で終えると、断片全体の exit が
+# 代入の 0 になり、ゲートの非 0 が呼び出し側へ一切伝わらない（散文の「停止する」
+# だけでは、この gate が防ごうとしている silent pass がここで再現する）。
+# 明示的に非 0 を返して初めて、機械が止められる。
+if [ "$GATE_ST" -ne 0 ]; then
+  echo "[EVIDENCE_REQUIRED] 配布完結性ゲートが exit $GATE_ST — 総合判定を出さずに停止します"
+  exit "$GATE_ST"
+fi
+```
+
+**`GATE_ST` が 0 以外なら、いかなる総合判定も出さずに停止する。** 分岐は必ず default（`*)`）まで書く:
+
+| exit | 意味 | 動作 |
+|---|---|---|
+| 0 | 参照先すべて実在 | Step 1 へ進む |
+| 3 | companion 欠落（EVIDENCE_REQUIRED） | **停止** |
+| 4 | 判定不能（manifest 欠落 / repo 外） | **停止** |
+| 5 | 検査器自体が不在 | **停止** |
+| 6 | bootstrap 失敗（ref に無い / 空 / chmod 失敗） | **停止** |
+| 7 | 検査器が想定外の exit を返した | **停止** |
+| **その他（`*)`）** | 未知の状態 | **停止**（想定外は成功ではない） |
+
+停止時に出すのは「欠落一覧 + `/adopt-sidekick-update` の案内」だけ。**この検査を「今回は不要では」で飛ばさない** — 飛ばした結果は無音の合格であり、飛ばしたこと自体が出力に残らない。
+
+### 欠落を承知で部分レビューを続ける場合（ユーザーが明示したときのみ）
+
+分析結果の提示は許容する。**合格判定は許容しない**（観測していない dimension を含む集合に min() は定義できない）:
+
+- **「PR作成可」「承認」「マージ可」「総合 3」「総合 2」「レビュー完了」「問題なし」等、合格・通過を意味する語を一切使わない**
+- 最終状態は必ず **`INCOMPLETE / EVIDENCE_REQUIRED`** に固定する
+- min() を**算出しない**。欠落した dimension 名を列挙し「未検査であって合格ではない」と明記する
+- 出力の見出し行に「配布欠落のため部分レビュー」と書き、承認を求める箇所に置く（末尾の注記では読まれない）
 
 ## Step 1: 変更範囲の把握
 
@@ -33,10 +80,17 @@ git log "$BASE_BRANCH"...HEAD --oneline
 
 ## Step 2: 決定的 fitness 前置ゲート
 
-LLM 観点を回す**前に**機械で落とす。決定的（grep）で、LLM 観点を増やさない。
+LLM 観点を回す**前に**機械で落とす。決定的で、LLM 観点を増やさない。
 
 ```bash
-.claude/skills/review/scripts/review-fitness.sh "$BASE_BRANCH"
+.claude/skills/review/scripts/review-fitness.sh "$BASE_BRANCH"; FIT_ST=$?
+# 0=検出なし / 1=検出あり(WARN 入力) / 2=走査できず(判定不能)。2 を 0 と混同しない。
+case "$FIT_ST" in
+  0|1) : ;;
+  *)   echo "[EVIDENCE_REQUIRED] fitness が走査できませんでした（exit $FIT_ST）— 決定的検査 dimension は未観測です"
+       echo "  → BASE_BRANCH ($BASE_BRANCH) が解決するか確認。解消するまで合格判定を出さない"
+       exit "$FIT_ST" ;;
+esac
 # STACK_PACK=nextjs かつ pack 同梱ありで app/lib/components/prisma に触れる時のみ:
 PACK=$(grep -E "^STACK_PACK:" CLAUDE.md 2>/dev/null | sed -E 's/^STACK_PACK:[[:space:]]*([a-z]+).*/\1/')
 GATE=.claude/stack-packs/nextjs/fitness-functions/run-fitness.js
@@ -44,6 +98,7 @@ if [ "$PACK" = "nextjs" ] && [ -f "$GATE" ] && git diff "$BASE_BRANCH"...HEAD --
 ```
 
 - `review-fitness.sh` の検出は **WARN 入力**（Step 5 の min() に渡す。レビューで最終 severity を確定）。
+- **exit 2 は「検出なし」ではなく「検査していない」**。明示 BASE が解決しない・`git diff` が失敗した場合に返る。この状態で Step 5 へ進むと未観測の dimension を合格として数えるので、Step 0 と同じく `INCOMPLETE / EVIDENCE_REQUIRED` で止める。
 - `run-fitness.js` の **error（exit 1）は BLOCKER**（Tier-1 違反・HARD 扱い）、warn は WARN。scope 外 / `STACK_PACK=none` は沈黙通過（コスト ゼロ）。
 - hook（guard-commit / pre-commit PII / guard-bash）が既に fail のものは無条件 BLOCKER（REVIEW.md §0）。
 
@@ -80,12 +135,14 @@ diff が**ランタイム表面**（`app/` `api/` `src/` UI コンポーネン�
 ```
 === 統合レビュー結果 ===
 
+[前提]        配布完結: OK / 欠落 N 件（欠落時は最終判定行に「dimension 欠落」を明記）
 [fitness]     決定的検出: なし / N 件（WARN 入力）
 [code-review] 公式レビュー: 指摘なし / BLOCKER n / WARN n / INFO n
 [PJ規範]      REVIEW.md §1: 整合 / HARD照合 or ADR整合 or 破壊的変更に指摘
 [Arch]        アーキ OK / 逸脱あり（fitness）/ 対象外（STACK_PACK=none・scope 外）
 
 最終判定: PR作成可（総合3/2）/ ブロッカーあり（総合1・PR不可）
+        / INCOMPLETE / EVIDENCE_REQUIRED（配布欠落 — min() を出さず合格判定もしない）
 
 指摘サマリ（file:line + 欠陥1文 + 失敗シナリオ。REVIEW.md §4 契約）:
   [BLOCKER] ...
@@ -103,5 +160,7 @@ diff が**ランタイム表面**（`app/` `api/` `src/` UI コンポーネン�
 
 - **fitness を重くしない** — `review-fitness.sh` / `run-fitness.js` は決定的スクリプト。LLM 観点を増やさない。scope 外・`STACK_PACK=none` では沈黙通過（ADR-0022 軽さドクトリン）。重いと回すのが億劫になりサイクルが死ぬ。
 - **min() を格上げしない** — 平均・多数決・情状酌量で総合を上げない。BLOCKER 1 件＝総合 1。これが診断の最重要発見（rubric 既在なのに未配線だと標準モデルは甘い判定に流れる）。
+- **欠落した部品を沈黙で飛ばさない（Step 0）** — `REVIEW.md` / `review-fitness.sh` が無い PJ で「総合3・PR作成可」を出すのは、判定が甘いのではなく **観測していない dimension を合格に数えている**。gate が 0 を返した時だけ判定してよく、それ以外（default 分岐を含む）は `INCOMPLETE / EVIDENCE_REQUIRED` で止める。
+- **fitness の exit 2 は「検出なし」ではない** — `review-fitness.sh` は走査できなかったとき exit 2 を返す（明示 BASE が解決しない / `git diff` 失敗）。0 と混同すると、検査していない diff を「決定的検出なし」として min() に入れることになる。
 - **外部依存は失敗する前提** — `/code-review` の REVIEW.md 注入に依存しきらず、このスキルでも REVIEW.md を Read して二重適用する（Step 3-2）。注入が no-op / コマンド不在でも PJ 規範を落とさない。
 - **旧 review-* 5 スキルは撤去済み**（`/review` に統合。移行: `docs/migrations/review-6to1-adapter.md`） — 観点別の深掘りは公式 `/code-review` の effort と `/security-review` に委譲する。
