@@ -38,3 +38,4 @@ sidekick の設計判断とその根拠を記録する。
 | 0032 | [enforcement 層は fail-closed、advisory 層は fail-open + 検知](0032-enforcement-guards-fail-closed.md) | 採用（2026-07-10） |
 | 0033 | [文書ガバナンス（文体標準・読者宣言・単一ソース原則）](0033-doc-governance-style-and-single-source.md) | 採用（2026-07-10） |
 | 0034 | [/ux-scan スキル（UX 導線フリクションのプロファイラ）](0034-ux-scan-skill.md) | 採用（2026-07-20・v0.17.0 で実装） |
+| 0035 | [並列 Worktree の資源統治（公式ライフサイクル前提・ccs は Resource Governor + Quality Layer）](0035-parallel-worktree-resource-model.md) | 提案（2026-08-21） |
