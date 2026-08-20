@@ -51,7 +51,82 @@ CURRENT=$(grep -E "^SIDEKICK_VERSION:" CLAUDE.md | sed -E "s/.*['\"]([^'\"]+)['\
 LATEST=$(gh api repos/SideMountain/claude-code-sidekick/releases/latest --jq '.tag_name')
 ```
 
-最新と同じなら「取り込み済み」と表示して終了。
+`CURRENT` と `LATEST` が同じでも、ここで終了しない。**バージョンが一致していることと配布が完結していることは別の事実**であり、前者だけを見て「取り込み済み」と表示すると、companion が欠けたままの PJ が恒久的に検知されなくなる（差分は closure ではないため、欠けたものは以後どの差分にも現れない）。Step 0a でタグを取り寄せ、Step 0b で配布完結性を検査・補修してから、その結果に応じて終了する。
+
+#### Step 0a: 最新タグの取り寄せ（以降の全ステップの前提）
+
+Step 0b・Step 2・Step 6.6 はいずれも**ローカルのタグ参照**（`${LATEST}:<path>` / `v${CURRENT}..${LATEST}`）で動く。`LATEST` は GitHub API から得た**タグ名**であって、その時点でローカルに実体があるとは限らない — 初回取り込みや `--tags` 無しで運用してきた PJ では**まだ 1 度も fetch されていない**のが正常な状態である。取り寄せる前に `git cat-file` を叩くと、正常な環境が「ref に無い（exit 6）」として弾かれる。取り寄せは**ここで 1 度だけ**行い、失敗は fail-closed で止める（取り寄せられないなら以降のどの判定も成立しない）。
+
+```bash
+if ! git fetch ccs --tags; then
+  echo "⛔ git fetch ccs --tags に失敗しました — 最新タグを取り寄せられないため判定できません"
+  exit 4
+fi
+
+# fetch の成功は「そのタグが手元にある」ことを意味しない（tag が付け替えられた・
+# 別リポを指している等）。解決できることを明示的に確かめる。
+if ! git rev-parse -q --verify "${LATEST}^{commit}" >/dev/null 2>&1; then
+  echo "⛔ ${LATEST} をローカルで解決できません（fetch は成功したがタグが見つからない）"
+  exit 4
+fi
+```
+
+- **exit 4 = 判定不能**（ゲートの exit 意味論と揃える）。「取り寄せられなかった」を「変更なし」と読まない。
+- ここで fetch を済ませるので、**Step 2 では再 fetch しない**（同じ取り寄せを 2 度書くと、片方だけが直されて分岐する）。
+- このブロックは**作業ツリーを変更しない**（fetch は `.git/` のみ）。
+
+#### Step 0b: 同一バージョン時の検査・補修（same-version 回収経路）
+
+**このブロックは `CURRENT == LATEST` のときだけ働く。** バージョンが異なる通常の更新では、ここで作業ツリーに一切触れない — カテゴリ選択も適用もまだ済んでいない段階でファイルを増やすと、**利用者が承認していない変更が取り込みの diff に混ざる**。通常更新の配布完結性は、適用がすべて終わった後の **Step 6.6** が見る。
+
+```bash
+if [ "${CURRENT#v}" != "${LATEST#v}" ]; then
+  # 通常の更新。何も表示せず、作業ツリーにも触れずに Step 1 へ進む。
+  exit 0
+fi
+
+GATE=.claude/scripts/distribution-gate.sh
+
+# --- gate-bootstrap:begin （Step 0a/0b と Step 6.6 で同一。差異は回帰が検知する） ---
+# ゲート自身も「届かなかった companion」でありうる。空の検査器は「検査した」と
+# 見分けがつかないので、配置してはならない（一時ファイル経由で原子的に置く）。
+if [ ! -f "$GATE" ]; then
+  mkdir -p .claude/scripts || { echo "⛔ .claude/scripts を作成できません"; exit 6; }
+  if ! git cat-file -e "${LATEST}:$GATE" 2>/dev/null; then
+    echo "⛔ $GATE が ${LATEST} に存在しません。取り込みは未完了です"; exit 6
+  fi
+  if ! git show "${LATEST}:$GATE" > "$GATE.tmp" 2>/dev/null; then
+    rm -f "$GATE.tmp"; echo "⛔ git show ${LATEST}:$GATE に失敗しました"; exit 6
+  fi
+  if [ ! -s "$GATE.tmp" ]; then
+    rm -f "$GATE.tmp"; echo "⛔ 取り出した $GATE が空でした（空の検査器は配置しない）"; exit 6
+  fi
+  mv "$GATE.tmp" "$GATE" || { rm -f "$GATE.tmp"; echo "⛔ $GATE の配置に失敗"; exit 6; }
+  chmod +x "$GATE" || { echo "⛔ $GATE に実行権限を付与できません"; exit 6; }
+fi
+# --- gate-bootstrap:end ---
+
+# --- 同一バージョンでも配布完結性を検査・補修してから終了する ---
+# 「バージョンが同じ」は「配布が完結している」の証拠ではない。旧バージョンの
+# /adopt で取り込んだ実行は、その途中で新しい Step 6.6 へ切り替わらないため、
+# 初回取り込み直後は closure が未完成でありうる。ここが唯一の回収経路になる。
+bash "$GATE" --repair-from "${LATEST}"
+GATE_ST=$?
+# 代入は必ず 0 を返す。`bash "$GATE" …; GATE_ST=$?` で終えると断片全体の exit が
+# 代入の 0 になり、欠落を抱えたまま「取り込み済み」と表示されてしまう。
+if [ "$GATE_ST" -ne 0 ]; then
+  echo "[EVIDENCE_REQUIRED] 配布完結性ゲートが exit $GATE_ST — 配布は完結していません"
+  echo "  → このバージョンを適用済みとして記録しないでください（欠落は次の差分にも現れません）"
+  exit "$GATE_ST"
+fi
+echo "✅ 取り込み済み・配布完結（${LATEST}）"
+exit 0
+```
+
+- **exit 0 のときだけ**「取り込み済み・配布完結」と表示して終了する。非 0 のときは、否定形であってもこの語を出力に載せない — 回帰テストは出力の**部分一致**で判定するため（否定形を許すと、将来の文言変更が「完了と表示していないこと」の検査を素通りする）。表示した時点で、利用者は補修が要る状態を完了として記録する。
+- 非 0 の意味は Step 6.6 の対応表と同一（3 = companion 欠落 / 4 = 判定不能 / 5 = 検査器不在 / 6 = bootstrap 失敗 / 7 = 想定外 exit / その他 = 停止）。
+- **bootstrap が Step 6.6 と 2 箇所にあるのは重複ではなく排他**: このブロックは `CURRENT == LATEST`、Step 6.6 は `CURRENT != LATEST` の経路にしか到達しない（1 回の実行でどちらか一方しか走らない）。両者のブロックは `# --- gate-bootstrap:begin/end ---` で囲った**同一テキスト**とし、ずれたら回帰が落ちるようにしてある。
+- 回帰テスト: `tests/fixtures/distribution-gate/replay.sh` の same-version 群・route 分離群（実 SKILL.md のブロックを抽出して実走する）。
 
 ### Step 1: severity 判定
 
@@ -81,7 +156,7 @@ esac
 ### Step 2: 差分抽出 + カテゴリ分類
 
 ```bash
-git fetch ccs --tags
+# タグの取り寄せは Step 0a で完了済み（ここでは再 fetch しない）
 RANGE="v${CURRENT}..${LATEST}"
 
 RULES=$(git diff --name-only --diff-filter=AM "$RANGE" -- '.claude/rules/*.md' | sort -u)
@@ -530,10 +605,14 @@ Step 2 が抽出するのは差分であって **closure ではない**。`v${CU
 
 実観測: 下流 PJ に `.claude/skills/review/SKILL.md` だけが在り、`scripts/review-fitness.sh` と `REVIEW.md` が両方欠落したまま `/review` が「判定」を返していた。決定的前置ゲートと PJ 規範 dimension が min() から黙って消え、**不完全なレビューが合格を出す**状態になる。
 
-判定は `.claude/scripts/distribution-gate.sh` が持つ（stop/proceed の対応表をスキルの散文で再導出しない）。ゲート自身も「届かなかった companion」でありうるため、先に取り寄せる — その取り寄せも**成否・空ファイル・実行権限まで確認する**:
+判定は `.claude/scripts/distribution-gate.sh` が持つ（stop/proceed の対応表をスキルの散文で再導出しない）。**ここは通常更新（`CURRENT != LATEST`）の終端検査**であり、Step 0b の same-version 回収経路とは排他 — 1 回の実行でどちらか一方しか走らない。ゲート本体はこの経路では未取得なので、ここで取り寄せる（適用が済んだ後なので、作業ツリーに増える分は取り込みの一部として commit してよい）。取り寄せは**成否・空ファイル・実行権限まで確認する**:
 
 ```bash
 GATE=.claude/scripts/distribution-gate.sh
+
+# --- gate-bootstrap:begin （Step 0a/0b と Step 6.6 で同一。差異は回帰が検知する） ---
+# ゲート自身も「届かなかった companion」でありうる。空の検査器は「検査した」と
+# 見分けがつかないので、配置してはならない（一時ファイル経由で原子的に置く）。
 if [ ! -f "$GATE" ]; then
   mkdir -p .claude/scripts || { echo "⛔ .claude/scripts を作成できません"; exit 6; }
   if ! git cat-file -e "${LATEST}:$GATE" 2>/dev/null; then
@@ -548,6 +627,7 @@ if [ ! -f "$GATE" ]; then
   mv "$GATE.tmp" "$GATE" || { rm -f "$GATE.tmp"; echo "⛔ $GATE の配置に失敗"; exit 6; }
   chmod +x "$GATE" || { echo "⛔ $GATE に実行権限を付与できません"; exit 6; }
 fi
+# --- gate-bootstrap:end ---
 
 bash "$GATE" --repair-from "${LATEST}"
 GATE_ST=$?
@@ -575,7 +655,8 @@ fi
 - `--repair-from` は Step 6 と同じく**タグ参照**で取り寄せる（ブランチ tip 参照の drift 回避）。`.sh` は実行権限を復元する。
 - 補修で入ったファイルは Step 7 の commit に含める（取り込みの一部であり、別 PR に分離しない）。
 - 上流が意図的に削除したファイルを参照元が指したままなら exit 6 の「ref に無い」で止まる。これは補修対象ではなく**参照元の是正対象**（撤去はソース以外の参照まで畳んで完了）。
-- 回帰テスト: `tests/fixtures/distribution-gate/replay.sh`（12 ケース。bootstrap 失敗・空ファイル・想定外 exit を含む）。
+- **bootstrap が Step 0b と同一テキストなのは意図的**（`# --- gate-bootstrap:begin/end ---` で囲ってある）。2 経路は排他だが、片方だけ直されると挙動が分岐するため、回帰が両ブロックの一致を機械照合する。
+- 回帰テスト: `tests/fixtures/distribution-gate/replay.sh`（ゲート単体 + caller 伝播 + same-version 補修経路。bootstrap 失敗・空ファイル・想定外 exit を含む）。
 
 ### Step 7: 取り込み結果 → commit 提案
 
@@ -618,6 +699,9 @@ vX.Y.Z-1 → vX.Y.Z
 - **タグ参照（ドリフト回避）**: `git show` の対象は `${LATEST}` タグ（リリース時点固定）。`ccs/main` を使うと post-release commit が混ざる可能性あり
 - **SIDEKICK_VERSION 抽出のクォート**: シングル/ダブルクォート両対応の regex を Step 0 で使う。下流 PJ で書式が揺れていても CURRENT を正しく抽出する
 - **`while read` は heredoc で**: パイプ経由 (`... | while read; do ...; done`) はサブシェル化により 1 イテレーション後に停止する事象あり。`done <<< "$VAR"` のヒアストリング形式を使うと配列収集も含めて確実に動く
+- **同一バージョンでも終了しない（Step 0b）**: `CURRENT == LATEST` は「配布が完結している」の証拠ではない。旧バージョンの /adopt で取り込んだ実行は、その途中から新しい Step 6.6 へ切り替わらないため、初回取り込み直後は closure が未完成でありうる。Step 0b で `--repair-from "${LATEST}"` まで通し、**exit 0 のときだけ**「取り込み済み・配布完結」と表示する。非 0 で「取り込み済み」と表示すると、利用者は補修が要る状態を完了として記録する。
+- **タグはローカルにある前提を置かない（Step 0a）**: `LATEST` は API から得た**タグ名**で、ローカルの実体は別。取り寄せ前に `git cat-file` を叩くと、**まだ fetch していないだけの正常な PJ** が「ref に無い」で弾かれる。fetch は Step 0a で 1 度だけ行い（Step 2 では再 fetch しない）、失敗は exit 4 で止める。
+- **承認前の作業ツリーを汚さない（Step 0b / Step 6.6 の分担）**: 通常更新では、カテゴリ選択・適用より前に 1 バイトも書かない。ゲートの取り寄せは適用後の Step 6.6 が行う。前倒しで置くと、利用者が選んでいないファイルが取り込みの diff に混ざる。
 - **差分は closure ではない（Step 6.6）**: `v<CURRENT>..<LATEST>` に現れない companion は、その SKILL.md が更新されても届かない。前のバージョンで変わったもの・配布フィルタに入る前から在ったものは以後どの差分にも現れず**永久に届かない**。適用の最後に `distribution-gate.sh --repair-from "${LATEST}"` を必ず通し、**0 以外なら Step 7 へ進まない**。exit 3 / 4 を `echo` して続行しない（メッセージは停止の代わりにならない）。default 分岐まで書き、想定外 exit も停止させる
 - **配布カバレッジ（hooks / scripts / docs / templates / skills scripts / REVIEW.md / settings.json）**: skills の `scripts/`・`templates/`、`.claude/hooks/`・`.claude/githooks/`、`.claude/scripts/`、`.claude/docs/`、`.claude/templates/` も配布対象。加えて `REVIEW.md`（6.4e diff 案内）と `.claude/settings.json` の hooks キー（6.4f partial merge）を PJ migration 経由で追従させる。従来これらは無カテゴリで下流に届かず、Critical 修正（guard-bash 強化等）・rules 参照先 doc・PJ 規範の更新・新規 hook の配線が配布されない配布ブロッカーだった。`.claude/statusline/` は settings.json の statusLine 配線が PJ 固有のため既定の自動配布に含めない（必要なら手動）
 - **settings.json の hooks 未配線は silent no-op**: hook 本体（.sh）だけ取り込んで settings.json の hooks 配線を取り込まないと、新規 guard / Stop hook はファイルが存在しても発火しない。[hooks] を適用したリリースでは 6.4f の hooks 同期を必ず通す
