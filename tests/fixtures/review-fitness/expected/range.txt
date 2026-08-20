@@ -1,0 +1,35 @@
+=== exit: 1 ===
+--- stdout ---
+[WARN] migrations/001_destructive.sql:3 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] migrations/001_destructive.sql:4 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] migrations/001_destructive.sql:5 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] migrations/001_destructive.sql:6 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] migrations/001_destructive.sql:7 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] migrations/001_destructive.sql:8 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] migrations/001_destructive.sql:9 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] prisma/schema.prisma:5 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] prisma/schema.prisma:6 — 破壊的 DDL の可能性（Expand-Contract 2 段階リリース + backfill --dry-run を確認 / deploy-strategy.md）
+[WARN] app/Card.svelte:1 — <img> に alt 属性がない（a11y）
+[WARN] app/Card.svelte:2 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] app/Card.vue:2 — <img> に alt 属性がない（a11y）
+[WARN] app/Card.vue:3 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] components/Old.jsx:1 — <img> に alt 属性がない（a11y）
+[WARN] components/Widget.tsx:5 — <img> に alt 属性がない（a11y）
+[WARN] components/Widget.tsx:7 — <img> に alt 属性がない（a11y）
+[WARN] components/Widget.tsx:9 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] components/Widget.tsx:11 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] components/Widget.tsx:17 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] components/Widget.tsx:18 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] components/Widget.tsx:27 — <img> に alt 属性がない（a11y）
+[WARN] pages/legacy.html:2 — <img> に alt 属性がない（a11y）
+[WARN] pages/legacy.html:3 — <input> にラベル（aria-label / 関連 label の id）がない可能性（a11y）
+[WARN] components/Old.jsx:2 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] components/Widget.tsx:26 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] lib/handlers.ts:3 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] lib/handlers.ts:6 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] lib/handlers.ts:12 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] lib/handlers.ts:15 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] lib/legacy.js:1 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+[WARN] lib/legacy.js:2 — 空の catch（エラーを握りつぶす。reporter〔captureException/logger〕を呼ぶ / brain 外部依存）
+--- stderr ---
+=== review-fitness: 31 件の決定的検出（WARN 入力・レビューが最終 severity を確定）===

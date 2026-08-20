@@ -25,12 +25,22 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ### Added
 
+- **fail-closed 配布ゲート `.claude/scripts/distribution-gate.sh`**: stop/proceed の判定を 1 本のスクリプトに集約し、`/review` Step 0・`/inventory` 5e・`/adopt-sidekick-update` Step 6.6 が共有する。exit は 0（PROCEED）/ 3（companion 欠落）/ 4（判定不能）/ 5（検査器不在）/ 6（bootstrap 失敗）/ 7（検査器の想定外 exit）で、**`*)` 分岐を含め 0 以外はすべて停止**。検査器・manifest の bootstrap は `git show` の成否・空ファイル・実行権限・配置を個別に検査し、一時ファイル経由で原子的に置く（空の検査器は「検査した」と見分けがつかないため配置しない）。対応表を各スキルの散文で再導出させないのが要点 — 散文だと未列挙の exit がどこかで素通りする。回帰 21 件 = `tests/fixtures/distribution-gate/`（ゲート単体 12 + caller 伝播 9）。caller 側は **SKILL.md の bash ブロックを実体から抽出して実行する** — `bash "$GATE"; GATE_ST=$?` は代入で終わるため断片全体の exit が 0 になり、ゲートの非 0 が呼び出し側へ伝わらない。散文の「停止する」は実行されないので、両呼び出し箇所は `if [ "$GATE_ST" -ne 0 ]; then exit "$GATE_ST"; fi` で明示的に伝播させる（`/inventory` だけは棚卸しを中断しないため意図的に非伝播。その旨をコードコメントに明記）。
+- **配布完結性ゲート `.claude/scripts/verify-distribution.sh` + `distribution-manifest.tsv`**: ローカルの SKILL.md / rules / REVIEW.md がパスで参照する資産（`.claude/{skills,scripts,hooks,githooks,docs}/**.{sh,js,md}`）の実在を機械検査し、パス走査では見えない依存（`REVIEW.md` 等）は manifest で補う。`/review` Step 0（**判定を出す前に停止**）・`/inventory` 5e（検知）・`/adopt-sidekick-update` Step 6.6（タグから `--repair-from` で補修）に配線。exit は 0（完結）/ 3（欠落・EVIDENCE_REQUIRED）/ 4（判定不能）で、**「検査できなかった」を「問題なし」に合流させない**。
+- **`tests/fixtures/review-fitness/`**: fitness の characterization コーパス + `replay.sh`（6 シナリオ = 4 起動モードの byte 一致 golden〔書き換え前の実装で生成〕+ 判定不能 2 件の契約アサーション。`--update` は既存 golden を上書きせず、provenance を壊す上書きは `--update-all` に分離）+ `bench.sh`（合成 N 行 diff の wall time + 出力 checksum）+ 実測記録。単語境界・既知の癖・pathspec スコープ・バケット順序を凍結し、実装を作り替えても検出が黙って変わらないようにする。
 - **Guard 5.5: `git worktree remove` の node_modules junction 事故を物理ブロック**: 削除対象の Worktree 配下に `node_modules`（junction / symlink / 実体）が残っている場合は deny し、安全順序（①リンク解除 → ②消失確認 → ③再実行）を提示する。Windows 環境では worktree removal が junction を辿ってメインWS の実体 node_modules を削除しうる（実インシデント・2026-07-23）。変数・コマンド置換で検査不能なパスも fail-closed で deny。
 - **Guard 5.6: Windows の再帰削除 `rmdir /s` を警告対象に追加**: `rm -rf` の別名コマンドとして permission ダイアログでの確認を促す（rmdir /s は junction を辿らないため deny ではなく warning）。
 - **executor 検出に `cmd /c`・`cmd //c` を追加**: Windows シェル実行子で包まれた payload が引用符除去ベースのガード全てをすり抜ける盲点を封鎖。ラップされた破壊コマンド（再帰削除等）も raw 検査で既存 deny ガードに掛かる。
 - **guard oracle に 11 ケース追加（計 53）**: Guard 5.5/5.6/cmd executor の deny/allow 期待値を実走で凍結。`replay.sh` に `{{REPO}}` プレースホルダ置換を追加し、コミット済み fixture パス（疑似 Worktree `wt-junction-sim/`）を portably 参照可能に。
 
 ### Changed
+
+- **`review-fitness.sh` を「追加行ごとの grep 起動」から単一パス awk へ**: 検査クラスごとに `git diff` を 3 回取得し、追加行 1 行につき `printf | grep` を 1〜5 本起動していた構造を、**`git diff` 1 回（union pathspec）+ `awk` 1 プロセス**に置き換えた。プロセス数が diff サイズに対して O(1) になる。2,000 行の合成 diff で **Windows (Git Bash) 591〜2,705 秒 → 2.1〜2.4 秒（保守側で約 245 倍）**、WSL 17.8〜38.4 秒 → 0.26〜0.32 秒（約 55 倍）。検出は不変（旧実装・新実装とも 821 件・stdout checksum 一致）。実測記録 = `tests/fixtures/review-fitness/results/`。
+  - 単語境界は `\b`（GNU 拡張）ではなく `(^|[^a-z0-9_])…([^a-z0-9_]|$)` で表現し、mawk / BusyBox awk の下流でも同じ判定になるようにした。
+  - 契約（検出内容・severity・`file:line`・バケット順序・stderr サマリ・終了コード・`BASE...HEAD` と working-tree fallback）は `tests/fixtures/review-fitness/` で凍結。旧実装で生成した golden に新実装が byte 一致することと、境界条件 3,377 行・変更/削除/リネーム混在 diff での差分テストが一致することを実走で確認済み。
+  - **走査できなかった場合は exit 2 で fail-loud にする**（新設。「走らなかった」を「検出なし」と読ませない）。`x=$(git diff | awk …)` は awk の status しか返さないため、`git diff` の失敗（unborn repo・不正な revision）が空ストリーム経由で「決定的検出なし・exit 0」に化けていた。PIPESTATUS で両段を見て、両者の stderr も捨てずに出す。
+  - **明示された `BASE_REF` が解決しない場合は作業ツリー検査へフォールバックせず exit 2**（新設）。旧実装は指定と違う対象を黙って検査し、そこで見つけた検出を exit 1 で返していた（呼び出し側が訊いていない問いへの答え）。引数なしの自動解決時のフォールバックは従来どおり。
+  - 上記 2 つは **意図的な契約変更**（旧実装の偽 clean の是正）。`replay.sh` に恒久回帰として `invalid-explicit-base` / `unborn-repo` を追加し、旧実装ではこの 2 件だけが落ちることを実走で確認済み。
 
 - **worktree-guide.md に削除の安全順序を追記**: リンク共有した Worktree の削除は「node_modules 除去 → 確認 → `git worktree remove`」の順序を明記（Guard 5.5 の認知層ペア）。
 
