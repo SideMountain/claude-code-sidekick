@@ -11,6 +11,8 @@
 | `expected/` | 凍結判定（verdict + must_find + 根拠） | **被測定モデルに絶対に見せない**（採点者のみ参照） |
 | `harness/` | 判定基準の集約スナップショット（`rubrics.md` = R1-R10 の rubric 集 / `exemplars.md` = 昇格・分解・findings の few-shot） | `rubrics.md` は判定基準として両アームに渡す。`exemplars.md`（few-shot 蒸留）は harness 構成（後述 worth-it の B アーム）のみに渡す |
 
+> ファイル名の例外: CON カテゴリのファイルは `CON-cases.md` / `CON-cases.yaml`。`CON.md` のような基底名 `CON` は Windows の予約デバイス名で、Git for Windows が checkout / index 登録を拒否し **clone・worktree 作成がリポジトリごと失敗する**ため、カテゴリコード（ケース ID の `CON-XX`）は変えずファイル名だけ非予約名にしている。新カテゴリ追加時も予約名（CON / PRN / AUX / NUL / COM1-9 / LPT1-9）を基底名にしない。
+
 | カテゴリ | 測るもの | 件数 | verdict 形式 |
 |---|---|---|---|
 | REV | レビュー総合判定（min()） | 5 | `verdict: 1\|2\|3` |
