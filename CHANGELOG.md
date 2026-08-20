@@ -23,11 +23,15 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-08-20
+
 ### Added
 
-- **fail-closed 配布ゲート `.claude/scripts/distribution-gate.sh`**: stop/proceed の判定を 1 本のスクリプトに集約し、`/review` Step 0・`/inventory` 5e・`/adopt-sidekick-update` Step 6.6 が共有する。exit は 0（PROCEED）/ 3（companion 欠落）/ 4（判定不能）/ 5（検査器不在）/ 6（bootstrap 失敗）/ 7（検査器の想定外 exit）で、**`*)` 分岐を含め 0 以外はすべて停止**。検査器・manifest の bootstrap は `git show` の成否・空ファイル・実行権限・配置を個別に検査し、一時ファイル経由で原子的に置く（空の検査器は「検査した」と見分けがつかないため配置しない）。対応表を各スキルの散文で再導出させないのが要点 — 散文だと未列挙の exit がどこかで素通りする。回帰 21 件 = `tests/fixtures/distribution-gate/`（ゲート単体 12 + caller 伝播 9）。caller 側は **SKILL.md の bash ブロックを実体から抽出して実行する** — `bash "$GATE"; GATE_ST=$?` は代入で終わるため断片全体の exit が 0 になり、ゲートの非 0 が呼び出し側へ伝わらない。散文の「停止する」は実行されないので、両呼び出し箇所は `if [ "$GATE_ST" -ne 0 ]; then exit "$GATE_ST"; fi` で明示的に伝播させる（`/inventory` だけは棚卸しを中断しないため意図的に非伝播。その旨をコードコメントに明記）。
+- **fail-closed 配布ゲート `.claude/scripts/distribution-gate.sh`**: stop/proceed の判定を 1 本のスクリプトに集約し、`/review` Step 0・`/inventory` 5e・`/adopt-sidekick-update` Step 6.6 が共有する。exit は 0（PROCEED）/ 3（companion 欠落）/ 4（判定不能）/ 5（検査器不在）/ 6（bootstrap 失敗）/ 7（検査器の想定外 exit）で、**`*)` 分岐を含め 0 以外はすべて停止**。検査器・manifest の bootstrap は `git show` の成否・空ファイル・実行権限・配置を個別に検査し、一時ファイル経由で原子的に置く（空の検査器は「検査した」と見分けがつかないため配置しない）。対応表を各スキルの散文で再導出させないのが要点 — 散文だと未列挙の exit がどこかで素通りする。回帰 37 件 = `tests/fixtures/distribution-gate/`（ゲート単体 12 + caller 伝播 9 + same-version 補修 9 + 経路分離 6 + bootstrap 同一性 1）。caller 側は **SKILL.md の bash ブロックを実体から抽出して実行する** — `bash "$GATE"; GATE_ST=$?` は代入で終わるため断片全体の exit が 0 になり、ゲートの非 0 が呼び出し側へ伝わらない。散文の「停止する」は実行されないので、両呼び出し箇所は `if [ "$GATE_ST" -ne 0 ]; then exit "$GATE_ST"; fi` で明示的に伝播させる（`/inventory` だけは棚卸しを中断しないため意図的に非伝播。その旨をコードコメントに明記）。
 - **配布完結性ゲート `.claude/scripts/verify-distribution.sh` + `distribution-manifest.tsv`**: ローカルの SKILL.md / rules / REVIEW.md がパスで参照する資産（`.claude/{skills,scripts,hooks,githooks,docs}/**.{sh,js,md}`）の実在を機械検査し、パス走査では見えない依存（`REVIEW.md` 等）は manifest で補う。`/review` Step 0（**判定を出す前に停止**）・`/inventory` 5e（検知）・`/adopt-sidekick-update` Step 6.6（タグから `--repair-from` で補修）に配線。exit は 0（完結）/ 3（欠落・EVIDENCE_REQUIRED）/ 4（判定不能）で、**「検査できなかった」を「問題なし」に合流させない**。
 - **`tests/fixtures/review-fitness/`**: fitness の characterization コーパス + `replay.sh`（6 シナリオ = 4 起動モードの byte 一致 golden〔書き換え前の実装で生成〕+ 判定不能 2 件の契約アサーション。`--update` は既存 golden を上書きせず、provenance を壊す上書きは `--update-all` に分離）+ `bench.sh`（合成 N 行 diff の wall time + 出力 checksum）+ 実測記録。単語境界・既知の癖・pathspec スコープ・バケット順序を凍結し、実装を作り替えても検出が黙って変わらないようにする。
+- **`/adopt-sidekick-update` に最新タグの取り寄せゲート（Step 0a）を新設**: `LATEST` は GitHub API から得た**タグ名**であって、その実体がローカルにあるとは限らない — 初回取り込みや `--tags` 無しで運用してきた PJ では**まだ 1 度も fetch されていないのが正常**である。取り寄せ前にタグ参照を叩くと、正常な PJ が「ref に無い」として弾かれる。`git fetch ccs --tags` をここで 1 度だけ行い、**失敗は exit 4（判定不能）で停止**する。fetch の成功はタグが手元にあることを意味しないため、`git rev-parse --verify` で解決可能性まで確かめる。あわせて Step 2 の重複 fetch を撤去した（同じ取り寄せを 2 度書くと片方だけが直る）。このブロックは作業ツリーを変更しない（fetch は `.git/` のみ）。
+- **`/adopt-sidekick-update` に same-version 補修経路（Step 0b）を新設**: `CURRENT == LATEST` でも早期終了せず、配布完結性を検査・補修してから終える。**バージョンの一致は配布が完結していることの証拠ではない** — 旧バージョンの `/adopt` で取り込んだ実行は、その途中から新しい Step 6.6 へ切り替わらないため、初回取り込み直後は closure が未完成でありうる。さらにこの範囲で変更されていない companion（`REVIEW.md` 等）は差分配布では永久に復元されない。同一バージョン時に限り ①ゲート本体を LATEST タグから安全に bootstrap（`cat-file` 確認・一時ファイル・空ファイル拒否・`chmod` 確認・配置失敗は非 0）② `--repair-from` で補修 ③**exit 0 のときだけ**「取り込み済み・配布完結」と表示して終了 — 非 0 は `EVIDENCE_REQUIRED` で停止し、否定形であっても「取り込み済み」の語を出力に載せない（回帰は出力の部分一致で判定するため）。**バージョンが異なる通常更新では、このブロックは作業ツリーに 1 バイトも書かない**（カテゴリ選択・適用より前に置くと、利用者が承認していないファイルが取り込みの diff に混ざる）。
 - **Guard 5.5: `git worktree remove` の node_modules junction 事故を物理ブロック**: 削除対象の Worktree 配下に `node_modules`（junction / symlink / 実体）が残っている場合は deny し、安全順序（①リンク解除 → ②消失確認 → ③再実行）を提示する。Windows 環境では worktree removal が junction を辿ってメインWS の実体 node_modules を削除しうる（実インシデント・2026-07-23）。変数・コマンド置換で検査不能なパスも fail-closed で deny。
 - **Guard 5.6: Windows の再帰削除 `rmdir /s` を警告対象に追加**: `rm -rf` の別名コマンドとして permission ダイアログでの確認を促す（rmdir /s は junction を辿らないため deny ではなく warning）。
 - **executor 検出に `cmd /c`・`cmd //c` を追加**: Windows シェル実行子で包まれた payload が引用符除去ベースのガード全てをすり抜ける盲点を封鎖。ラップされた破壊コマンド（再帰削除等）も raw 検査で既存 deny ガードに掛かる。
@@ -42,7 +46,18 @@ sidekick のリリース履歴。セマンティックバージョニングに�
   - **明示された `BASE_REF` が解決しない場合は作業ツリー検査へフォールバックせず exit 2**（新設）。旧実装は指定と違う対象を黙って検査し、そこで見つけた検出を exit 1 で返していた（呼び出し側が訊いていない問いへの答え）。引数なしの自動解決時のフォールバックは従来どおり。
   - 上記 2 つは **意図的な契約変更**（旧実装の偽 clean の是正）。`replay.sh` に恒久回帰として `invalid-explicit-base` / `unborn-repo` を追加し、旧実装ではこの 2 件だけが落ちることを実走で確認済み。
 
+- **配布ゲートの検査タイミングを経路ごとに分離**: same-version の回収は Step 0b（取り込み前・ここだけが同一バージョンで走る）、通常更新の終端検査は Step 6.6（**適用がすべて終わった後**）が担当し、1 回の実行ではどちらか一方しか走らない。ゲート本体の bootstrap は両経路に必要なため 2 箇所に置いているが、これは重複ではなく**排他経路それぞれの前提**であり、両者を `# --- gate-bootstrap:begin/end ---` で囲った同一テキストとして**回帰が一致を機械照合する**（片方だけ直されると落ちる）。
 - **worktree-guide.md に削除の安全順序を追記**: リンク共有した Worktree の削除は「node_modules 除去 → 確認 → `git worktree remove`」の順序を明記（Guard 5.5 の認知層ペア）。
+
+### Fixed
+
+- **Windows 予約デバイス名によるリポジトリ利用不能を解消**: `tests/fixtures/judgment-corpus/` の `CON.md` / `CON.yaml` を `CON-cases.md` / `CON-cases.yaml` にリネーム（内容変更なしの 100% rename・blob 同一）。基底名 `CON` は Windows の予約デバイス名で、Git for Windows は `core.protectNTFS` により該当パスの checkout も index 登録も拒否するため、本リポジトリは Windows 環境で clone・`git worktree add`・`git pull` が失敗し**リポジトリごと利用できない**状態だった。凍結済みのケース ID（`CON-XX`）・カテゴリコード・ファイル内容は一切変更していない（`expected/` は append-only の凍結基準のため blob を保持したまま rename のみ）。`tests/fixtures/judgment-corpus/README.md` に命名例外の理由と、新カテゴリ追加時に予約名（CON / PRN / AUX / NUL / COM1-9 / LPT1-9）を基底名にしない規約を追記。
+
+### Breaking Changes
+
+- **`review-fitness.sh` に exit 2（走査できなかった）を新設**: 旧実装は `x=$(git diff | awk …)` が awk の status しか返さないため、`git diff` の失敗（unborn repo・不正な revision）が空ストリーム経由で「決定的検出なし・exit 0」に化けていた。exit を判定に使う呼び出し側は 0（検出なし）/ 1（検出あり）/ 2（走査できず＝判定不能）の 3 値として扱う必要がある。**2 を 0 と合流させない**こと。
+- **明示された `BASE_REF` が解決しない場合、作業ツリー検査へフォールバックせず exit 2**: 旧実装は指定と違う対象を黙って検査し、そこで見つけた検出を exit 1 で返していた（呼び出し側が訊いていない問いへの答え）。引数なしの自動解決時のフォールバックは従来どおり変更なし。
+- **配布ゲートが非 0 を返す状態では `/review` が総合判定を出さずに停止する**: `/review` Step 0 が `.claude/scripts/distribution-gate.sh` を前置し、exit 0 以外（`*)` 分岐を含む）では `INCOMPLETE / EVIDENCE_REQUIRED` で停止して min() を算出しない。ゲート自体が未配置の場合も停止する（exit 3）。従来は companion 欠落時に**観測していない dimension を合格に数えて「総合 3・PR 作成可」を出していた**ため、これは fail-open の是正だが観測可能な挙動の変更にあたる。復旧は `/adopt-sidekick-update`（Step 6.6 がタグから `--repair-from` で自動補修）。
 
 ## [0.17.0] - 2026-07-22
 
