@@ -2,7 +2,9 @@
 
 ## ステータス
 
-提案（2026-08-21）。MVP 未実装。前提は ADR-0018（目的と最小ループ）・ADR-0015（下流の ccs 不意識運用）・ADR-0023（文脈経済）・ADR-0027（公式スキル採用とラップ配布）・ADR-0032（enforcement は fail-closed）。
+**承認済み（2026-08-21）**。MVP 未実装。前提は ADR-0018（目的と最小ループ）・ADR-0015（下流の ccs 不意識運用）・ADR-0023（文脈経済）・ADR-0027（公式スキル採用とラップ配布）・ADR-0032（enforcement は fail-closed）。
+
+**採番について**: 本 ADR は `0035` を取得する前提で書かれている。`origin/main` に `0035` は未使用だが、**並行するブランチにも `0035` を名乗る ADR が存在する**。本ブランチを先にマージする場合、他の `0035` はマージ前に再採番が必要になる。**push / PR の前に `origin/main` と他の PR を再確認する**（本ファイルは現時点で再採番しない）。
 
 ## 背景
 
@@ -26,19 +28,20 @@ ccs が持つのは、公式が扱わない 2 つの層に限る。
 
 WT の作成・削除・隔離・配布は**公式へ委譲する**。
 
-## 前提とする公式機能と、その確度
+## 前提とする公式機能 — Claude Code 2.1.238 での characterization 結果
 
-**確度を明示する** — 未検証の前提に依存する設計を「確定」として実装へ渡さないため、**Phase 2 の characterization で全件を一次確認してから Phase 3 へ進む**。
+下記は **Claude Code 2.1.238** を対象に scratch 環境で一次確認した観測結果である。**特定バージョンでの観測であり、普遍的な仕様として扱わない**（再確認の規定は「既知の限界」7）。
 
-| 前提 | 用途 | 確度 |
-|---|---|---|
-| `isolation: "worktree"`（subagent を専用 WT で実行） | subagent の隔離実行を公式へ委譲 | **確認済み**（本セッションで参照可能なツール定義に記載） |
-| `.worktreeinclude`（gitignored ファイルの WT への持ち込み） | 環境ファイル等の配布を公式へ委譲 | **未検証**（Phase 2 で確認） |
-| `WorktreeRemove` hook | WT 撤去時に slot を解放する接続点 | **未検証**（Phase 2 で確認） |
-| `SessionEnd` hook | セッション終了時に slot を解放する接続点 | **未検証**（Phase 2 で確認） |
-| `claude agents`（実行中エージェントの一覧） | 監視 UI の第一候補 | **未検証**（Phase 2 で確認） |
+| 前提 | 観測結果（CLI 2.1.238） | 確認方法 | 観測範囲 |
+|---|---|---|---|
+| `isolation: "worktree"` | **確認済み**。WT は `<repo>/.claude/worktrees/agent-<hash>` に作られ、**新規ブランチ `worktree-agent-<hash>`** をチェックアウトする。**正常終了時は WT・登録・ブランチのすべてが自動削除**され、**`SIGKILL` では 3 つとも残り、`git worktree list` に `locked` として登録が残る** | scratch リポジトリで subagent を実走し、前後の `git worktree list` / `branch` / ディレクトリを観測 | 実行中の WT も `locked` として現れる（`locked` は実行中と孤児を区別しない） |
+| `.worktreeinclude` | **確認済み（現行環境に存在）**。gitignored ファイルを `git ls-files --others --ignored --exclude-standard --directory` で解決し、WT へ**コピー**する。symlink はスキップし、コミット済み symlink 経由で WT 外へ出る宛先は拒否する | 実体の文字列（該当機能のメッセージ群）+ scratch で isolation WT へのコピーを実走確認 | subagent の isolation WT で有効であることを確認。通常 WT での挙動は未観測 |
+| `WorktreeRemove` hook | **確認済み（正式なイベント）**。payload は共通フィールド + `worktree_path` | 実体のイベント名 enum と schema、および実走 | **subagent の isolation WT が自動削除される経路では発火しなかった**。`SIGKILL` でも発火しない |
+| `SessionEnd` hook | **確認済み（正式なイベント）**。payload は共通フィールド + `reason`（`clear` / `resume` / `logout` / `prompt_input_exit` / `other`） | 実体の schema + 非対話実行での実発火 | 非対話の正常終了では `reason: other` で発火。**`SIGKILL` では発火しない** |
+| `claude agents` | **確認済み**。`--json` は **TTY 不要**で `cwd` / `kind` / `name` / `pid` / `sessionId` / `startedAt` / `status` を返す。`--cwd <path>` で絞り込める | `--help` とサブコマンド一覧、および実走 | **セッション単位**の一覧であり、**in-process の subagent は列挙されない** |
+| `WorktreeCreate` hook | **確認済み。ただし観測用ではない**（決定 5） | 実体の schema（`hookSpecificOutput.worktreePath`）+ 実走で起動失敗を再現 | **WT パスを返す provider hook**。配線して空出力だと `isolation: "worktree"` の起動自体が失敗する |
 
-**前提が崩れた場合の縮退先**を決定 5・7 に明記する。前提が無くても Resource Governor の中核（決定 2・3）は成立する — 公式接続は**観測と解放を早める補助**であって、枠の成立条件ではない。
+**観測の生データは追跡ツリーに置かない**（ADR-0030）。本 ADR に残すのは**観測結果・対象 CLI 版・そこから導いた判定・制約**だけである。
 
 ## 決定
 
@@ -49,7 +52,7 @@ WT の作成・削除・隔離・配布は**公式へ委譲する**。
 | WT の作成 | **公式** | なし |
 | WT の通常削除 | **公式** | なし。**公式管理の WT を削除する独自 CLI を持たない** |
 | subagent の隔離実行 | **公式**（`isolation: "worktree"`） | なし |
-| gitignored ファイルの持ち込み | **公式**（`.worktreeinclude`） | なし |
+| gitignored ファイルの持ち込み | **公式**（`.worktreeinclude`） | なし。**コピー**であり symlink は拒否される（決定 8） |
 | node_modules の用意 | **利用者 / package manager** | なし。共有リンク禁止の規範だけ残す（決定 8） |
 | **同時実行数の枠** | **ccs** | 本 ADR の中核 |
 | **枠の判定の決定的化・fail-closed** | **ccs** | 本 ADR の中核 |
@@ -146,6 +149,8 @@ WT の作成・削除・隔離・配布は**公式へ委譲する**。
 
 `WorktreeRemove` / `SessionEnd` に配線するのは**観測と再検証の trigger のみ**とする。**配線自体は MVP に含めない（Phase 4 以降）** — MVP は hook 無しで成立する枠を先に作り、hook はその後に足す。
 
+**`WorktreeCreate` は配線しない（禁止）。** これは観測 hook ではなく、**作成する WT のパスを返す provider hook** である。配線して何も返さないと `isolation: "worktree"` の起動そのものが失敗する（実走で再現）。ccs が独自の WT provider を実装すると決定しない限り、この hook には触れない。
+
 - **やること**: **観測記録**と、**該当 index の再検証（stale recovery）の trigger**。
 - **やらないこと**: **WT の削除**（公式の責務）、**許可・拒否の判定**（hook の戻り値で公式の操作を止めない）、破壊的な後始末、そして**ACTIVE な cell の解放**。
 - **hook は cell を「解放」しない。** できるのは決定 3 の stale recovery を早めに起動することだけで、**実際に消えるのは PID 死亡かつ再検証で STALE と確定した cell のみ**である。`ACTIVE` / `ACTIVE_EXPIRED` / `INDETERMINATE` は hook 経由でも解放されない。
@@ -156,10 +161,12 @@ WT の作成・削除・隔離・配布は**公式へ委譲する**。
   |---|---|
   | 正常終了 | `with-slot` の `finally`（秘密 token 一致） |
   | 捕捉可能なシグナル（`SIGINT` / `SIGTERM` 等） | 同上（ハンドラから `finally` へ合流させる） |
-  | `SIGKILL` / プロセスクラッシュ / 電源断 | **stale recovery のみ**（`finally` は走らない） |
-  | 公式 hook（`WorktreeRemove` / `SessionEnd`） | **解放しない。** stale recovery を早く起動するだけ |
+  | `SIGKILL` | **stale recovery のみ**。`finally` が走らず **`SessionEnd` も `WorktreeRemove` も発火しない**ことを CLI 2.1.238 で**実測済み**。回収の根拠は **PID 死亡**だけである |
+  | プロセスクラッシュ / 電源断 | **stale recovery のみ**。`finally` や hook の完走を正しさの根拠にできないため回収経路を stale recovery に限定する（**SIGKILL 以外を実測済みとは主張しない**） |
+  | 公式 hook（`WorktreeRemove` / `SessionEnd`） | **解放しない。** stale recovery を早く起動するだけ（`WorktreeRemove` は発火しない経路がある） |
 
 - **これらの hook は advisory 扱い**とする（ADR-0032 の分類）。起動に失敗しても公式の操作を妨げない。取りこぼした cell は決定 3 の stale 回収が拾う — **hook は最適化であって、正しさの根拠ではない。**
+- **`WorktreeRemove` は全経路では発火しない。** subagent の isolation WT が自動削除される経路では発火しないことを実測した（CLI 2.1.238）。したがって **slot の正しさ・通常解放・回収の根拠にしてはならない**。用途は「発火する一部経路での advisory な再検証 trigger」に限定する。
 - **前提が崩れた場合の縮退**: hook が利用できない場合でも、`with-slot` の `finally` と stale 回収だけで枠は成立する。hook はクラッシュ時の回収を早めるだけである。
 
 ### 決定 6: Cold / Ready / Running を制御の中心に置かない
@@ -181,13 +188,29 @@ WT の状態（node_modules の有無・常駐プロセスの有無）は**診�
 
 - **doctor は MVP に含めない（Phase 4 以降）。** MVP は Resource Governor（決定 2・3・4）だけを作る。本決定は doctor を作るときの制約を先に固定するものである。
 - **doctor は報告のみ**。削除しない。提案は出すが、実行するのは利用者か公式の経路である。
+
+#### doctor の分類 — 一覧の不在を孤児の証拠にしない
+
+`claude agents --json` は**セッション単位**の一覧で、**in-process の subagent は列挙されない**。また **active な isolation WT も `git worktree list` では `locked` として現れる**（実行中と孤児を `locked` では区別できない）。したがって「`locked` かつ一覧に PID が無い」だけで孤児と断定すると、**実行中の subagent WT を孤児と誤判定する**。
+
+| 分類 | 条件 | doctor の動作 |
+|---|---|---|
+| **ACTIVE_CONFIRMED** | `claude agents --json` に一致するセッションがある | 触れない（報告に「稼働中」と出す） |
+| **ORPHAN_CANDIDATE** | 一致が無く、かつ age・`locked` 状態などから孤児の可能性がある | **候補として報告するだけ**。削除も自動確定もしない |
+| **INDETERMINATE** | 一覧を取得できない・解析できない・判定材料が欠ける | **判定不能として報告**。ORPHAN 側へ倒さない |
+
+- **一覧に無いことを STALE や孤児の確定根拠にしない。** 不在は「観測できなかった」であって「存在しない」ではない。
+- 報告には **age・`git worktree` の `locked` 状態・関連セッションの有無**を併記するが、**それらの組み合わせで自動確定しない**。
+- **doctor は報告のみで削除しない**（決定 1）。処遇の判断は利用者と公式の経路に残る。
+
 - **pre-commit / pre-push に配線しない。** O(N) の走査を commit / push の hot path に置くと、WT 本数の増加がそのまま日常操作の遅延になる（背景 1 の再生産）。呼び出しは `/weekly-inventory` または夜間に限る。
-- **監視 UI は `claude agents` を第一候補**とする。実行中エージェントの一覧が公式で得られるなら ccs 独自のダッシュボードを作らない。**前提が崩れた場合の縮退**: doctor のテキスト出力に留める。
+- **監視 UI は `claude agents --json` を第一候補**とする。**TTY 不要**で `pid` / `cwd` / `status` を取得でき、`--cwd` で絞り込める。ただし**in-process の subagent を含む完全な実行一覧ではない** — **正の存在確認には使えるが、不在証明には使わない**（決定 7 の分類）。**doctor のテキスト出力による縮退経路は残す**（一覧を取得できない環境でも報告が成立するようにする）。
 
 ### 決定 8: 共有 node_modules は禁止のまま・store の共有は可
 
 - **node_modules の junction / symlink 共有を禁止する**（規範として維持）。Guard 5.5 は強制層として残す。
 - **package manager の共有 store（pnpm store / npm cache 等）は利用してよい。** store から WT 内へ張られるリンクは「WT 内の実体」であり、WT を消しても store は壊れない。禁止するのは **WT 間で node_modules ディレクトリそのものを共有する**形だけである。
+- **`.worktreeinclude` は該当ファイルを WT へ「コピー」し、symlink はスキップする**（コミット済み symlink 経由で WT 外へ出る宛先も拒否される）。したがって **`.worktreeinclude` がコピーしたファイルについては**、リンクを辿って共有元を壊す事故クラスが構造的に生じない。**この保証はコピーされたファイルに限る** — `.worktreeinclude` は node_modules の用意には関与しないため、**共有 node_modules に起因する事故まで防ぐわけではない**。共有リンク禁止の規範は維持する。
 - node_modules の作成・削除そのものに ccs は関与しない（決定 1）。
 
 ### 決定 9: プロジェクト固有の規則は adapter 境界に置き、MVP では実装しない
@@ -291,7 +314,7 @@ tests/fixtures/wt-concurrency/replay.sh   並行性 4 点（Phase 3 = 回帰 1�
 | Phase | 内容 | rollback |
 |---|---|---|
 | **1. ADR** | 本 ADR の承認 | — |
-| **2. characterization（scratch）** | 公式 WT 挙動を scratch 環境で一次確認する。`.worktreeinclude` / `WorktreeRemove` / `SessionEnd` / `claude agents` / `isolation: "worktree"` の**実挙動を観測して固定**し、前提表の「未検証」を解消する。**ここで前提が崩れたら決定 5・7 を縮退させてから Phase 3 へ進む** | 観測のみ・変更なし |
+| **2. characterization（scratch）** | 公式 WT 挙動を scratch 環境で一次確認する。**実施済み（CLI 2.1.238）** — 結果は前提表に反映。生データは追跡ツリーに置かない（ADR-0030） | 観測のみ・変更なし |
 | **3. Resource Governor（ccs 実装）** | policy / domain / slots / with-slot と fixture テスト。公式 hook への配線はまだ行わない | ファイル削除で可逆（既存機構に未接続） |
 | **4. ccs dogfood** | ccs 自身の重いコマンド（テスト・型チェック）を `with-slot` 経由にする。Phase 2 の結果が良ければ hook 配線を追加 | ラッパを外すだけ |
 | **5. ARC dogfood** | ARC で併存運用。adapter が要る要求（ブランチ規則等）をここで洗い出す（実装は別 ADR） | 併存のため既存経路は無傷 |
@@ -310,7 +333,7 @@ tests/fixtures/wt-concurrency/replay.sh   並行性 4 点（Phase 3 = 回帰 1�
 4. **`ACTIVE_EXPIRED` は自動では解けない**: 期限更新に失敗したまま生き続けるプロセスがあると枠が 1 つ埋まったままになる。doctor が可視化するが、解放は人間の判断に残る（自動回収は二重割り当てを招くため採らない）。
 5. **秘密 token は owner process tree 内にのみ継承される**: 外側の `with-slot` が生成し、子へは環境変数で継承されるが、tree の外には存在しない。owner が死ねば token も消えるため、**その cell を通常解放できる主体は以後いなくなる**。回収は stale recovery だけが行う（設計どおりだが、`ACTIVE_EXPIRED` に落ちた cell は「既知の限界」4 のとおり自動では解けない）。
 6. **上限の解決値が不一致な場合**: policy 編集中などで 2 プロセスが異なる `N` を解決すると、大きい view を持つ側が余分な cell を取れる。同一ファイルから解決する限り実害は小さいが、厳密には解決値を cell に記録して照合する必要がある（Phase 3 の実装判断）。
-7. **公式機能への依存**: 決定 5・7 は未検証の前提に依存する。Phase 2 で崩れた場合の縮退先は各決定に書いたが、**縮退した状態での運用品質は未評価**である。
+7. **公式挙動はバージョンに紐づく**: 本 ADR の前提は **Claude Code 2.1.238** で characterization 済みである。将来の CLI 更新で **hook の payload・発火経路・WT の削除挙動・`claude agents` の出力**が変わりうる。**ccs のリリース時、または対応 Claude Code 版を更新する時に characterization を再実行する**。現在の既知制約として、**`WorktreeRemove` が発火しない経路がある**ことと、**`claude agents` の一覧が in-process subagent を含まず不在証明に使えない**ことを残す。
 
 ## 既存 ADR との整合表
 
