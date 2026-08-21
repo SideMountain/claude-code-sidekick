@@ -1,6 +1,6 @@
 # ADR-0034: UX 導線スキャンスキル（/ux-scan）の追加
 
-- Status: Proposed
+- Status: Accepted（v0.17.0 で実装）
 - Date: 2026-07-20
 
 ## Context
