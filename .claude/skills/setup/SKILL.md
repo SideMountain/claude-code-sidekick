@@ -169,19 +169,20 @@ SIDEKICK_AUTO=true claude --dangerouslySkipPermissions -p "/auto-implement #123"
 
 保護ブランチ push・`.env`・`rm -rf`・PRD DB 等のハードブロックは `SIDEKICK_AUTO` の値と無関係に常に deny される（不可逆操作の保護は無人でも不変）。
 
-#### 2d. PII pre-commit hook の有効化（core.hooksPath）
+#### 2d. git hooks の有効化（core.hooksPath）
 
-`.claude/githooks/pre-commit`（PII 強制層、`.claude/rules/pii-prevention.md` の enforcement 実装）を有効化する。
+`.claude/githooks/`（pre-commit = PII 強制層・pre-push = 型/テスト検証ゲート）を有効化する。
 `core.hooksPath` は git 非追跡の per-repo 設定なので、clone ごとに 1 回必要:
 
 ```bash
 git config core.hooksPath .claude/githooks
-echo "PII pre-commit hook を有効化しました（公開ファイルへの PII 混入を commit 時に物理ブロック）"
+echo "git hooks を有効化しました（pre-commit: PII 物理ブロック / pre-push: 型・変更テスト検証）"
 ```
 
 > **注意**: `core.hooksPath` は `.git/hooks/` を置き換える。既に独自 git hook を `.git/hooks/` に持つ PJ では、それらを `.claude/githooks/` に移すか統合する。
 > **PJ 固有名のカスタマイズ**: `.claude/githooks/pre-commit` 末尾のコメント部に、当該 PJ の人名・PJ名・接続先パターンを追記する（`pii-prevention.md` の scan_pii と同じ運用）。
 > **既存PJモードでも同様**: Step 1E で `core.hooksPath` 未設定なら設定する。worktree は共通 git config を参照するため、設定は全 worktree に効く。
+> **node 系 PJ は install に自動配線を推奨**: `package.json` に `"prepare": "git config core.hooksPath .claude/githooks"` を足すと、fresh clone・別マシン・worktree での install 時に配線が自動で入り、手動一手の忘れが構造的に消える（husky 等の追加依存は不要）。配線漏れは session-start チェック [8/9] が検知する。
 
 ### Step 3: テンプレート配置
 
