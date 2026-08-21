@@ -65,6 +65,15 @@ ln -s $(realpath node_modules) ../<project>-<用途>/node_modules
 
 **注意**: ブランチ間で `package.json` / `package-lock.json` が異なる場合はシンボリックリンクではなく通常の `npm install` を使うこと。
 
+**⚠ Windows ではこの最適化は効かない**: Git Bash（MSYS）の `ln -s` は既定で symlink に
+ならず**実体コピー**を作る（`fsutil reparsepoint query` が reparse point でないと応答する）。
+ディスクは共有されず worktree ごとのフルコピーになるだけでなく、「リンクのつもりの実体」と
+「実体のつもりのリンク」が混在して削除事故の温床になる。Windows では:
+
+- 短命な worktree（doc / `.claude/` のみ変更）→ そもそも依存を入れない（軽量Worktreeパターン）
+- ランタイムが要る worktree → 素直に `<PACKAGE_MANAGER> install` する
+  （リンク由来の teardown 事故が構造的に起きない）
+
 **⚠ 削除時の危険（Windows junction / symlink 共有時）**: リンク共有した Worktree を
 リンク解除より先に `git worktree remove`（特に `--force`）すると、junction を辿って
 **メインWS の実体 node_modules が削除される**（Windows 環境での実インシデント・2026-07-23）。
@@ -81,6 +90,12 @@ ln -s $(realpath node_modules) ../<project>-<用途>/node_modules
   symlink は `rm <wt>/node_modules` / 実体ディレクトリは中身ごと削除） → ② 消えたことを確認 →
   ③ `git worktree remove`。junction / symlink を残したまま remove すると、リンクを辿って
   メインWS の実体が削除されうる（Guard 5.5 が deny で強制）
+- **リンクか実体かの判定は機械で行う**: Windows では `fsutil reparsepoint query <path>` が
+  決定的（reparse point なら成功する）。PowerShell の `(Get-Item).LinkType` は空文字を返す
+  環境があり判定に使えない。判定を飛ばして再帰削除しない
+- **掃除の機械化**: `.claude/scripts/cleanup-worktrees.sh`（既定 dry-run・`--apply` で実行）が
+  上記の判定と安全順序、未push/未コミット/未マージ/ローカル設定（`.env.*`）の自動除外、
+  共有 store の前後内容検査までを一括で行う。複数 worktree の定期掃除はこれを使う
 
 ### Active Work ステータス
 
