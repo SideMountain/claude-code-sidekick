@@ -1,0 +1,91 @@
+# 並列 Worktree 資源ガバナー（ADR-0035）の回帰を CI で回す最小ワークフロー。
+#
+# 目的は安全網を置くことだけで、既存の動作は変えない。fixture は追加せず、
+# リポジトリにある 2 本をそのまま各 1 回実行する。
+#
+# 閾値（判定ループ 50 ms）は fixture 側が持つ。**CI が閾値を調整することはない** —
+# cold 実行で閾値に近づいた場合は失敗として実測を残し、変更の是非は人が判断する。
+name: wt-fixtures
+
+on:
+  pull_request:
+    paths:
+      - '.claude/scripts/wt/**'
+      - 'tests/fixtures/wt-slots/**'
+      - 'tests/fixtures/wt-concurrency/**'
+      - '.github/workflows/wt-fixtures.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '.claude/scripts/wt/**'
+      - 'tests/fixtures/wt-slots/**'
+      - 'tests/fixtures/wt-concurrency/**'
+      - '.github/workflows/wt-fixtures.yml'
+
+# 読み取りだけで足りる。書き込み権限は要求しない。
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    # OS ごとに job を書き分けず matrix で表現する（差異は shell の指定だけ）。
+    name: fixtures (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    defaults:
+      run:
+        # Windows でも bash で実行する（fixture は bash スクリプト）。
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 環境の記録（失敗時に実測を読み解くため）
+        run: |
+          node --version
+          echo "runner=${{ matrix.os }} tmpdir=$(node -e 'console.log(require("node:os").tmpdir())')"
+
+      # 2 つの fixture を直接、各 1 回だけ実行する。
+      - name: wt-slots（純粋 fixture・判定ループ予算を含む）
+        run: bash tests/fixtures/wt-slots/replay.sh
+
+      # fixture の実行と cleanup 契約の検査を **1 step で完結**させる。
+      # step を分けると、fixture が赤いときに後続 step が skip され、
+      # **最も残骸が出やすい失敗経路でだけ cleanup 検査が走らない**。
+      - name: wt-concurrency（実プロセス並行 + 一時領域の回収検査）
+        run: |
+          # 1. 実行して終了コードを保存する。パイプにすると exit が tee のものになり、
+          #    `|| status=$?` で受けないと errexit がログ表示前に step を打ち切る。
+          status=0
+          bash tests/fixtures/wt-concurrency/replay.sh > wt-concurrency.log 2>&1 || status=$?
+
+          # 2. ログを表示する（成功・失敗のどちらでも実測を残す）
+          cat wt-concurrency.log
+
+          # 3. 一時領域の回収は fixture 自身の自己検査を正とする。OS 全体の tmp を
+          #    走査すると無関係なプロセスの一時領域まで拾い、他人の状態で赤くなる。
+          cleanup=0
+          grep -q '^PASS  *suite-temp-root-removed' wt-concurrency.log || cleanup=1
+
+          # 4. cleanup 検査が失敗したことを明示する
+          if [ "$cleanup" -ne 0 ]; then
+            echo "::error::suite-temp-root-removed が出力されていない（一時領域の回収を確認できない）"
+          fi
+
+          # 5. fixture 本体が非ゼロなら、その終了コードをそのまま返す
+          if [ "$status" -ne 0 ]; then
+            exit $status
+          fi
+
+          # 6. fixture が 0 でも cleanup 検査が失敗したら赤にする
+          exit $cleanup
