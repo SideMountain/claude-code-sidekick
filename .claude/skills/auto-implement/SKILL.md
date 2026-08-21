@@ -84,10 +84,17 @@ Agent 完了後、**メインコンテキストに戻って** `/review` を実�
 3. **矛盾 findings**（観点間・仕様と実装・ADR と diff の食い違い）は R2 難所 = **単発判断を禁止**。R3 敵対検証を多視点 judge へ fan-out して裁定する（下記）。
 4. min()=1（BLOCKER）→ **ledger に記録して停止**（ユーザー判断待ち）。min()≧2 は WARN を修正 → 再 `/review`（最大3回）。
 
-## Phase 4: 全テスト + PR（ADR-0026）
+## Phase 4: PR 前ゲート + PR（ADR-0026）
+
+PR 作成前ゲートは **PR の base ブランチで選ぶ**（単一ソース = CLAUDE.md「テスト実行の最適化」の 2 段ゲート）。base 無条件のフル一式は回さない — STG 反復で全テスト+ビルドを毎回回すと、並列 worktree 時にマシン全体が劣化する。
 
 ```bash
-$TEST_COMMAND && $TYPECHECK_COMMAND && $BUILD_COMMAND   # PR 作成前ゲート
+# base = release/stg（STG・反復。STG_ENABLED=true の既定）— 軽量ゲート
+#   変更箇所のテストのみ（ファイル/ディレクトリ指定 or --changed で絞る）+ 型チェック全体
+<TEST_COMMAND を変更箇所に絞ったもの> && $TYPECHECK_COMMAND
+
+# base = main（本番前）/ hotfix / STG_ENABLED=false — フル一式
+$TEST_COMMAND && $TYPECHECK_COMMAND && $BUILD_COMMAND
 ```
 
 | モード | git push / gh pr create |

@@ -88,11 +88,22 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 - **H12**: 新作業は Worktree 作成（メインWSでブランチ切り替え禁止）
 - **H13**: Worktree 作成 → auto-memory の MEMORY.md（`~/.claude/projects/<slug>/memory/MEMORY.md`）の Active Work セクションに記録（この順序。飛ばさない）
 - **H14**: DBマイグレーション作業の並行禁止
+- **H21** (STG_ENABLED=true のみ): メインWSの常駐ブランチは `release/stg` 固定。`main` で滞在しない（main 視点が必要な操作は checkout せず `git fetch origin && git log origin/main` 等で参照する）
+- **H22** (STG_ENABLED=true のみ): 新規 Worktree のベースブランチは `origin/release/stg`。例外は hotfix（`origin/main` から切る）
+- **H23** (STG_ENABLED=true のみ): WT が `release/stg` にマージされた直後、メインWSで `git pull origin release/stg` を実行して同期（WT 削除よりこの sync が先）
 
 #### ORM_TYPE=prisma の場合のみ有効
 
 - **H3**: `prisma db push` 禁止
 - **H4**: `prisma migrate deploy/dev` は Claude 自律実行禁止
+
+#### ORM_TYPE=none（Supabase CLI）の場合のみ有効
+
+- **H16**: `supabase db reset` 禁止（全データ消去。例外なし）
+- **H17**: `supabase db push --force` 禁止（破壊的変更の強制適用。Expand-Contract で対応）
+- **H18**: `supabase migration repair` 禁止（マイグレーション履歴の改竄）
+- **H19**: `supabase db push` はユーザー確認必須（対象プロジェクト・適用内容を明示）
+- **H20**: PRD への `supabase db push` は手順・影響・ロールバック提示 → 明示的承認（H6 と同等）
 
 #### コミット
 
@@ -111,6 +122,9 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 | `.env` の `DATABASE_URL` 変更 | guard-bash.sh | H5 |
 | `rm -rf` / 再帰削除 | guard-bash.sh | — |
 | `prisma db push` | guard-bash.sh | H3 |
+| `supabase db reset` | guard-bash.sh | H16 |
+| `supabase db push --force` | guard-bash.sh | H17 |
+| `supabase migration repair` | guard-bash.sh | H18 |
 | メインWSでの `git checkout` | guard-bash.sh | H12 |
 | 保護ブランチ checkout 中のファイル編集 | guard-protected-branch-edit.sh | H9, H12 |
 | 背景/対応/影響 を欠くコミット | guard-commit-message.sh | H15 |
@@ -122,7 +136,8 @@ SIDEKICK_VERSION: ""          # 取り込み済み sidekick バージョン（�
 - PR 作成・マージ・クローズ → **H8**
 - PRD DB マイグレーション → **H4**
 - PRD DB SELECT（読み取りでも確認必須）
-- STG DB マイグレーション実行
+- STG DB マイグレーション実行（Supabase 構成では `supabase db push` = **H19**、PRD へは **H20**）
+- `supabase db execute`（直接 SQL 実行。ORM_TYPE=none の場合）
 - STG DB データ変更（INSERT / UPDATE / DELETE）
 - 破壊的操作（ファイル削除、ブランチ削除、force push）
 - `git stash` / `git reset` / `git rebase`
@@ -175,6 +190,22 @@ git操作・DB操作・デプロイなど、CLAUDE.md にルールが存在す�
 3. **決定**: ユーザーの判断を待つ。勝手に決めない
 
 壁打ち中は実装に着手しない（「考える」と「作る」を分離）。決定後、仕様判断があれば ADR 記録を提案する。
+
+### テスト実行の最適化
+
+**STG_ENABLED=true の場合は 2 段ゲート**（STG=反復速度優先で軽量・本番前=フル）。STG は検証環境のため軽量ゲートで開発サイクルを上げ、論理回帰は本番反映前のフルスイートで捕捉する。小さな修正 → STG 確認のサイクルで毎回フル一式（全テスト+ビルド+重いレビュー）を回すのは AI 開発の速度ロスが大きい — さらに並列 worktree でフルスイートが同時に走るとマシン全体が劣化する。
+
+| タイミング | テスト範囲 |
+|---|---|
+| ローカル開発中 | 変更に関連するテストのみ（スコープ限定） |
+| **feature → release/stg（STG・反復）** | **変更箇所のテストのみ ＋ 型チェック（全体） ＋ lint（変更分）**。全テスト / ビルドはスキップ |
+| **release/stg → main（本番前）** | **全テスト ＋ 型チェック ＋ ビルド**（＋ E2E があれば実行） |
+
+- `TEST_COMMAND` はファイル指定・ディレクトリ指定・`--changed` 等で対象を絞る
+- **STG PR は「変更箇所テスト + 型チェック」が通れば作成可**（全テスト緑は要求しない）。**main（本番）PR は全テスト緑を必須**にする
+- 型チェック全体は STG でも残す＝クロスモジュールの型崩れを安価に即検知する
+- `STG_ENABLED=false` の PJ は main への PR が本番前ゲート＝フル一式を回す（2 段ゲートは適用しない）
+- guard-bash.sh Guard 13 が「非リリースブランチでのフルスイート実行」を advisory 警告する（検知層）
 
 ### セルフレビュー
 
