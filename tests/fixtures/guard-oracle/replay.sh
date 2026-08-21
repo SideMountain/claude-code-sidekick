@@ -17,7 +17,10 @@ while IFS= read -r line; do
   stdin_json=${stdin_json//"{{REPO}}"/$REPO}
   exp_dec=$(printf '%s\n' "$line" | jq -r '.expected.decision')
   exp_sub=$(printf '%s\n' "$line" | jq -r '.expected.output_contains // ""')
-  envargs=$(printf '%s\n' "$line" | jq -r '.env | to_entries | map("\(.key)=\(.value)") | .[]' 2>/dev/null)
+  # tr -d '\r': Windows の jq は複数行出力を CRLF で終端するため、env が複数キーの
+  # ケースでは中間行の値末尾に \r が残り「値が一致しない」偽動作になる（1 キーなら
+  # 末尾改行ごと $() が剥がすため顕在化しない）。
+  envargs=$(printf '%s\n' "$line" | jq -r '.env | to_entries | map("\(.key)=\(.value)") | .[]' 2>/dev/null | tr -d '\r')
   if [ -n "$envargs" ]; then
     out=$(printf '%s\n' "$stdin_json" | env $envargs bash "$REPO/$hook" 2>/dev/null)
   else

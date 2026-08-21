@@ -41,7 +41,8 @@
 ```
 条件:
   1. /review 総合スコア >= 2
-  2. テスト全 PASS（TEST_COMMAND 実行結果）
+  2. テスト PASS（範囲は CLAUDE.md「テスト実行の最適化」の 2 段ゲートに従う。
+     STG=変更箇所テストのみ / main=フルスイート。STG に全テスト緑は要求しない）
   3. 型チェック PASS（TYPECHECK_COMMAND 実行結果）
   4. セキュリティ深掘り（/security-review）が未指摘
   5. PR の変更行数が閾値以内（デフォルト: 500行）
