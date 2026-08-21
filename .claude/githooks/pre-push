@@ -1,0 +1,99 @@
+#!/bin/sh
+
+# pre-push: ローカル検証ゲート（型チェック + 変更テスト）
+#
+# 位置づけ: push は「他者・CI・デプロイに影響が波及する最初の不可逆点」。
+#   CI を持たない（または CI がテストを回さない）PJ では、このフックが
+#   push 前にテストを回す唯一の砦になる。ゆえに失敗は必ず block し、
+#   silent pass させない（検証未実施も「失敗」として扱う fail-closed）。
+#
+# 戦略:
+#   1. push 範囲の変更ファイルを取得
+#   2. 型・テストに影響するファイルを含まないなら fast-path で全スキップ
+#      （docs / .claude のみの push を遅くしない）
+#   3. 検出できたツールチェーンで検証を実行
+#      - TypeScript: tsc --noEmit（incremental）+ vitest --changed
+#      - Python:     pytest
+#      - どちらかが失敗（検証失敗 or 実行環境不備）したら push を中止
+#
+# 有効化は pre-commit と同じ（clone ごとに 1 回。/setup が設定する）:
+#   git config core.hooksPath .claude/githooks
+# worktree でも起動する（core.hooksPath は追跡ディレクトリを相対参照するため、
+# 各 worktree のルートで解決される）。
+#
+# 検証を意図的にスキップする場合のみ: git push --no-verify
+# （Claude 経由の push は guard-bash.sh も通るため、--no-verify では
+#   そちらの防衛線は外れない）
+
+# 検証ゲート実行ヘルパー。失敗時は原因の切り分けを示して push を中止する。
+run_gate() {
+  name="$1"
+  shift
+  echo "[pre-push] ${name} ..."
+  if "$@"; then
+    return 0
+  fi
+  echo ""
+  echo "❌ [pre-push] ${name} に失敗しました。push を中止します。"
+  echo "   考えられる原因:"
+  echo "   - 型エラー / テスト失敗 → 修正してから再 push してください。"
+  echo "   - 依存未インストールの worktree → install してから再 push してください"
+  echo "     （軽量 worktree でも型・テスト対象ファイルを触った push には依存が要ります）。"
+  echo "   - 検証を意図的にスキップする場合のみ 'git push --no-verify'。"
+  echo ""
+  exit 1
+}
+
+# push 範囲のファイル一覧を取得 (commit-range が空 / 取れないなら全変更を対象)
+range_files=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "$local_sha" ] && continue
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # 新規ブランチ push: 適切なベースから比較
+    base=$(git merge-base "$local_sha" origin/release/stg 2>/dev/null \
+      || git merge-base "$local_sha" origin/main 2>/dev/null)
+    if [ -n "$base" ]; then
+      files=$(git diff --name-only "$base" "$local_sha")
+    else
+      # base 解決不可なら直近 1 コミットの差分にフォールバック
+      files=$(git diff --name-only "$local_sha~1" "$local_sha" 2>/dev/null)
+    fi
+  else
+    files=$(git diff --name-only "$remote_sha" "$local_sha")
+  fi
+  range_files="$range_files
+$files"
+done
+
+# range が空 (まれ) なら作業ツリーの最新変更を見る
+if [ -z "$(echo "$range_files" | tr -d '[:space:]')" ]; then
+  range_files=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+fi
+
+# 型・テストに影響するパターン (TS/JS 系、py、tsconfig*、package.json、lock files、
+# vitest/next/pytest の設定)
+relevant=$(echo "$range_files" | grep -E '\.(ts|tsx|js|jsx|mjs|cjs|py)$|^tsconfig.*\.json$|^package\.json$|^package-lock\.json$|^pnpm-lock\.yaml$|^yarn\.lock$|^vitest\.config\.|^next\.config\.|^pyproject\.toml$|^setup\.(py|cfg)$' | head -1)
+
+if [ -z "$relevant" ]; then
+  changed_count=$(echo "$range_files" | grep -c -v '^$' || true)
+  echo "[pre-push] No type/test-relevant changes (${changed_count} files). Skipping typecheck and tests."
+  echo "[pre-push] 型/テストに影響しない変更のためスキップします。"
+  exit 0
+fi
+
+# 通常パス: 検出できたツールチェーンで検証（いずれも失敗したら block）
+# tsc は --incremental + tsBuildInfo で 2 回目以降を高速化（.tsbuildinfo は gitignore 推奨）
+if command -v npx > /dev/null 2>&1 && [ -f "tsconfig.json" ]; then
+  run_gate "typecheck (tsc --noEmit, incremental)" \
+    npx tsc --noEmit --incremental --tsBuildInfoFile .tsbuildinfo
+fi
+
+if command -v npx > /dev/null 2>&1 && { [ -f "vitest.config.ts" ] || [ -f "vitest.config.js" ] || [ -f "vitest.config.mts" ]; }; then
+  # 全スイートではなく変更起点の関連テストのみ（STG 反復の軽量ゲートと整合）
+  run_gate "test (vitest --changed)" \
+    npx vitest run --changed HEAD~1
+elif command -v pytest > /dev/null 2>&1 && { [ -f "pyproject.toml" ] || [ -f "pytest.ini" ] || [ -f "setup.cfg" ]; }; then
+  run_gate "test (pytest)" pytest
+fi
+
+exit 0

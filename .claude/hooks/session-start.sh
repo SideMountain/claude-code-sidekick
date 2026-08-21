@@ -16,7 +16,7 @@
 # =============================================================================
 
 # Advisory hook — source fail-open (ADR-0032). The enforcement guards are
-# fail-closed; this hook must still run (and SURFACE the failure in [8/8]) even
+# fail-closed; this hook must still run (and SURFACE the failure in [9/9]) even
 # when the helper library is broken, so it degrades to safe defaults instead.
 . "$(dirname "$0")/hook-helpers.sh" 2>/dev/null
 _CCS_ENFORCE_OK=0
@@ -59,8 +59,8 @@ read -ra PROTECTED_BRANCHES <<< "$(get_protected_branches "$PROJECT_DIR/CLAUDE.m
 echo "=== SESSION START: Automated Checks ==="
 echo ""
 
-# --- [1/8] Branch Status ---
-echo "[1/8] Branch status"
+# --- [1/9] Branch Status ---
+echo "[1/9] Branch status"
 git fetch origin 2>/dev/null
 BRANCH=$(git branch --show-current 2>/dev/null)
 echo "  Current branch: $BRANCH"
@@ -90,9 +90,9 @@ else
   echo "  INFO: Not on a protected branch. Ensure this is intentional."
 fi
 
-# --- [2/8] Uncommitted Changes ---
+# --- [2/9] Uncommitted Changes ---
 echo ""
-echo "[2/8] Uncommitted changes"
+echo "[2/9] Uncommitted changes"
 CHANGES=$(git status --short 2>/dev/null)
 if [ -n "$CHANGES" ]; then
   echo "  WARNING: Uncommitted changes detected:"
@@ -101,23 +101,23 @@ else
   echo "  OK: clean"
 fi
 
-# --- [3/8] Active Work ---
+# --- [3/9] Active Work ---
 echo ""
-echo "[3/8] Active Work (parallel work board)"
+echo "[3/9] Active Work (parallel work board)"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   sed -n '/^## Active Work/,/^## [^A]/p' "$MEMORY_FILE" | head -30 | sed 's/^/  /'
 else
   echo "  (MEMORY.md not found)"
 fi
 
-# --- [4/8] Existing Worktrees ---
+# --- [4/9] Existing Worktrees ---
 echo ""
-echo "[4/8] Existing worktrees"
+echo "[4/9] Existing worktrees"
 git worktree list 2>/dev/null | sed 's/^/  /'
 
-# --- [5/8] Maintenance ---
+# --- [5/9] Maintenance ---
 echo ""
-echo "[5/8] Maintenance"
+echo "[5/9] Maintenance"
 if [ -n "$MEMORY_FILE" ] && [ -f "$MEMORY_FILE" ]; then
   LAST_REVIEW=$(grep -o '最終棚卸し: [0-9-]*' "$MEMORY_FILE" 2>/dev/null | head -1 | sed 's/最終棚卸し: //')
   if [ -n "$LAST_REVIEW" ]; then
@@ -142,8 +142,8 @@ else
 fi
 
 echo ""
-# --- [6/8] Critical sidekick update pending (ADR-0009 P3) ---
-echo "[6/8] Critical sidekick update"
+# --- [6/9] Critical sidekick update pending (ADR-0009 P3) ---
+echo "[6/9] Critical sidekick update"
 CRITICAL_FLAG=""
 if [ -n "$MEM_DIR" ]; then
   CRITICAL_FLAG="$MEM_DIR/project_critical_pending.md"
@@ -157,8 +157,8 @@ else
 fi
 
 echo ""
-# --- [7/8] Personal brain layer health check (ADR-0016) ---
-echo "[7/8] Personal brain layer"
+# --- [7/9] Personal brain layer health check (ADR-0016) ---
+echo "[7/9] Personal brain layer"
 PERSONAL_BRAIN="$HOME/.claude/brain/thinking.md"
 if [ -f "$PERSONAL_BRAIN" ]; then
   echo "  OK: $PERSONAL_BRAIN"
@@ -169,12 +169,32 @@ else
 fi
 
 echo ""
-# --- [8/8] Enforcement layer health (ADR-0032) ---
+# --- [8/9] git hooks wiring (core.hooksPath) ---
+# core.hooksPath is per-clone local config: after a fresh clone (or a machine
+# switch) the tracked .claude/githooks/ exists but NOTHING fires — the hooks go
+# silent without any error. Wiring must be verified as config AND substance
+# (the directory with hooks), not either alone.
+echo "[8/9] git hooks wiring"
+if [ -d "$PROJECT_DIR/.claude/githooks" ]; then
+  _HOOKS_PATH=$(git -C "$PROJECT_DIR" config core.hooksPath 2>/dev/null)
+  if [ "$_HOOKS_PATH" = ".claude/githooks" ]; then
+    echo "  OK: core.hooksPath=.claude/githooks (worktree でも有効)"
+  else
+    echo "  ⚠️  WARNING: core.hooksPath が未配線（現在: '${_HOOKS_PATH:-unset}'）"
+    echo "     → .claude/githooks/ の pre-commit / pre-push が一切起動していません（無エラーで沈黙）"
+    echo "     → 修正: git config core.hooksPath .claude/githooks（/setup Step 2d 参照）"
+  fi
+else
+  echo "  INFO: .claude/githooks/ が無い構成（githooks 強制層は未使用）"
+fi
+
+echo ""
+# --- [9/9] Enforcement layer health (ADR-0032) ---
 # The enforcement guards are fail-closed on a broken helper library: if it does
 # not load, EVERY Bash/Edit is denied. Surface that here so the cause is visible
 # rather than mysterious. Also surface DB-pattern drift ("configured then lost"),
 # which silently downgrades PRD-write protection.
-echo "[8/8] Enforcement layer"
+echo "[9/9] Enforcement layer"
 if [ "$_CCS_ENFORCE_OK" = "1" ]; then
   echo "  OK: guard helper library loaded (guards fail-closed on load failure)"
 else

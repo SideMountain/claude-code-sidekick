@@ -90,6 +90,19 @@ ln -s $(realpath node_modules) ../<project>-<用途>/node_modules
 | STG確認待ち | PRマージ済み、動作確認待ち |
 | 完了 | ユーザーが完了確認。Worktree削除実行 |
 
+### Worktree でも git hooks は効く（配線の前提）
+
+`core.hooksPath=.claude/githooks`（追跡ディレクトリ）は相対パスとして各 worktree の
+ルートから解決され、`.claude/githooks/` は追跡されて全 worktree に checkout されるため、
+**worktree でも pre-commit / pre-push が起動する**（`.git/hooks/` 直置きや husky の
+`.husky/_` は worktree に存在せず、worktree では hooks が沈黙する）。
+
+- 配線は clone / 環境ごとの local config。ズレていると hooks は**エラーも出さず沈黙**する
+  （session-start チェック [8/9] が config＋実体の 2 条件で検知する）
+- 手動で直す場合: `git config core.hooksPath .claude/githooks`
+- Claude 経由の push は guard-bash.sh も通るため、`--no-verify` で git hooks を
+  飛ばしてもそちらの防衛線は残る
+
 ### 並行作業の制約
 
 | 作業種別 | 並行実行 |
