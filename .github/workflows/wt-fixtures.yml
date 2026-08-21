@@ -1,7 +1,9 @@
 # 並列 Worktree 資源ガバナー（ADR-0035）の回帰を CI で回す最小ワークフロー。
 #
-# 目的は安全網を置くことだけで、既存の動作は変えない。fixture は追加せず、
-# リポジトリにある 2 本をそのまま各 1 回実行する。
+# 目的は安全網を置くことだけで、既存の動作は変えない。**既存の生 fixture 2 本を
+# そのまま維持し**、CLI 境界カナリア 1 本を追加して、計 3 本を各 1 回実行する。
+# 生の 2 本は slots.mjs の API を直接叩き、カナリアだけが with-slot.mjs の CLI
+# 境界を実プロセスで通す（ラッパは生の経路に噛ませない）。
 #
 # 閾値（判定ループ 50 ms）は fixture 側が持つ。**CI が閾値を調整することはない** —
 # cold 実行で閾値に近づいた場合は失敗として実測を残し、変更の是非は人が判断する。
@@ -13,6 +15,7 @@ on:
       - '.claude/scripts/wt/**'
       - 'tests/fixtures/wt-slots/**'
       - 'tests/fixtures/wt-concurrency/**'
+      - 'tests/fixtures/wt-canary/**'
       - '.github/workflows/wt-fixtures.yml'
   push:
     branches:
@@ -21,6 +24,7 @@ on:
       - '.claude/scripts/wt/**'
       - 'tests/fixtures/wt-slots/**'
       - 'tests/fixtures/wt-concurrency/**'
+      - 'tests/fixtures/wt-canary/**'
       - '.github/workflows/wt-fixtures.yml'
 
 # 読み取りだけで足りる。書き込み権限は要求しない。
@@ -88,4 +92,27 @@ jobs:
           fi
 
           # 6. fixture が 0 でも cleanup 検査が失敗したら赤にする
+          exit $cleanup
+
+      # Resource Governor の CLI 境界カナリア。生の fixture（上の 2 step）は残し、
+      # ここだけが with-slot.mjs を実プロセスで通す。上と同じ 1-step 契約で、
+      # 実行と一時領域の回収検査を分離しない。
+      - name: wt-canary（Resource Governor 経由・短い取得期限で有界化）
+        run: |
+          status=0
+          bash tests/fixtures/wt-canary/replay.sh > wt-canary.log 2>&1 || status=$?
+
+          cat wt-canary.log
+
+          cleanup=0
+          grep -q '^PASS  *canary-temp-root-removed' wt-canary.log || cleanup=1
+
+          if [ "$cleanup" -ne 0 ]; then
+            echo "::error::canary-temp-root-removed が出力されていない（一時領域の回収を確認できない）"
+          fi
+
+          if [ "$status" -ne 0 ]; then
+            exit $status
+          fi
+
           exit $cleanup
