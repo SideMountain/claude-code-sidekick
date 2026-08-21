@@ -1,0 +1,414 @@
+[
+  {
+    "name": "tt1-alive-within-lease",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T20:13:20.000Z",
+        "leaseUntil": "2023-11-15T06:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": true,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "ACTIVE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "tt2-dead-within-lease",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T20:13:20.000Z",
+        "leaseUntil": "2023-11-15T06:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "STALE",
+      "reclaimable": true
+    }
+  },
+  {
+    "name": "tt3-alive-lease-expired",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T20:13:20.000Z",
+        "leaseUntil": "2023-11-14T21:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": true,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "ACTIVE_EXPIRED",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "tt4-dead-lease-expired",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T20:13:20.000Z",
+        "leaseUntil": "2023-11-14T21:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "STALE",
+      "reclaimable": true
+    }
+  },
+  {
+    "name": "tt5-foreign-domain",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "win:other",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T22:13:20.000Z",
+        "leaseUntil": "2023-11-15T06:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "INDETERMINATE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "tt6-unparsable",
+    "fn": "classifyCell",
+    "input": {
+      "cell": null,
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "INDETERMINATE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "grace-dead-within-grace",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T22:13:19.500Z",
+        "leaseUntil": "2023-11-15T06:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "STALE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "missing-field",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T22:13:20.000Z",
+        "leaseUntil": "2023-11-15T06:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "INDETERMINATE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "pid-unknown",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T22:13:20.000Z",
+        "leaseUntil": "2023-11-15T06:13:20.000Z"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": null,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "INDETERMINATE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "bad-time",
+    "fn": "classifyCell",
+    "input": {
+      "cell": {
+        "v": 1,
+        "kind": "heavy",
+        "owner": "pid:1",
+        "executionDomain": "wsl:Ubuntu:1000",
+        "pid": 4242,
+        "label": "t",
+        "releaseTokenHash": "deadbeef",
+        "createdAt": "2023-11-14T22:13:20.000Z",
+        "leaseUntil": "not-a-date"
+      },
+      "nowMs": 1700000000000,
+      "selfDomain": "wsl:Ubuntu:1000",
+      "pidAlive": false,
+      "graceMs": 10000
+    },
+    "expect": {
+      "state": "INDETERMINATE",
+      "reclaimable": false
+    }
+  },
+  {
+    "name": "policy-absent",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": null
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 2,
+      "base": "builtin"
+    }
+  },
+  {
+    "name": "policy-ok",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{\"heavy\":2,\"runtime\":4}"
+    },
+    "expect": {
+      "heavy": 2,
+      "runtime": 4,
+      "base": "policy"
+    }
+  },
+  {
+    "name": "policy-partial",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{\"runtime\":5}"
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 5,
+      "base": "policy"
+    }
+  },
+  {
+    "name": "policy-broken-json",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{heavy:2"
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 1,
+      "base": "safe"
+    }
+  },
+  {
+    "name": "policy-empty-string",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": ""
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 1,
+      "base": "safe"
+    }
+  },
+  {
+    "name": "policy-zero",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{\"heavy\":0,\"runtime\":2}"
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 1,
+      "base": "safe"
+    }
+  },
+  {
+    "name": "policy-non-number",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{\"heavy\":\"2\"}"
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 1,
+      "base": "safe"
+    }
+  },
+  {
+    "name": "policy-array",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "[1,2]"
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 1,
+      "base": "safe"
+    }
+  },
+  {
+    "name": "repo-lowers",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{\"heavy\":3,\"runtime\":4}",
+      "repoValues": {
+        "heavy": 2
+      }
+    },
+    "expect": {
+      "heavy": 2,
+      "runtime": 4,
+      "base": "policy"
+    }
+  },
+  {
+    "name": "repo-cannot-raise",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": "{\"heavy\":1,\"runtime\":2}",
+      "repoValues": {
+        "heavy": 9,
+        "runtime": 9
+      }
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 2,
+      "base": "policy"
+    }
+  },
+  {
+    "name": "env-cannot-raise",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": null,
+      "envValues": {
+        "heavy": 8,
+        "runtime": 8
+      }
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 2,
+      "base": "builtin"
+    }
+  },
+  {
+    "name": "env-lowers",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": null,
+      "envValues": {
+        "runtime": 1
+      }
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 1,
+      "base": "builtin"
+    }
+  },
+  {
+    "name": "env-invalid-ignored",
+    "fn": "resolveLimits",
+    "input": {
+      "policyText": null,
+      "envValues": {
+        "heavy": null
+      }
+    },
+    "expect": {
+      "heavy": 1,
+      "runtime": 2,
+      "base": "builtin"
+    }
+  }
+]

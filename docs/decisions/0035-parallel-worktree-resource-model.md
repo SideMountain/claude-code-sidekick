@@ -321,7 +321,7 @@ tests/fixtures/wt-concurrency/replay.sh   並行性 4 点（Phase 3 = 回帰 1�
 | **6. BizIQ dogfood** | 2 プロジェクト目での確認 | 同上 |
 | **7. 旧掃除器の縮小** | 現行掃除器から、公式と Resource Governor が担う部分を削る。**全撤去は最後**で、legacy doctor の対象（決定 7 の閉集合）は残す | 併存を維持したまま段階的に縮小 |
 
-**Phase 3 の受入条件**: **並行性の回帰 1〜4 が緑**であること（回帰 5 は Phase 4）、policy の縮退が実走で確認できること、fixture テストが 1 秒未満で回ること。**WT 本数・プロセス数に実行時間が依存しないこと。**
+**Phase 3 の受入条件**: **並行性の回帰 1〜4 が緑**であること（回帰 5 は Phase 4）、policy の縮退が実走で確認できること、純粋 fixture が実プロセスを起動せず、**判定ループ**（module import と fixture 読み込みを除いた全ケースの評価）が 50 ms 未満で回ること（wall は Node の起動と module import が支配的で環境により桁が変わるため、wall を受入条件にしない）。**acquire 処理は全 WT・全プロセスを走査せず、走査量は設定された slot 上限にのみ比例すること。**
 
 **Phase 4 の受入条件（追加分）**: **回帰 5**（`SessionEnd` 相当の trigger 時に子プロセスが生存していれば cell が残る）が緑であること。
 
