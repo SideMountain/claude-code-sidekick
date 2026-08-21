@@ -36,6 +36,17 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 - **Guard 5.6: Windows の再帰削除 `rmdir /s` を警告対象に追加**: `rm -rf` の別名コマンドとして permission ダイアログでの確認を促す（rmdir /s は junction を辿らないため deny ではなく warning）。
 - **executor 検出に `cmd /c`・`cmd //c` を追加**: Windows シェル実行子で包まれた payload が引用符除去ベースのガード全てをすり抜ける盲点を封鎖。ラップされた破壊コマンド（再帰削除等）も raw 検査で既存 deny ガードに掛かる。
 - **guard oracle に 11 ケース追加（計 53）**: Guard 5.5/5.6/cmd executor の deny/allow 期待値を実走で凍結。`replay.sh` に `{{REPO}}` プレースホルダ置換を追加し、コミット済み fixture パス（疑似 Worktree `wt-junction-sim/`）を portably 参照可能に。
+- **`cleanup-worktrees.sh` を追加**: マージ済み worktree 掃除の機械化（既定 dry-run・`--apply`/`--keep`/`--base`）。unpushed/dirty/未マージ/ローカル設定（`.env.*`）を自動除外し、node_modules のリンク種別を機械判定（Windows は `fsutil reparsepoint` が決定的）してリンクだけ撤去、共有 store を「内容」で前後検査してから worktree を削除する。
+- **`.claude/githooks/pre-push` を追加**: push 前のローカル検証ゲート。型/テストに無関係な push は fast-path でスキップし、関係する push は検出できたツールチェーンで検証（tsc incremental + `vitest --changed` / pytest）。検証不能も fail-closed で中止。
+- **session-start に git hooks 配線チェックを追加（チェックを 9 本化）**: `core.hooksPath` は clone ごとの local config のため、fresh clone・worktree で hooks が無エラーで沈黙する。config と実体の 2 条件で配線を検知する。
+- **Guard 2.5: マージ済み PR のブランチへの追い足し push を物理ブロック**: マージ後の同一ブランチへの push は差分が元 PR に反映されずベースに永久に入らない。判定は `check-merged-pr.sh`（単一の正・pre-push ゲート 0 と共有）。gh が答えられないときは fail-closed で deny。ack は `CONFIRM_PUSH_TO_MERGED=1`（履歴に痕跡が残る）。
+- **STG 2 段テストゲートを認知・配線・検知の 3 層で導入**: CLAUDE.md「テスト実行の最適化」節（STG=変更箇所テスト+型チェック全体 / main=フル一式）、auto-implement Phase 4 の base 分岐、Guard 13（非リリースブランチでのフルスイート/build に advisory 警告・STG_ENABLED=true のみ）、Guard 12（release PR への migration 同梱で適用順を advisory 確認）。
+- **Supabase CLI の HARD ルールと強制層（H16-H20）+ STG 運用ルール（H21-H23）**: `supabase db reset`/`db push --force`/`migration repair` を Guard 8.5 で物理 deny、`db push`/`db execute` は承認必須の warning。H21（メインWS 常駐ブランチ固定）は session-start が検知。`verify-migration-stg.sh`（BEGIN→適用→ROLLBACK の STG dry-run で参照オブジェクトの現存を実 DB 検証）を同梱。
+- **guard oracle に 15 ケース追加（計 68）**: Guard 2.5（テストシームで決定的化）/ Guard 13 / Guard 8.5 の期待値を実走で凍結。
+- **`/prepare-release` スキルを追加**: release/stg → main のリリース準備（差分集約・migration の破壊/非破壊判定と適用順・データパッチ dry-run・環境変数チェック → 承認を得てリリース PR 作成）。ORM_TYPE で読み替える構成。
+- **`/news-slack` スキルを追加**: main の直近変更を Slack Bot で日次投稿。最終投稿 commit をメッセージ内 fingerprint として埋め込み、外部 state 無しで差分を判定（投稿削除時は自動 bootstrap）。
+- **`/system-map-update` スキルを追加**: system-map の差分更新運用（骨格だけ決定的に再生成し、差分だけ軟層 enrich。全量やり直しをしない）。STACK_PACK 採用 PJ 向け。
+- **`docs/ratchet-allowlist.md` を追加**: 既存違反が多い規範を段階導入する「検知スクリプト + 理由付き allowlist + ratchet 上限 + pre-commit 配線」の型。
 
 ### Changed
 
@@ -48,6 +59,14 @@ sidekick のリリース履歴。セマンティックバージョニングに�
 
 - **配布ゲートの検査タイミングを経路ごとに分離**: same-version の回収は Step 0b（取り込み前・ここだけが同一バージョンで走る）、通常更新の終端検査は Step 6.6（**適用がすべて終わった後**）が担当し、1 回の実行ではどちらか一方しか走らない。ゲート本体の bootstrap は両経路に必要なため 2 箇所に置いているが、これは重複ではなく**排他経路それぞれの前提**であり、両者を `# --- gate-bootstrap:begin/end ---` で囲った同一テキストとして**回帰が一致を機械照合する**（片方だけ直されると落ちる）。
 - **worktree-guide.md に削除の安全順序を追記**: リンク共有した Worktree の削除は「node_modules 除去 → 確認 → `git worktree remove`」の順序を明記（Guard 5.5 の認知層ペア）。
+- **worktree-guide.md に Windows の `ln -s` 実体コピー問題を追記**: Git Bash（MSYS）の `ln -s` は既定で symlink にならず実体コピーを作るため、Windows では symlink 最適化が機能しない。依存インストールの指針と `fsutil` による機械判定を明記。
+- **/setup Step 2d を githooks 全体の有効化に更新**: pre-commit（PII）に加え pre-push を対象化。node 系 PJ には `package.json` の `prepare` スクリプトによる `core.hooksPath` 自動配線を推奨（fresh clone・worktree で配線忘れが構造的に消える）。
+- **/tune remediation-playbook にローカル worker cap の原則を追記**: 並列 worktree 運用ではテストランナーの worker 数を cap しないと「コア数 × worktree 本数」でマシン全体が劣化する。
+
+### Fixed
+
+- **Windows 予約デバイス名のファイルをリネーム（`CON.md`/`CON.yaml` → `CON-cases.*`）**: 基底名 `CON` は Git for Windows が checkout / index 登録を拒否し、**Windows で clone・worktree 作成がリポジトリごと失敗**していた。ケース ID・凍結内容は不変（blob 同一の rename のみ）。README に予約名（CON/PRN/AUX/NUL/COM1-9/LPT1-9）を避ける命名規約を追記。
+- **guard-oracle `replay.sh` の Windows CRLF バグ**: Windows の jq は複数行出力を CRLF 終端するため、env が複数キーのケースで値末尾に `\r` が残り誤判定になっていた（既存ケースは全て 1 キーで潜伏）。`tr -d '\r'` で除去。
 
 ### Fixed
 

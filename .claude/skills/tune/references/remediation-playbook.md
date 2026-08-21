@@ -45,6 +45,10 @@ git -C <PJ> worktree add <別パス>-tune -b feature/<用途> origin/<base>
 - **YAML 構文**: `python3 -c "import yaml; yaml.safe_load(open(f))"`。
 - **限界の明示**: ランナー固有のランタイム挙動（cache hit/miss・matrix 実展開・スイート green）はローカル不可 → 「最終証拠は CI」と正直に言う。
 
+## 3.5 ローカル並列実行の worker cap
+
+テストランナーの**ローカル worker 数を明示 cap** する（例: vitest の `maxWorkers` を 4 に固定し、env で上書き可能にする）。未指定だと CPU コア数ぶん worker が立ち、並列 worktree でスイートが同時に走ると「コア数 × worktree 本数」で全セッションが劣化する。単発の全走を最速化するより、並列運用時に破綻しない既定を選ぶ（CI は従来どおりランナーのコア数準拠）。
+
 ## 4. コミット（H15）
 
 本文に **背景 / 対応 / 影響** を必ず記載。
